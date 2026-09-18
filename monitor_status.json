@@ -1,17 +1,17 @@
 {
-  "checked_at": "2026-09-18T04:26:40.845788+00:00",
+  "checked_at": "2026-09-18T04:41:48.533409+00:00",
   "previous_rows": 40,
   "new_rows": 0,
   "total_rows": 40,
   "tracker_sha256": "5e093bcc4143a1f9f923bf852005c0332c43ab6d516402906730e7ad54691e8e",
   "cleanup": {
-    "duplicates_removed": 10,
-    "invalid_links_cleared": 22,
-    "before": 50,
+    "duplicates_removed": 0,
+    "invalid_links_cleared": 0,
+    "before": 40,
     "after": 40,
-    "changed": true
+    "changed": false
   },
   "notification_batch_id": "",
-  "google_sheets_configured": false,
-  "live_tracker_url": "https://github.com/koolestasian/zero2sudo-opportunity-monitor/blob/main/LATEST.md"
+  "google_sheets_configured": true,
+  "live_tracker_url": "https://docs.google.com/spreadsheets/d/1Ih0T0EkndMrzj9N6uYwknKxvZhgL05m1Y5kfu3boErU/edit"
 }
