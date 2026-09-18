@@ -182,7 +182,7 @@ def as_text(value):
         return json.dumps(value, ensure_ascii=False)
     return str(value)
 
-URL_RE = re.compile(r'https?://[^\\s<>"\\']+')
+URL_RE = re.compile(r"https?://[^\\s<>\\\"']+")
 
 def _walk_urls(value):
     """Recursively collect URLs from arbitrary actor output.
