@@ -47,6 +47,26 @@ When the monitor finds something genuinely new:
 
 If nothing new is found, it stays quiet.
 
+### Where to see updates
+
+The live copy is the workbook **in this GitHub repository**. An Excel file
+previously downloaded to your computer, or attached to a chat, is a separate
+snapshot and does not automatically refresh. Download the repository copy again
+to see later rows, or download the workbook artifact from a successful Actions run.
+
+Each successful check commits `monitor_status.json` with the check time,
+previous/new/total row counts, and workbook checksum. The Actions summary shows
+these counts after verifying the uploaded bytes on `main`. If no new opportunities
+are found, the workbook is intentionally unchanged and the status still updates.
+The hourly schedule is configured for minute 17; actual scheduled execution can
+be delayed. A green manual or push run alone does not verify the scheduler.
+
+Runs start from current `main`, preserve existing rows, deduplicate new records,
+verify the saved IDs, and commit before sending alerts. Scrape failures fail the
+run instead of masquerading as an empty successful check. Notification failures
+are warnings and cannot prevent tracker persistence. A downloadable snapshot is
+saved before pushing, so it remains available if the push fails.
+
 ## One setup step left: add APIFY_TOKEN
 
 The monitor uses Apify to retrieve public Instagram Stories and posts.

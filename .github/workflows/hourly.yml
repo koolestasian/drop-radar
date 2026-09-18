@@ -27,6 +27,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Verify Apify secret
         env:
@@ -50,6 +53,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Test tracker persistence
+        run: python -m unittest discover -s tests -v
+
       - name: Check Zero2Sudo and update tracker
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
@@ -57,23 +63,54 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           IG_USERNAME: zero2sudo
-        run: python opportunity_monitor.py
+        run: python opportunity_monitor.py --defer-notifications
 
-      - name: Commit tracker if changed
+      - name: Save downloadable tracker snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: zero2sudo-tracker-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            Zero2Sudo_Opportunity_Tracker.xlsx
+            monitor_status.json
+          if-no-files-found: error
+
+      - name: Commit and verify tracker
         run: |
-          if [ -z "$(git status --porcelain -- Zero2Sudo_Opportunity_Tracker.xlsx)" ]; then
-            echo "Tracker unchanged."
-            exit 0
-          fi
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Zero2Sudo_Opportunity_Tracker.xlsx
-          git commit -m "Update Zero2Sudo opportunity tracker"
+          git add Zero2Sudo_Opportunity_Tracker.xlsx monitor_status.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update Zero2Sudo opportunity tracker and check status"
+          fi
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              break
+            fi
+            if [ "$attempt" = 3 ]; then
+              echo "::error::Could not persist tracker to main."
+              exit 1
+            fi
+          done
+          git fetch origin main
+          git show origin/main:Zero2Sudo_Opportunity_Tracker.xlsx > /tmp/persisted-tracker.xlsx
+          cmp Zero2Sudo_Opportunity_Tracker.xlsx /tmp/persisted-tracker.xlsx
+          git show origin/main:monitor_status.json > /tmp/persisted-status.json
+          cmp monitor_status.json /tmp/persisted-status.json
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          status = json.loads(Path("monitor_status.json").read_text())
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("# Tracker saved and verified on main\n\n")
+              for key in ("checked_at", "previous_rows", "new_rows", "total_rows"):
+                  summary.write(f"- {key}: {status[key]}\n")
+              summary.write("\nDownload the workbook from this run's artifact or the repository. Previously downloaded Excel copies do not auto-refresh.\n")
+          PY
 
-          # The repository may have received unrelated code/docs commits while
-          # this job was running. Rebase the tracker commit onto the latest
-          # main branch before pushing so the automation does not fail with a
-          # non-fast-forward error.
-          git pull --rebase origin main
-          git push origin HEAD:main
+      - name: Send alerts after tracker is persisted
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python opportunity_monitor.py --notify

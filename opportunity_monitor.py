@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import hashlib
 import json
 import os
@@ -149,8 +150,7 @@ def fetch_stories():
     try:
         return run_actor(STORY_ACTOR, {"usernames": [USERNAME]})
     except Exception as exc:
-        print(f"::warning::Story scrape failed: {exc}")
-        return []
+        raise RuntimeError("Story scrape failed; this check is incomplete.") from None
 
 def fetch_posts():
     payload = {
@@ -163,8 +163,7 @@ def fetch_posts():
     try:
         return run_actor(POST_ACTOR, payload)
     except Exception as exc:
-        print(f"::warning::Post/reel scrape failed: {exc}")
-        return []
+        raise RuntimeError("Post/reel scrape failed; this check is incomplete.") from None
 
 def pick(item, *keys):
     for key in keys:
@@ -748,7 +747,15 @@ def github_issue(rows):
     else:
         print(f"Created alert issue: {response.json().get('html_url', '')}")
 
-def main():
+def notify_rows(rows):
+    # A notification outage must never discard an already saved tracker.
+    for notify in (github_issue, ntfy_alert):
+        try:
+            notify(rows)
+        except Exception:
+            print(f"::warning::{notify.__name__} failed; tracker rows remain saved.")
+
+def main(defer_notifications=False):
     if not APIFY_TOKEN:
         raise SystemExit(
             "APIFY_TOKEN is missing. Add it in GitHub: Settings → Secrets and variables → Actions → New repository secret."
@@ -771,18 +778,36 @@ def main():
     unique = {record["ID"]: record for record in candidates}
     new_rows = [record for key, record in unique.items() if key not in known]
 
-    if not new_rows:
-        print("No new actionable opportunities.")
-        return
-
     # Fill the spreadsheet Priority column automatically for new rows.
     for row in new_rows:
         row["Priority"] = priority_for(row).title()
 
     append_rows(new_rows)
-    github_issue(new_rows)
-    ntfy_alert(new_rows)
+    persisted = existing_ids()
+    expected = known | {row["ID"] for row in new_rows}
+    if persisted != expected:
+        raise RuntimeError("Saved tracker IDs do not match the expected rows.")
+    report = {
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "previous_rows": len(known),
+        "new_rows": len(new_rows),
+        "total_rows": len(persisted),
+        "tracker_sha256": hashlib.sha256(TRACKER_PATH.read_bytes()).hexdigest(),
+    }
+    Path("monitor_status.json").write_text(json.dumps(report, indent=2) + "\n")
+    if defer_notifications:
+        Path("pending_alerts.json").write_text(json.dumps(new_rows))
+    else:
+        notify_rows(new_rows)
     print(f"Added {len(new_rows)} new opportunity row(s).")
+    print(f"Verified {len(persisted)} total rows in {TRACKER_PATH}.")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--defer-notifications", action="store_true")
+    parser.add_argument("--notify", action="store_true")
+    args = parser.parse_args()
+    if args.notify:
+        notify_rows(json.loads(Path("pending_alerts.json").read_text()))
+    else:
+        main(defer_notifications=args.defer_notifications)
