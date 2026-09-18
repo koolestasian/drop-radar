@@ -1,7 +1,17 @@
 {
-  "checked_at": "2026-09-18T03:57:58.778936+00:00",
+  "checked_at": "2026-09-18T04:26:40.845788+00:00",
   "previous_rows": 40,
-  "new_rows": 10,
-  "total_rows": 50,
-  "tracker_sha256": "bc6b2aeb75c5ffd0b434af5dfc8f83ac1e5ed446a856345703577c0a47dfff15"
+  "new_rows": 0,
+  "total_rows": 40,
+  "tracker_sha256": "5e093bcc4143a1f9f923bf852005c0332c43ab6d516402906730e7ad54691e8e",
+  "cleanup": {
+    "duplicates_removed": 10,
+    "invalid_links_cleared": 22,
+    "before": 50,
+    "after": 40,
+    "changed": true
+  },
+  "notification_batch_id": "",
+  "google_sheets_configured": false,
+  "live_tracker_url": "https://github.com/koolestasian/zero2sudo-opportunity-monitor/blob/main/LATEST.md"
 }
