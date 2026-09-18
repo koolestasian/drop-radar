@@ -120,3 +120,38 @@ There is also a Dashboard sheet.
 **Zero2Sudo posts something actionable → GitHub checks it → Excel updates → you get one GitHub alert → you decide whether to act.**
 
 No hourly Instagram refreshing required.
+
+
+## Cleaner alerts
+
+The monitor now ranks new opportunities and makes GitHub alerts much easier to scan:
+
+- **HIGH** — especially relevant organizations / opportunities
+- **MEDIUM** — strong SWE / AI / data / internship / new-grad matches
+- **NORMAL** — everything else actionable
+
+GitHub Issue titles now look like:
+
+`🚨 [HIGH] Palantir — Software Engineering — APPLY / OPEN`
+
+The direct application link is placed prominently in the alert.
+
+### Optional: instant phone push with ntfy
+
+GitHub notifications still work without this. If you want an immediate dedicated phone push:
+
+1. Install the **ntfy** app on your phone.
+2. Pick a long, random topic name, for example:
+   `khanh-zero2sudo-7f3c9b2a91`
+3. Subscribe to that exact topic in the ntfy app.
+4. In this GitHub repository go to:
+   **Settings → Secrets and variables → Actions → New repository secret**
+5. Name the secret:
+   `NTFY_TOPIC`
+6. Set the value to only your topic name, not the full URL.
+
+Once that secret exists, the hourly workflow automatically sends a push when something new is found.
+
+HIGH-priority alerts use ntfy's urgent notification priority and include an **Apply / Open** action that jumps directly to the opportunity link.
+
+If `NTFY_TOPIC` is not configured, the workflow does not fail; it simply uses GitHub Issue/email notifications only.
