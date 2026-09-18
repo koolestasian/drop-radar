@@ -18,12 +18,18 @@ class PersistenceTests(unittest.TestCase):
         self.addCleanup(os.chdir, self.previous_cwd)
         for name, value in (
             ("TRACKER_PATH", Path("tracker.xlsx")),
+            ("STATUS_PATH", Path("monitor_status.json")),
+            ("STATE_PATH", Path("monitor_state.json")),
+            ("LIVE_VIEW_PATH", Path("LATEST.md")),
             ("APIFY_TOKEN", "test"),
             ("fetch_stories", lambda: []),
             ("fetch_posts", lambda: []),
             ("normalize_item", lambda item, source: item),
-            ("github_issue", lambda rows: None),
-            ("ntfy_alert", lambda rows: None),
+            ("migrate_workbook", lambda: {"before": 0, "after": 0, "changed": False}),
+            ("record_semantic_key", lambda row: row["ID"]),
+            ("pull_google_manual_fields", lambda: {}),
+            ("github_issue", lambda rows, batch_id="": True),
+            ("ntfy_alert", lambda rows, batch_id="": True),
         ):
             patcher = patch.object(monitor, name, value)
             patcher.start()
@@ -54,17 +60,19 @@ class PersistenceTests(unittest.TestCase):
         self.assertEqual((status["previous_rows"], status["new_rows"], status["total_rows"]), (1, 1, 2))
 
     def test_alert_exception_does_not_lose_saved_rows(self):
-        def failing_alert(rows):
+        def failing_alert(rows, batch_id=""):
             raise TimeoutError()
         with patch.object(monitor, "github_issue", failing_alert), patch.object(monitor, "ntfy_alert", failing_alert):
-            self.run_rows([{"ID": "one"}], defer=False)
+            with self.assertRaises(RuntimeError):
+                self.run_rows([{"ID": "one"}], defer=False)
         self.assertEqual(monitor.existing_ids(), {"one"})
 
     def test_deferred_alerts_not_sent_before_commit(self):
         with patch.object(monitor, "github_issue") as notify:
             self.run_rows([{"ID": "one"}])
             notify.assert_not_called()
-        self.assertEqual(json.loads(Path("pending_alerts.json").read_text())[0]["ID"], "one")
+        state = json.loads(Path("monitor_state.json").read_text())
+        self.assertEqual(state["pending_batches"][0]["rows"][0]["ID"], "one")
 
     def test_scrape_failure_is_not_reported_as_success(self):
         with patch.object(monitor, "fetch_stories", side_effect=RuntimeError("failed")):
@@ -76,6 +84,27 @@ class PersistenceTests(unittest.TestCase):
         with patch.object(monitor, "append_rows"):
             with self.assertRaisesRegex(RuntimeError, "Saved tracker IDs"):
                 self.run_rows([{"ID": "one"}])
+
+    def test_failed_alert_batch_is_retried_without_losing_state(self):
+        row = {"ID": "one", "Opportunity": "Internship"}
+        batch_id = monitor.queue_batch([row])
+        attempts = []
+
+        def flaky_issue(rows, current_batch_id=""):
+            attempts.append(current_batch_id)
+            if len(attempts) == 1:
+                raise TimeoutError("temporary")
+            return True
+
+        with patch.object(monitor, "github_issue", flaky_issue):
+            with self.assertRaisesRegex(RuntimeError, "remain pending"):
+                monitor.deliver_pending_batches()
+            monitor.deliver_pending_batches()
+
+        state = json.loads(Path("monitor_state.json").read_text())
+        self.assertEqual(attempts, [batch_id, batch_id])
+        self.assertEqual(state["pending_batches"], [])
+        self.assertIn(batch_id, state["delivered_batch_ids"])
 
 
 if __name__ == "__main__":

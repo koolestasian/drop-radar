@@ -41,18 +41,36 @@ Generic career advice, motivational content, and duplicate opportunities are fil
 When the monitor finds something genuinely new:
 
 1. It creates or updates **Zero2Sudo_Opportunity_Tracker.xlsx** in this repository.
-2. It deduplicates previously seen opportunities.
-3. It creates a **GitHub Issue assigned to the repository owner** with the new opportunity links.
-4. GitHub sends the normal issue/assignment notification through your GitHub notification settings.
+2. It updates **LATEST.md**, a permanent browser view that requires no download.
+3. It deduplicates previously seen opportunities using stable Instagram/media identity.
+4. If configured, it synchronizes the same rows to a permanent Google Sheet.
+5. It creates a **GitHub Issue assigned to the repository owner** only after persistence succeeds.
+6. GitHub sends the normal issue/assignment notification through your GitHub notification settings.
 
 If nothing new is found, it stays quiet.
 
 ### Where to see updates
 
-The live copy is the workbook **in this GitHub repository**. An Excel file
-previously downloaded to your computer, or attached to a chat, is a separate
-snapshot and does not automatically refresh. Download the repository copy again
-to see later rows, or download the workbook artifact from a successful Actions run.
+Open **[LATEST.md](LATEST.md)** for the current tracker in your browser. It
+updates at the same URL after each successful run, so there is nothing to
+download. The Excel workbook remains a formatted backup.
+
+### Optional: use Google Sheets as the live tracker
+
+Google Sheets provides a familiar spreadsheet at one permanent URL and preserves
+edits made in the Actioned? and Notes columns.
+
+1. Create a Google Cloud project and enable the Google Sheets API.
+2. Create a service account and download its JSON key.
+3. Create a Google Sheet and share it with the service-account email as Editor.
+4. Add the complete JSON key as a GitHub Actions secret named
+   GOOGLE_SERVICE_ACCOUNT_JSON.
+5. Copy the Sheet ID from its URL and add it as a secret named GOOGLE_SHEET_ID.
+6. Run the workflow once, then set the repository Actions variable
+   GOOGLE_SYNC_REQUIRED to true.
+
+Never commit the service-account JSON. Without these secrets, the monitor uses
+LATEST.md as the permanent live view and continues maintaining the Excel backup.
 
 Each successful check commits `monitor_status.json` with the check time,
 previous/new/total row counts, and workbook checksum. The Actions summary shows
@@ -61,11 +79,10 @@ are found, the workbook is intentionally unchanged and the status still updates.
 The hourly schedule is configured for minute 17; actual scheduled execution can
 be delayed. A green manual or push run alone does not verify the scheduler.
 
-Runs start from current `main`, preserve existing rows, deduplicate new records,
-verify the saved IDs, and commit before sending alerts. Scrape failures fail the
-run instead of masquerading as an empty successful check. Notification failures
-are warnings and cannot prevent tracker persistence. A downloadable snapshot is
-saved before pushing, so it remains available if the push fails.
+Runs start from current main, back up the workbook, preserve user fields,
+deduplicate new records, verify saved IDs, update the browser/Google views, and
+commit before sending alerts. Unexpected scraper response formats fail the run.
+A durable notification queue makes alert retries safe.
 
 ## One setup step left: add APIFY_TOKEN
 

@@ -19,6 +19,9 @@ import pytesseract
 USERNAME = os.getenv("IG_USERNAME", "zero2sudo").lstrip("@")
 APIFY_TOKEN = os.environ.get("APIFY_TOKEN", "").strip()
 TRACKER_PATH = Path(os.getenv("TRACKER_PATH", "Zero2Sudo_Opportunity_Tracker.xlsx"))
+STATUS_PATH = Path(os.getenv("STATUS_PATH", "monitor_status.json"))
+STATE_PATH = Path(os.getenv("STATE_PATH", "monitor_state.json"))
+LIVE_VIEW_PATH = Path(os.getenv("LIVE_VIEW_PATH", "LATEST.md"))
 
 STORY_ACTOR = os.getenv("STORY_ACTOR", "data-slayer/instagram-stories-scraper")
 POST_ACTOR = os.getenv("POST_ACTOR", "apify/instagram-scraper")
@@ -26,6 +29,11 @@ POST_ACTOR = os.getenv("POST_ACTOR", "apify/instagram-scraper")
 GITHUB_TOKEN = os.getenv("GH_TOKEN", "").strip()
 GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY", "").strip()
 NTFY_TOPIC = os.getenv("NTFY_TOPIC", "").strip()
+GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "").strip()
+GOOGLE_SYNC_REQUIRED = os.getenv("GOOGLE_SYNC_REQUIRED", "false").strip().lower() in {
+    "1", "true", "yes"
+}
 
 REQUEST_TIMEOUT = 180
 
@@ -60,6 +68,22 @@ ACTION_RE = re.compile(
 NOISE_RE = re.compile(
     r"\b(resume tips?|interview tips?|leetcode tips?|career advice|motivation|day in the life|"
     r"salary transparency|story time|q&a|ama)\b",
+    re.I,
+)
+
+NEGATIVE_CONTEXT_RE = re.compile(
+    r"\b(got|received|accepted|landed)\s+(?:an?\s+)?(?:intern(?:ship)?\s+)?offer\b|"
+    r"\boffer\s*[+&/]?\s*process\b|\bhas anyone\b|\bdid anyone\b|"
+    r"\bno sign[- ]?up\b|\bno registration\b|\bhiring happens\b|"
+    r"\bapplication process\b|\binterview process\b|\brecap\b|"
+    r"\bthis is why\b|\bwhat are my chances\b",
+    re.I,
+)
+
+STRONG_ACTION_RE = re.compile(
+    r"\b(apply now|apply here|applications? (?:are )?(?:open|live)|"
+    r"registration (?:is )?open|register now|register here|rsvp|"
+    r"sign[- ]?up|deadline|apply by|register by|submissions? (?:are )?open)\b",
     re.I,
 )
 
@@ -144,7 +168,16 @@ def run_actor(actor_id, payload):
     )
     response.raise_for_status()
     data = response.json()
-    return data if isinstance(data, list) else []
+    if not isinstance(data, list):
+        shape = type(data).__name__
+        keys = sorted(data)[:8] if isinstance(data, dict) else []
+        raise RuntimeError(
+            f"Actor {actor_id} returned unexpected {shape} payload"
+            + (f" with keys {keys}" if keys else "")
+        )
+    if any(not isinstance(item, dict) for item in data):
+        raise RuntimeError(f"Actor {actor_id} returned a non-object dataset item.")
+    return data
 
 def fetch_stories():
     try:
@@ -181,7 +214,8 @@ def as_text(value):
         return json.dumps(value, ensure_ascii=False)
     return str(value)
 
-URL_RE = re.compile(r"https?://[^\\s<>\\\"']+")
+URL_RE = re.compile(r"https?://[^\s<>\"']+")
+URL_TRAILING_PUNCTUATION = ".,;:!?)]}"
 
 def _walk_urls(value):
     """Recursively collect URLs from arbitrary actor output.
@@ -192,10 +226,7 @@ def _walk_urls(value):
     """
     found = []
     if isinstance(value, str):
-        if value.startswith("http"):
-            found.append(value)
-        else:
-            found.extend(URL_RE.findall(value))
+        found.extend(match.rstrip(URL_TRAILING_PUNCTUATION) for match in URL_RE.findall(value))
     elif isinstance(value, dict):
         for nested in value.values():
             found.extend(_walk_urls(nested))
@@ -210,7 +241,7 @@ def normalize_links(item):
 def is_instagram_url(url):
     try:
         host = urlparse(url).netloc.lower()
-        return "instagram.com" in host or "instagr.am" in host
+        return host == "instagram.com" or host.endswith(".instagram.com") or host == "instagr.am"
     except Exception:
         return False
 
@@ -220,7 +251,7 @@ def is_media_url(url):
         host = parsed.netloc.lower()
         path = parsed.path.lower()
         media_hosts = ("cdninstagram.com", "fbcdn.net", "scontent.", "cdn.fbsbx.com")
-        media_exts = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".m3u8", ".mov")
+        media_exts = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".mp4", ".m3u8", ".mov")
         return any(x in host for x in media_hosts) or path.endswith(media_exts)
     except Exception:
         return False
@@ -242,8 +273,13 @@ def external_links(links):
     cleaned = []
     for raw in links:
         url = unwrap_instagram_redirect(raw)
-        if not is_instagram_url(url) and not is_media_url(url):
-            cleaned.append(url)
+        try:
+            parsed = urlparse(url)
+            valid = parsed.scheme.lower() in {"http", "https"} and bool(parsed.netloc)
+        except Exception:
+            valid = False
+        if valid and not is_instagram_url(url) and not is_media_url(url):
+            cleaned.append(clean_url(url))
     return list(dict.fromkeys(cleaned))
 
 def clean_url(url):
@@ -307,14 +343,16 @@ def item_text(item):
 def looks_actionable(text, links):
     if not text:
         return False
-    if OPPORTUNITY_RE.search(text):
-        if NOISE_RE.search(text) and not ACTION_RE.search(text) and not external_links(links):
-            return False
-        return True
-    # Bias toward recall: an external destination plus an action verb is worth surfacing.
-    if external_links(links) and ACTION_RE.search(text):
-        return True
-    return False
+    opportunity = bool(OPPORTUNITY_RE.search(text))
+    external = bool(external_links(links))
+    strong_action = bool(STRONG_ACTION_RE.search(text))
+    if NEGATIVE_CONTEXT_RE.search(text) and not external:
+        return False
+    if NOISE_RE.search(text) and not external and not strong_action:
+        return False
+    if external:
+        return opportunity or bool(ACTION_RE.search(text))
+    return opportunity and strong_action
 
 def _pretty_org(value):
     value = re.sub(r"[-_]+", " ", value or "").strip()
@@ -438,7 +476,7 @@ def posted_at(item):
 def source_url(item, source_type):
     for key in ("url", "postUrl", "post_url"):
         value = item.get(key)
-        if isinstance(value, str) and value.startswith("http"):
+        if isinstance(value, str) and value.startswith("http") and is_instagram_url(value):
             return value
     shortcode = pick(item, "shortCode", "shortcode")
     if shortcode:
@@ -475,29 +513,66 @@ def opportunity_title(org, category, role, text):
         if score >= 0:
             lines.append((score, line))
 
-    best_line = max(lines, default=(0, ""))[1][:140]
-
-    # A real program/job title is more useful than a generic generated label.
-    if best_line and OPPORTUNITY_RE.search(best_line):
-        if org and org.lower() not in best_line.lower():
-            return f"{org} — {best_line}"
-        return best_line
-
+    best_line = max(lines, default=(0, ""))[1][:100]
     if org and role:
         return f"{org} — {role}"
     if org:
         return f"{org} — {category}"
-    if best_line:
+    if (
+        best_line
+        and OPPORTUNITY_RE.search(best_line)
+        and not NEGATIVE_CONTEXT_RE.search(best_line)
+        and not best_line.startswith(("-", "(", "|"))
+        and not best_line.endswith(("?", "&", ",", "|"))
+    ):
         return best_line
-    return category
+    return role or category
+
+def normalize_identity_text(value):
+    value = URL_RE.sub(" ", value or "")
+    value = re.sub(r"[^a-z0-9]+", " ", value.lower())
+    return " ".join(value.split())
+
+def instagram_media_key(links):
+    for url in links:
+        try:
+            parsed = urlparse(url)
+            params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+            if params.get("ig_cache_key"):
+                return params["ig_cache_key"]
+            if is_media_url(url):
+                filename = Path(parsed.path).name
+                if filename:
+                    return filename
+        except Exception:
+            continue
+    return ""
+
+def stable_item_key(item):
+    for key in (
+        "id", "pk", "story_pk", "story_id", "storyId", "media_id", "mediaId",
+        "shortCode", "shortcode",
+    ):
+        value = item.get(key)
+        if value not in (None, ""):
+            return f"{key.lower()}:{value}"
+    return ""
 
 def row_id(item, source_type, category, role, links, text):
+    stable = stable_item_key(item)
+    media = instagram_media_key(links)
     ex = external_links(links)
-    if ex:
-        basis = f"link:{clean_url(ex[0])}|{category}|{role}"
+    if stable:
+        basis = f"{source_type}:{stable}"
+    elif media:
+        basis = f"{source_type}:media:{media}"
+    elif ex:
+        basis = f"link:{clean_url(ex[0])}|{normalize_identity_text(opportunity_title('', category, role, text))}"
     else:
-        stable = pick(item, "id", "pk", "story_pk", "shortCode", "shortcode")
-        basis = f"{source_type}:{stable or posted_at(item)}:{text[:500]}"
+        basis = (
+            f"{source_type}:{posted_at(item)}:"
+            f"{normalize_identity_text(text)[:1000]}"
+        )
     return hashlib.sha256(basis.encode("utf-8", errors="ignore")).hexdigest()[:20]
 
 def normalize_item(item, source_type):
@@ -510,7 +585,7 @@ def normalize_item(item, source_type):
     category = extract_category(text)
     role = extract_roles(text)
     ex = external_links(links)
-    destination = ex[0] if ex else (links[0] if links else "")
+    destination = ex[0] if ex else ""
 
     return {
         "ID": row_id(item, source_type, category, role, links, text),
@@ -581,6 +656,149 @@ def ensure_workbook():
     if not TRACKER_PATH.exists():
         create_workbook(TRACKER_PATH)
 
+def workbook_records():
+    wb = load_workbook(TRACKER_PATH, read_only=True, data_only=False)
+    ws = wb["Opportunities"]
+    headers = [cell.value for cell in ws[1]]
+    records = [
+        dict(zip(headers, row))
+        for row in ws.iter_rows(min_row=2, values_only=True)
+        if any(value not in (None, "") for value in row)
+    ]
+    wb.close()
+    return records
+
+def record_links(record):
+    values = [
+        record.get("Application / Registration Link", ""),
+        record.get("Instagram Source", ""),
+    ]
+    values.extend(URL_RE.findall(str(record.get("Raw Text", "") or "")))
+    return [value for value in values if value]
+
+def record_semantic_key(record):
+    links = record_links(record)
+    media = instagram_media_key(links)
+    if media:
+        return f"media:{media}"
+    application = record.get("Application / Registration Link", "") or ""
+    external = external_links([application])
+    title = normalize_identity_text(record.get("Opportunity", ""))
+    if external:
+        return f"external:{clean_url(external[0])}|{title}"
+    posted = str(record.get("Posted At", "") or "")[:13]
+    org = normalize_identity_text(record.get("Organization", ""))
+    raw = normalize_identity_text(record.get("Raw Text", ""))[:1000]
+    return f"text:{posted}|{org}|{title}|{raw}"
+
+def merge_record(target, source):
+    merged = dict(target)
+    for header in HEADERS:
+        if header in {"Actioned?", "Notes"}:
+            continue
+        if merged.get(header) in (None, "") and source.get(header) not in (None, ""):
+            merged[header] = source[header]
+    if str(source.get("Actioned?", "")).strip().lower() == "yes":
+        merged["Actioned?"] = "Yes"
+    notes = []
+    for value in (target.get("Notes"), source.get("Notes")):
+        value = str(value or "").strip()
+        if value and value not in notes:
+            notes.append(value)
+    merged["Notes"] = " | ".join(notes)
+    return merged
+
+def conservative_record_title(record):
+    organization = str(record.get("Organization") or "").strip()
+    role = str(record.get("Role / Track") or "").strip()
+    category = str(record.get("Category") or "Opportunity").strip()
+    current = str(record.get("Opportunity") or "").strip()
+    if organization:
+        return f"{organization} — {role or category}"
+    low_quality = (
+        not current
+        or len(current) > 100
+        or current.startswith(("-", "(", "@", "|"))
+        or current.endswith(("?", "&", ",", "|"))
+        or bool(NEGATIVE_CONTEXT_RE.search(current))
+        or bool(re.search(
+            r"\b(if you|as an|all intern roles|posted today|please fill out|"
+            r"been the driving|has anyone|this is why)\b",
+            current,
+            re.I,
+        ))
+    )
+    return (role or category) if low_quality else current
+
+def cleanup_records(records):
+    cleaned = []
+    index_by_key = {}
+    invalid_links_cleared = 0
+    duplicates_removed = 0
+    for original in records:
+        record = {header: original.get(header, "") for header in HEADERS}
+        application = record.get("Application / Registration Link", "") or ""
+        if application:
+            valid_external = external_links([application])
+            if not valid_external:
+                record["Application / Registration Link"] = ""
+                invalid_links_cleared += 1
+            else:
+                record["Application / Registration Link"] = valid_external[0]
+        record["Opportunity"] = conservative_record_title(record)
+        key = record_semantic_key(record)
+        record["ID"] = hashlib.sha256(key.encode("utf-8")).hexdigest()[:20]
+        if key in index_by_key:
+            position = index_by_key[key]
+            cleaned[position] = merge_record(cleaned[position], record)
+            duplicates_removed += 1
+        else:
+            index_by_key[key] = len(cleaned)
+            cleaned.append(record)
+    return cleaned, {
+        "duplicates_removed": duplicates_removed,
+        "invalid_links_cleared": invalid_links_cleared,
+    }
+
+def save_records(records):
+    wb = load_workbook(TRACKER_PATH)
+    ws = wb["Opportunities"]
+    if ws.max_row > 1:
+        ws.delete_rows(2, ws.max_row - 1)
+    for record in records:
+        ws.append([record.get(header, "") for header in HEADERS])
+        current = ws.max_row
+        ws.row_dimensions[current].height = 45
+        for col in range(1, len(HEADERS) + 1):
+            ws.cell(current, col).alignment = Alignment(vertical="top", wrap_text=True)
+        for col in (11, 12):
+            cell = ws.cell(current, col)
+            if cell.value:
+                cell.hyperlink = cell.value
+                cell.style = "Hyperlink"
+    ws.auto_filter.ref = f"A1:R{max(ws.max_row, 1)}"
+    wb.calculation.fullCalcOnLoad = True
+    wb.calculation.forceFullCalc = True
+    wb.save(TRACKER_PATH)
+
+def migrate_workbook():
+    records = workbook_records()
+    cleaned, stats = cleanup_records(records)
+    changed = cleaned != records
+    if changed:
+        save_records(cleaned)
+    stats.update({"before": len(records), "after": len(cleaned), "changed": changed})
+    return stats
+
+def apply_manual_fields(records, manual_fields):
+    for record in records:
+        values = manual_fields.get(str(record.get("ID", "")), {})
+        if values.get("Actioned?") not in (None, ""):
+            record["Actioned?"] = values["Actioned?"]
+        if values.get("Notes") not in (None, ""):
+            record["Notes"] = values["Notes"]
+    return records
+
 def existing_ids():
     wb = load_workbook(TRACKER_PATH, read_only=True)
     ws = wb["Opportunities"]
@@ -607,26 +825,99 @@ def append_rows(rows):
     ws.auto_filter.ref = f"A1:R{ws.max_row}"
     wb.save(TRACKER_PATH)
 
+def tracker_url():
+    if GOOGLE_SHEET_ID:
+        return f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/edit"
+    if GITHUB_REPOSITORY:
+        return f"https://github.com/{GITHUB_REPOSITORY}/blob/main/{LIVE_VIEW_PATH.name}"
+    return str(LIVE_VIEW_PATH)
+
+def write_live_view(records):
+    rows = sorted(
+        records,
+        key=lambda row: str(row.get("First Seen", "") or ""),
+        reverse=True,
+    )
+    lines = [
+        "# Zero2Sudo Opportunity Tracker",
+        "",
+        f"Last updated: {datetime.now(timezone.utc).isoformat()}",
+        "",
+        "This page updates automatically. The Excel workbook remains available as a backup.",
+        "",
+        "| Opportunity | Category | Status | Priority | Link |",
+        "|---|---|---|---|---|",
+    ]
+    for row in rows:
+        title = str(row.get("Opportunity") or row.get("Category") or "Opportunity").replace("|", "\\|")
+        category = str(row.get("Category") or "").replace("|", "\\|")
+        status = str(row.get("Status") or "").replace("|", "\\|")
+        priority = str(row.get("Priority") or "").replace("|", "\\|")
+        application = row.get("Application / Registration Link") or ""
+        source = row.get("Instagram Source") or ""
+        if application:
+            link = f"[Apply / Register]({application})"
+        elif source:
+            link = f"[View Instagram source]({source})"
+        else:
+            link = "—"
+        lines.append(f"| {title} | {category} | {status} | {priority} | {link} |")
+    LIVE_VIEW_PATH.write_text("\n".join(lines) + "\n")
+
+def load_state():
+    if not STATE_PATH.exists():
+        return {"version": 1, "pending_batches": [], "delivered_batch_ids": []}
+    state = json.loads(STATE_PATH.read_text())
+    state.setdefault("version", 1)
+    state.setdefault("pending_batches", [])
+    state.setdefault("delivered_batch_ids", [])
+    return state
+
+def save_state(state):
+    STATE_PATH.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n")
+
+def queue_batch(rows):
+    state = load_state()
+    if not rows:
+        save_state(state)
+        return ""
+    batch_id = hashlib.sha256(
+        "|".join(sorted(str(row["ID"]) for row in rows)).encode("utf-8")
+    ).hexdigest()[:20]
+    known = set(state["delivered_batch_ids"])
+    known.update(batch["id"] for batch in state["pending_batches"])
+    if batch_id not in known:
+        state["pending_batches"].append({
+            "id": batch_id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "rows": rows,
+        })
+        save_state(state)
+    return batch_id
+
 def priority_for(row):
+    organization = row.get("Organization", "")
     text = " ".join([
-        row.get("Organization", ""),
+        organization,
         row.get("Opportunity", ""),
         row.get("Category", ""),
         row.get("Role / Track", ""),
-    ]).lower()
+    ])
 
-    high_orgs = (
-        "palantir", "anduril", "scale ai", "scale", "primer", "vannevar",
-        "shield ai", "openai", "anthropic", "databricks"
+    high_org_re = re.compile(
+        r"\b(palantir|anduril|scale ai|primer|vannevar|shield ai|"
+        r"openai|anthropic|databricks)\b",
+        re.I,
     )
-    preferred_tracks = (
-        "software engineering", "machine learning", "ai", "data engineering",
-        "data science", "new grad", "internship"
+    preferred_re = re.compile(
+        r"\b(software engineering|machine learning|artificial intelligence|"
+        r"ai|data engineering|data science|new grad|internship)\b",
+        re.I,
     )
 
-    if any(org in text for org in high_orgs):
+    if high_org_re.search(organization):
         return "HIGH"
-    if any(track in text for track in preferred_tracks):
+    if preferred_re.search(text):
         return "MEDIUM"
     return "NORMAL"
 
@@ -637,9 +928,9 @@ def clean_alert_title(row):
         return f"{org} — {opp}"
     return opp
 
-def ntfy_alert(rows):
+def ntfy_alert(rows, batch_id=""):
     if not rows or not NTFY_TOPIC:
-        return
+        return True
 
     ranked = sorted(rows, key=lambda r: {"HIGH": 0, "MEDIUM": 1, "NORMAL": 2}[priority_for(r)])
     top = ranked[0]
@@ -669,6 +960,8 @@ def ntfy_alert(rows):
         "Tags": "rotating_light,briefcase" if priority == "HIGH" else "briefcase",
         "Priority": "5" if priority == "HIGH" else ("4" if priority == "MEDIUM" else "3"),
     }
+    if batch_id:
+        headers["X-Message-ID"] = f"zero2sudo-{batch_id}"
 
     top_link = top.get("Application / Registration Link") or top.get("Instagram Source") or ""
     if top_link:
@@ -682,16 +975,36 @@ def ntfy_alert(rows):
         timeout=30,
     )
     if response.status_code >= 300:
-        print(f"::warning::ntfy push failed: {response.status_code} {response.text}")
-    else:
-        print("Sent ntfy push notification.")
+        raise RuntimeError(f"ntfy push failed with status {response.status_code}.")
+    print("Sent ntfy push notification.")
+    return True
 
-def github_issue(rows):
+def github_issue(rows, batch_id=""):
     if not rows or not GITHUB_TOKEN or not GITHUB_REPOSITORY:
-        return
+        return True
 
     owner = GITHUB_REPOSITORY.split("/", 1)[0]
+    marker = f"<!-- zero2sudo-batch:{batch_id} -->" if batch_id else ""
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    issue_url = f"https://api.github.com/repos/{GITHUB_REPOSITORY}/issues"
+    if marker:
+        existing = requests.get(
+            issue_url,
+            headers=headers,
+            params={"state": "all", "per_page": 100},
+            timeout=30,
+        )
+        existing.raise_for_status()
+        if any(marker in (issue.get("body") or "") for issue in existing.json()):
+            print(f"GitHub alert already exists for batch {batch_id}.")
+            return True
+
     lines = [
+        marker,
         f"@{owner}",
         "",
         f"Zero2Sudo shared **{len(rows)} new actionable opportunit{'y' if len(rows) == 1 else 'ies'}**.",
@@ -711,7 +1024,9 @@ def github_issue(rows):
 
     lines.extend([
         "",
-        f"Tracker: [Zero2Sudo_Opportunity_Tracker.xlsx](https://github.com/{GITHUB_REPOSITORY}/blob/main/{TRACKER_PATH.name})",
+        f"Live tracker: [Open the current tracker]({tracker_url()})",
+        "",
+        f"Excel backup: [Download workbook](https://github.com/{GITHUB_REPOSITORY}/blob/main/{TRACKER_PATH.name})",
         "",
         "_Created automatically by the hourly Zero2Sudo monitor._",
     ])
@@ -726,12 +1041,6 @@ def github_issue(rows):
         title = f"{prefix} [{top_priority}] {top_title} — APPLY / OPEN"
     else:
         title = f"{prefix} [{top_priority}] {top_title} + {len(rows) - 1} more"
-    headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    issue_url = f"https://api.github.com/repos/{GITHUB_REPOSITORY}/issues"
     payload = {"title": title, "body": "\n".join(lines), "assignees": [owner]}
     response = requests.post(issue_url, headers=headers, json=payload, timeout=30)
 
@@ -743,17 +1052,67 @@ def github_issue(rows):
         response = requests.post(issue_url, headers=headers, json=payload, timeout=30)
 
     if response.status_code >= 300:
-        print(f"::warning::Could not create GitHub alert issue: {response.status_code} {response.text}")
-    else:
-        print(f"Created alert issue: {response.json().get('html_url', '')}")
+        raise RuntimeError(f"Could not create GitHub alert issue: {response.status_code}.")
+    print(f"Created alert issue: {response.json().get('html_url', '')}")
+    return True
 
-def notify_rows(rows):
-    # A notification outage must never discard an already saved tracker.
-    for notify in (github_issue, ntfy_alert):
+def deliver_pending_batches():
+    state = load_state()
+    delivered = set(state["delivered_batch_ids"])
+    remaining = []
+    for batch in state["pending_batches"]:
+        batch_id = batch["id"]
+        if batch_id in delivered:
+            continue
         try:
-            notify(rows)
-        except Exception:
-            print(f"::warning::{notify.__name__} failed; tracker rows remain saved.")
+            github_issue(batch["rows"], batch_id)
+            ntfy_alert(batch["rows"], batch_id)
+        except Exception as exc:
+            remaining.append(batch)
+            print(f"::warning::Batch {batch_id} remains pending: {exc}")
+            continue
+        delivered.add(batch_id)
+    state["pending_batches"] = remaining
+    state["delivered_batch_ids"] = sorted(delivered)[-500:]
+    save_state(state)
+    if remaining:
+        raise RuntimeError(f"{len(remaining)} notification batch(es) remain pending.")
+    return len(delivered)
+
+def pull_google_manual_fields():
+    if not GOOGLE_SERVICE_ACCOUNT_JSON or not GOOGLE_SHEET_ID:
+        if GOOGLE_SYNC_REQUIRED:
+            raise RuntimeError(
+                "Google Sheets sync is required but GOOGLE_SERVICE_ACCOUNT_JSON "
+                "or GOOGLE_SHEET_ID is missing."
+            )
+        return {}
+    from google_sheets_sync import fetch_manual_fields
+
+    return fetch_manual_fields(GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_SHEET_ID)
+
+def sync_google_sheet():
+    if not GOOGLE_SERVICE_ACCOUNT_JSON or not GOOGLE_SHEET_ID:
+        if GOOGLE_SYNC_REQUIRED:
+            raise RuntimeError(
+                "Google Sheets sync is required but its repository secrets are missing."
+            )
+        print("Google Sheets is not configured; LATEST.md is the permanent live view.")
+        return False
+    from google_sheets_sync import sync_records
+
+    records = workbook_records()
+    merged = sync_records(
+        GOOGLE_SERVICE_ACCOUNT_JSON,
+        GOOGLE_SHEET_ID,
+        HEADERS,
+        records,
+    )
+    if merged != records:
+        save_records(merged)
+        write_live_view(merged)
+    print(f"Verified {len(merged)} rows in Google Sheets.")
+    return True
 
 def main(defer_notifications=False):
     if not APIFY_TOKEN:
@@ -762,7 +1121,17 @@ def main(defer_notifications=False):
         )
 
     ensure_workbook()
-    known = existing_ids()
+    cleanup = migrate_workbook()
+    records = workbook_records()
+    manual_fields = pull_google_manual_fields()
+    if manual_fields:
+        before_manual = [dict(record) for record in records]
+        updated = apply_manual_fields(records, manual_fields)
+        if updated != before_manual:
+            save_records(updated)
+        records = updated
+    known_ids = {str(record.get("ID")) for record in records if record.get("ID")}
+    known_keys = {record_semantic_key(record) for record in records}
 
     candidates = []
     for item in fetch_stories():
@@ -774,9 +1143,11 @@ def main(defer_notifications=False):
         if record:
             candidates.append(record)
 
-    # Deduplicate within this run and against the workbook.
-    unique = {record["ID"]: record for record in candidates}
-    new_rows = [record for key, record in unique.items() if key not in known]
+    # Deduplicate by stable source/content identity, not temporary CDN URLs.
+    unique = {}
+    for record in candidates:
+        unique.setdefault(record_semantic_key(record), record)
+    new_rows = [record for key, record in unique.items() if key not in known_keys]
 
     # Fill the spreadsheet Priority column automatically for new rows.
     for row in new_rows:
@@ -784,21 +1155,27 @@ def main(defer_notifications=False):
 
     append_rows(new_rows)
     persisted = existing_ids()
-    expected = known | {row["ID"] for row in new_rows}
+    expected = known_ids | {row["ID"] for row in new_rows}
     if persisted != expected:
         raise RuntimeError("Saved tracker IDs do not match the expected rows.")
+    final_records = workbook_records()
+    write_live_view(final_records)
+    batch_id = queue_batch(new_rows)
     report = {
         "checked_at": datetime.now(timezone.utc).isoformat(),
-        "previous_rows": len(known),
+        "previous_rows": len(known_ids),
         "new_rows": len(new_rows),
         "total_rows": len(persisted),
         "tracker_sha256": hashlib.sha256(TRACKER_PATH.read_bytes()).hexdigest(),
+        "cleanup": cleanup,
+        "notification_batch_id": batch_id,
+        "google_sheets_configured": bool(GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SHEET_ID),
+        "live_tracker_url": tracker_url(),
     }
-    Path("monitor_status.json").write_text(json.dumps(report, indent=2) + "\n")
-    if defer_notifications:
-        Path("pending_alerts.json").write_text(json.dumps(new_rows))
-    else:
-        notify_rows(new_rows)
+    STATUS_PATH.write_text(json.dumps(report, indent=2) + "\n")
+    if not defer_notifications:
+        sync_google_sheet()
+        deliver_pending_batches()
     print(f"Added {len(new_rows)} new opportunity row(s).")
     print(f"Verified {len(persisted)} total rows in {TRACKER_PATH}.")
 
@@ -806,8 +1183,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--defer-notifications", action="store_true")
     parser.add_argument("--notify", action="store_true")
+    parser.add_argument("--sync-google", action="store_true")
     args = parser.parse_args()
     if args.notify:
-        notify_rows(json.loads(Path("pending_alerts.json").read_text()))
+        deliver_pending_batches()
+    elif args.sync_google:
+        sync_google_sheet()
     else:
         main(defer_notifications=args.defer_notifications)

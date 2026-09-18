@@ -8,7 +8,9 @@ on:
     branches: [main]
     paths:
       - "opportunity_monitor.py"
+      - "google_sheets_sync.py"
       - "requirements.txt"
+      - "tests/**"
       - ".github/workflows/hourly.yml"
 
 permissions:
@@ -56,12 +58,22 @@ jobs:
       - name: Test tracker persistence
         run: python -m unittest discover -s tests -v
 
+      - name: Back up tracker before cleanup
+        uses: actions/upload-artifact@v4
+        with:
+          name: zero2sudo-pre-run-backup-${{ github.run_id }}-${{ github.run_attempt }}
+          path: Zero2Sudo_Opportunity_Tracker.xlsx
+          if-no-files-found: ignore
+
       - name: Check Zero2Sudo and update tracker
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SYNC_REQUIRED: ${{ vars.GOOGLE_SYNC_REQUIRED || 'false' }}
           IG_USERNAME: zero2sudo
         run: python opportunity_monitor.py --defer-notifications
 
@@ -72,13 +84,15 @@ jobs:
           path: |
             Zero2Sudo_Opportunity_Tracker.xlsx
             monitor_status.json
+            monitor_state.json
+            LATEST.md
           if-no-files-found: error
 
       - name: Commit and verify tracker
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Zero2Sudo_Opportunity_Tracker.xlsx monitor_status.json
+          git add Zero2Sudo_Opportunity_Tracker.xlsx monitor_status.json monitor_state.json LATEST.md
           if ! git diff --cached --quiet; then
             git commit -m "Update Zero2Sudo opportunity tracker and check status"
           fi
@@ -105,12 +119,39 @@ jobs:
               summary.write("# Tracker saved and verified on main\n\n")
               for key in ("checked_at", "previous_rows", "new_rows", "total_rows"):
                   summary.write(f"- {key}: {status[key]}\n")
-              summary.write("\nDownload the workbook from this run's artifact or the repository. Previously downloaded Excel copies do not auto-refresh.\n")
+              summary.write(f"\nLive tracker: {status['live_tracker_url']}\n")
+              summary.write("\nThe Excel workbook remains available as a backup.\n")
           PY
 
-      - name: Send alerts after tracker is persisted
+      - name: Sync and verify Google Sheets
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SYNC_REQUIRED: ${{ vars.GOOGLE_SYNC_REQUIRED || 'false' }}
+        run: python opportunity_monitor.py --sync-google
+
+      - name: Persist Google Sheet manual-field changes
+        run: |
+          git add Zero2Sudo_Opportunity_Tracker.xlsx LATEST.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Sync tracker manual fields from Google Sheets"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Send idempotent alerts after persistence
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
         run: python opportunity_monitor.py --notify
+
+      - name: Persist notification delivery state
+        run: |
+          git add monitor_state.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Record delivered Zero2Sudo alert batches"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
