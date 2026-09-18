@@ -64,4 +64,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Zero2Sudo_Opportunity_Tracker.xlsx
           git commit -m "Update Zero2Sudo opportunity tracker"
-          git push
+
+          # The repository may have received unrelated code/docs commits while
+          # this job was running. Rebase the tracker commit onto the latest
+          # main branch before pushing so the automation does not fail with a
+          # non-fast-forward error.
+          git pull --rebase origin main
+          git push origin HEAD:main
