@@ -1,11 +1,12 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-18T09:05:49.442656+00:00
+Last updated: 2026-09-18T13:41:31.979399+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| machines will challenge your ideas | New Grad / Early Career | New | Medium | [Apply / Register](https://bloomberg.avature.net/careers/Private?jobId=21414) |
 | Coinbase — Product Management | Other Opportunity | New | Normal | [Apply / Register](https://www.gem.com/form?formID=4928fae1-3247-4eb2-9752-e5dfc087a4c1) |
 | Internship | Internship | New | Medium | [Apply / Register](https://fairlife.com/career-opportunities) |
 | Amazon — Software Engineering | Internship | New | Medium | [View Instagram source](https://www.instagram.com/stories/zero2sudo/) |
