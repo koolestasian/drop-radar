@@ -4,6 +4,12 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 * * * *"
+  push:
+    branches: [main]
+    paths:
+      - "opportunity_monitor.py"
+      - "requirements.txt"
+      - ".github/workflows/hourly.yml"
 
 permissions:
   contents: write
