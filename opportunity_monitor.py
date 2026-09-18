@@ -522,6 +522,8 @@ def github_issue(rows):
 
     owner = GITHUB_REPOSITORY.split("/", 1)[0]
     lines = [
+        f"@{owner}",
+        "",
         f"Zero2Sudo shared **{len(rows)} new actionable opportunit{'y' if len(rows) == 1 else 'ies'}**.",
         "",
         "| Opportunity | Category | Deadline | Link |",
@@ -544,17 +546,24 @@ def github_issue(rows):
         "_Created automatically by the hourly Zero2Sudo monitor._",
     ])
 
-    title = f"Zero2Sudo: {len(rows)} new opportunity{'y' if len(rows) == 1 else 'ies'} — {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}"
-    response = requests.post(
-        f"https://api.github.com/repos/{GITHUB_REPOSITORY}/issues",
-        headers={
-            "Authorization": f"Bearer {GITHUB_TOKEN}",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-        json={"title": title, "body": "\n".join(lines), "assignees": [owner]},
-        timeout=30,
-    )
+    noun = "opportunity" if len(rows) == 1 else "opportunities"
+    title = f"Zero2Sudo: {len(rows)} new {noun} — {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}"
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    issue_url = f"https://api.github.com/repos/{GITHUB_REPOSITORY}/issues"
+    payload = {"title": title, "body": "\n".join(lines), "assignees": [owner]}
+    response = requests.post(issue_url, headers=headers, json=payload, timeout=30)
+
+    # Some repository permission combinations reject assignment. The @mention in
+    # the body still alerts the owner, so retry without assignees rather than
+    # losing the alert entirely.
+    if response.status_code == 422:
+        payload.pop("assignees", None)
+        response = requests.post(issue_url, headers=headers, json=payload, timeout=30)
+
     if response.status_code >= 300:
         print(f"::warning::Could not create GitHub alert issue: {response.status_code} {response.text}")
     else:
