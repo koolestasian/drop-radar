@@ -1,34 +1,8 @@
 {
   "version": 1,
-  "pending_batches": [
-    {
-      "id": "d3df9fc7ca7b324cd916",
-      "created_at": "2026-09-18T17:44:32.259984+00:00",
-      "rows": [
-        {
-          "ID": "6e6be2c58f0b7438c75d",
-          "First Seen": "2026-09-18T17:44:23.568155+00:00",
-          "Posted At": "2026-09-18T14:48:40+00:00",
-          "Organization": "Two Sigma",
-          "Opportunity": "Two Sigma — Software Engineering",
-          "Category": "New Grad / Early Career",
-          "Role / Track": "Software Engineering",
-          "Season / Year": "",
-          "Location": "",
-          "Deadline": "",
-          "Application / Registration Link": "https://careers.twosigma.com/careers/JobDetail/Houston-Texas-United-States-Software-Engineering-Full-Time-Campus-Hire-Houston/14018",
-          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
-          "Source Type": "Story",
-          "Raw Text": "@ careers.twosigma.com C:\nInstagram :\n\nCareers Portal v\n\nSoftware Engineering Full-\nTime Campus Hire (Houston)\n\nTX Houston\nUnited States\n\nFunction\n\nEngineering\n\nExperience Level\n\nEarly Careers\n\nShare this job\n\nApply >\nhttps://scontent-dfw6-2.cdninstagram.com/v/t51.71878-15/814761768_2832500993789345_4138885630878849595_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=109&ig_cache_key=Mzk4ODk3NTIxNjQwMzIxMTMwNg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=45z9YqwwmlsQ7kNvwEYD42n&_nc_oc=AdrxxRlIEizNoc1O6B6Wm_TDH9PYn60d9qkq_qXf9I2DSv7k6pK_t90xshpiH82x2io&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-dfw6-2.cdninstagram.com&_nc_gid=_HJvXbB2iTBpEzEgYcxHhw&_nc_ss=7e3ba&oh=00_AQIupI8BK7pPUvevvplQK_o38VJh3xV8fSgEB8Ww2bjRUw&oe=6AB34064\nhttps://scontent-dfw6-2.cdninstagram.com/v/t51.71878-15/814761768_2832500993789345_4138885630878849595_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=109&ig_cache_key=Mzk4ODk3NTIxNjQwMzIxMTMwNg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=45z9YqwwmlsQ7kNvwEYD42n&_nc_oc=AdrxxRlIEizNoc1O6B6Wm_TDH9PYn60d9qkq_qXf9I2DSv7k6pK_t90xshpiH82x2io&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-dfw6-2.cdninstagram.com&_nc_gid=_HJvXbB2iTBpEzEgYcxHhw&_nc_ss=7e3ba&oh=00_AQJl3JQe7twtYLlcXofn1p82asW1KOVPf7QRtIoCyww3yQ&oe=6AB34064\nhttps://scontent-dfw5-2.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=v_28DqPFYsAQ7kNvwFEXube&_nc_oc=Adpz_CyRQp18B6vrHtHd4s9becfDXtCVB4v0hL4EpdTXKjbHdPDR17cGb0e9h-L3EKk&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-dfw5-2.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQKOPfxUiF90e2Q8NuYj_6nKAR34YYa0joHVpeFhzQ6Nsg&oe=6AB35199\nhttps://l.instagram.com/?u=https%3A%2F%2Fcareers.twosigma.com%2Fcareers%2FJobDetail%2FHouston-Texas-United-States-Software-Engineering-Full-Time-Campus-Hire-Houston%2F14018%3Ffbclid%3DPAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafKIwCwfnJ9zAdoa8iKhYq_jY2VY1z5KxxCfQZoGY4j9i4HbVDFgy_myczb-w_aem_MdwdutW1wxw67SPMn8Zr9g&e=AUDz2_WOW-arTotkdqRTL30bxhWf6Sj_k0LDV90r6ym_lDZe6D6iqEUN5mCowWo-3X1wRBlgD3B6nNy-dd9OS49Wf-h11Oa6V86MwmrTGA\nhttps://scontent-dfw5-2.cdninstagram.com/o1/v/t2/f2/m78/AQNBtWb44u-YIErHFp_1yBN2S26XT55Q_rTYPafI0qM7BV0HySQ1SB3rsVib0qJxiOdJxB-iXyzOcEye8FOYUfGDkPNch5T_g-QdoAA.mp4?_nc_cat=100&_nc_sid=5e9851&_nc_ht=scontent-dfw5-2.cdninstagram.com&_nc_ohc=Xcan3PMr2GsQ7kNvwGkivtw&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODczMjEyMTI2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=6a79a9efef48cb1&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyL0U4NDc0MTcwNTczNDhDOEIyQTNGNDQ0RDE4OUZEOUIwX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkzI-91JShQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=_HJvXbB2iTBpEzEgYcxHhw&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQLOUu6y9qQ3gXg1KKXXxT93TBo0ezGR4hw85157gmv5Iw&oe=6AAF5C29",
-          "Status": "New",
-          "Priority": "Medium",
-          "Actioned?": "No",
-          "Notes": ""
-        }
-      ]
-    }
-  ],
+  "pending_batches": [],
   "delivered_batch_ids": [
-    "01f02af07d8ef004333d"
+    "01f02af07d8ef004333d",
+    "d3df9fc7ca7b324cd916"
   ]
 }
