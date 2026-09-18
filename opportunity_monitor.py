@@ -182,34 +182,70 @@ def as_text(value):
         return json.dumps(value, ensure_ascii=False)
     return str(value)
 
-def normalize_links(item):
+URL_RE = re.compile(r'https?://[^\\s<>"\\']+')
+
+def _walk_urls(value):
+    """Recursively collect URLs from arbitrary actor output.
+
+    Story actors often put link-sticker/swipe-up URLs several levels deep,
+    and their field names can change. Walking the whole object is more robust
+    than depending on a short list of keys.
+    """
     found = []
-    for key in (
-        "link_urls", "links", "url", "externalUrl", "external_url",
-        "postUrl", "post_url", "linkUrl", "link_url"
-    ):
-        value = item.get(key)
-        if isinstance(value, str) and value.startswith("http"):
+    if isinstance(value, str):
+        if value.startswith("http"):
             found.append(value)
-        elif isinstance(value, list):
-            for entry in value:
-                if isinstance(entry, str) and entry.startswith("http"):
-                    found.append(entry)
-                elif isinstance(entry, dict):
-                    for subkey in ("url", "href", "link", "link_url", "linkUrl"):
-                        url = entry.get(subkey)
-                        if isinstance(url, str) and url.startswith("http"):
-                            found.append(url)
-    return list(dict.fromkeys(found))
+        else:
+            found.extend(URL_RE.findall(value))
+    elif isinstance(value, dict):
+        for nested in value.values():
+            found.extend(_walk_urls(nested))
+    elif isinstance(value, (list, tuple)):
+        for nested in value:
+            found.extend(_walk_urls(nested))
+    return found
+
+def normalize_links(item):
+    return list(dict.fromkeys(_walk_urls(item)))
 
 def is_instagram_url(url):
     try:
-        return "instagram.com" in urlparse(url).netloc.lower()
+        host = urlparse(url).netloc.lower()
+        return "instagram.com" in host or "instagr.am" in host
     except Exception:
         return False
 
+def is_media_url(url):
+    try:
+        parsed = urlparse(url)
+        host = parsed.netloc.lower()
+        path = parsed.path.lower()
+        media_hosts = ("cdninstagram.com", "fbcdn.net", "scontent.", "cdn.fbsbx.com")
+        media_exts = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".m3u8", ".mov")
+        return any(x in host for x in media_hosts) or path.endswith(media_exts)
+    except Exception:
+        return False
+
+def unwrap_instagram_redirect(url):
+    """Unwrap l.instagram.com redirects when a story actor returns them."""
+    try:
+        parsed = urlparse(url)
+        if parsed.netloc.lower() in {"l.instagram.com", "l.facebook.com"}:
+            params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+            for key in ("u", "url", "href"):
+                if params.get(key):
+                    return params[key]
+    except Exception:
+        pass
+    return url
+
 def external_links(links):
-    return [url for url in links if not is_instagram_url(url)]
+    cleaned = []
+    for raw in links:
+        url = unwrap_instagram_redirect(raw)
+        if not is_instagram_url(url) and not is_media_url(url):
+            cleaned.append(url)
+    return list(dict.fromkeys(cleaned))
 
 def clean_url(url):
     if not url:
@@ -281,13 +317,35 @@ def looks_actionable(text, links):
         return True
     return False
 
+def _pretty_org(value):
+    value = re.sub(r"[-_]+", " ", value or "").strip()
+    return " ".join(part.upper() if len(part) <= 3 else part.capitalize() for part in value.split())
+
 def organization_from_links(links):
     for url in external_links(links):
         try:
-            host = urlparse(url).netloc.lower().removeprefix("www.")
+            parsed = urlparse(url)
+            host = parsed.netloc.lower().removeprefix("www.")
+
             for domain, organization in DOMAIN_ORGS.items():
                 if host == domain or host.endswith("." + domain):
                     return organization
+
+            # Common ATS patterns encode the company in a subdomain/path.
+            labels = host.split(".")
+            if host.endswith("myworkdayjobs.com") and labels:
+                candidate = labels[0]
+                if candidate not in {"wd1", "wd2", "wd3", "wd5"}:
+                    return _pretty_org(candidate)
+
+            if host in {"jobs.lever.co", "boards.greenhouse.io", "job-boards.greenhouse.io"}:
+                path_parts = [p for p in parsed.path.split("/") if p]
+                if path_parts:
+                    return _pretty_org(path_parts[0])
+
+            # apply.company.com / careers.company.com / jobs.company.com
+            if len(labels) >= 2 and labels[0] in {"apply", "careers", "career", "jobs", "job"}:
+                return _pretty_org(labels[1])
         except Exception:
             pass
     return ""
@@ -390,15 +448,48 @@ def source_url(item, source_type):
         return f"https://www.instagram.com/stories/{USERNAME}/"
     return f"https://www.instagram.com/{USERNAME}/"
 
+def _line_quality(line):
+    line = re.sub(r"https?://\\S+", "", line).strip(" •|-—_")
+    if len(line) < 8 or len(line) > 180:
+        return -1
+    letters = sum(ch.isalpha() for ch in line)
+    visible = sum(not ch.isspace() for ch in line)
+    if not visible or letters / visible < 0.55:
+        return -1
+    words = re.findall(r"[A-Za-z0-9+#.&'-]+", line)
+    if len(words) < 2:
+        return -1
+    score = letters + min(len(words), 12) * 4
+    if OPPORTUNITY_RE.search(line):
+        score += 100
+    if ACTION_RE.search(line):
+        score += 30
+    return score
+
 def opportunity_title(org, category, role, text):
+    lines = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("http"):
+            continue
+        score = _line_quality(line)
+        if score >= 0:
+            lines.append((score, line))
+
+    best_line = max(lines, default=(0, ""))[1][:140]
+
+    # A real program/job title is more useful than a generic generated label.
+    if best_line and OPPORTUNITY_RE.search(best_line):
+        if org and org.lower() not in best_line.lower():
+            return f"{org} — {best_line}"
+        return best_line
+
     if org and role:
         return f"{org} — {role}"
     if org:
         return f"{org} — {category}"
-    for line in text.splitlines():
-        line = line.strip()
-        if line and not line.startswith("http"):
-            return line[:140]
+    if best_line:
+        return best_line
     return category
 
 def row_id(item, source_type, category, role, links, text):
