@@ -1,32 +1,7 @@
 {
   "version": 1,
-  "pending_batches": [
-    {
-      "id": "01f02af07d8ef004333d",
-      "created_at": "2026-09-18T13:41:31.979855+00:00",
-      "rows": [
-        {
-          "ID": "f44dafd8793e1e534a16",
-          "First Seen": "2026-09-18T13:41:22.870831+00:00",
-          "Posted At": "2026-09-18T11:16:39+00:00",
-          "Organization": "",
-          "Opportunity": "machines will challenge your ideas",
-          "Category": "New Grad / Early Career",
-          "Role / Track": "Software Engineering",
-          "Season / Year": "2027",
-          "Location": "",
-          "Deadline": "",
-          "Application / Registration Link": "https://bloomberg.avature.net/careers/Private?jobId=21414",
-          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
-          "Source Type": "Story",
-          "Raw Text": "Bloomberg\n\n2027 Software Engineer - New\nYork\n\nDescription & Requirements As a\nBloomberg engineer, you will impact\nthe real world by solving complex\nproblems in an ever-evolving market.\nOur engineers sit at the center of\nfinance and tech where people and\nmachines will challenge your ideas\nand push your engineering skills to\nthe next level.We wor...\n\nbloomberg new grad. not sure if\nits school specific tho https://\n\nBloomberg NeWorad SWE kat\nhttps://scontent-ord5-1.cdninstagram.com/v/t51.71878-15/815798021_4451613878428518_3929229307797770943_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=108&ig_cache_key=Mzk4ODg2ODUyNTQyMjMwNDc0MQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=qDEjTy71bXQQ7kNvwFnVmCw&_nc_oc=AdrpbUESQd5xBEccY9zHK3DSmHXZup46KpP0SbY7VFeRxvbOJEwSkq9Qm9wuPN4ME3c&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-ord5-1.cdninstagram.com&_nc_gid=FMuDcMCe2s70jKLbDFE5pA&_nc_ss=7e3ba&oh=00_AQJ0l-pR3og6SCPZVvrlOfMYZBjdnCComr8MT_sDLTwx6w&oe=6AB31B99\nhttps://scontent-ord5-1.cdninstagram.com/v/t51.71878-15/815798021_4451613878428518_3929229307797770943_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=108&ig_cache_key=Mzk4ODg2ODUyNTQyMjMwNDc0MQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=qDEjTy71bXQQ7kNvwFnVmCw&_nc_oc=AdrpbUESQd5xBEccY9zHK3DSmHXZup46KpP0SbY7VFeRxvbOJEwSkq9Qm9wuPN4ME3c&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-ord5-1.cdninstagram.com&_nc_gid=FMuDcMCe2s70jKLbDFE5pA&_nc_ss=7e3ba&oh=00_AQIfxGTd1ZRtk3XkdlaK410Epce7GuRtHsm0veuYB1Qg1g&oe=6AB31B99\nhttps://scontent-ord5-2.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=v_28DqPFYsAQ7kNvwE0Ou4K&_nc_oc=AdpQk_kx2-OALlXOk3z_BJjOdFTAD7mXXcDqatOjjyy47sySzBOwXF41z0pFW7SJlWM&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-ord5-2.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQK2GecX4iFYbRdS5UgPeZoCHU3Y3rq_Hy8g5NVXTgcv7Q&oe=6AB31959\nhttps://l.instagram.com/?u=https%3A%2F%2Fbloomberg.avature.net%2Fcareers%2FPrivate%3FjobId%3D21414%26fbclid%3DPAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAaevSyrh8_Kchlc5mvFDYVDYHHKuUNYugBViJu7IX37WR9MNlETYfY9u4XaITQ_aem_iK6Y-ACWBjGPnCiuu8Qq5g&e=AUBEbFOLF7HCsH7ehirbLkoP2Qnp3qfgOI3fCWghEvZS5otrLfZHkG0e8SqGVYMqxGzJhjGqKXlhNtS6qcdTJj70O0Jq67Mtco79aAVMsg\nhttps://scontent-ord5-1.cdninstagram.com/o1/v/t2/f2/m78/AQOdfmt1SXR6ChchF3oQLqhudH7B8xQPihR8AuElu0_srZ5T2xbK0wIADut5Uq0CB_N9gePjEw3OnrUcC5F2O_uOeNSQllWbwpxp4QU.mp4?_nc_cat=101&_nc_sid=5e9851&_nc_ht=scontent-ord5-1.cdninstagram.com&_nc_ohc=mzn9AMMaanYQ7kNvwFfn4ff&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODcyOTMwNDg2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=342d1379830a5cf6&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzdENDQ5MTYxMUUxNTYzMDM5MzU4RDUwREIxNTE5MUJFX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkqOvRgpOhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=FMuDcMCe2s70jKLbDFE5pA&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQKbLSG-34VdpYOqnipbxLh7MMfBjLdxSWFIMTp3qu-8Cw&oe=6AAF2CE6",
-          "Status": "New",
-          "Priority": "Medium",
-          "Actioned?": "No",
-          "Notes": ""
-        }
-      ]
-    }
-  ],
-  "delivered_batch_ids": []
+  "pending_batches": [],
+  "delivered_batch_ids": [
+    "01f02af07d8ef004333d"
+  ]
 }
