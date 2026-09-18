@@ -24,6 +24,7 @@ POST_ACTOR = os.getenv("POST_ACTOR", "apify/instagram-scraper")
 
 GITHUB_TOKEN = os.getenv("GH_TOKEN", "").strip()
 GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY", "").strip()
+NTFY_TOPIC = os.getenv("NTFY_TOPIC", "").strip()
 
 REQUEST_TIMEOUT = 180
 
@@ -516,6 +517,85 @@ def append_rows(rows):
     ws.auto_filter.ref = f"A1:R{ws.max_row}"
     wb.save(TRACKER_PATH)
 
+def priority_for(row):
+    text = " ".join([
+        row.get("Organization", ""),
+        row.get("Opportunity", ""),
+        row.get("Category", ""),
+        row.get("Role / Track", ""),
+    ]).lower()
+
+    high_orgs = (
+        "palantir", "anduril", "scale ai", "scale", "primer", "vannevar",
+        "shield ai", "openai", "anthropic", "databricks"
+    )
+    preferred_tracks = (
+        "software engineering", "machine learning", "ai", "data engineering",
+        "data science", "new grad", "internship"
+    )
+
+    if any(org in text for org in high_orgs):
+        return "HIGH"
+    if any(track in text for track in preferred_tracks):
+        return "MEDIUM"
+    return "NORMAL"
+
+def clean_alert_title(row):
+    org = row.get("Organization") or ""
+    opp = row.get("Opportunity") or row.get("Category") or "New opportunity"
+    if org and not opp.lower().startswith(org.lower()):
+        return f"{org} — {opp}"
+    return opp
+
+def ntfy_alert(rows):
+    if not rows or not NTFY_TOPIC:
+        return
+
+    ranked = sorted(rows, key=lambda r: {"HIGH": 0, "MEDIUM": 1, "NORMAL": 2}[priority_for(r)])
+    top = ranked[0]
+    priority = priority_for(top)
+    title = clean_alert_title(top)
+
+    prefix = "🚨" if priority == "HIGH" else "📣"
+    ntfy_title = f"{prefix} {priority}: {title}"
+
+    body_lines = []
+    for row in ranked[:5]:
+        p = priority_for(row)
+        label = clean_alert_title(row)
+        deadline = row.get("Deadline") or ""
+        link = row.get("Application / Registration Link") or row.get("Instagram Source") or ""
+        meta = " · ".join(x for x in [row.get("Category", ""), deadline] if x)
+        body_lines.append(f"[{p}] {label}" + (f" — {meta}" if meta else ""))
+        if link:
+            body_lines.append(link)
+        body_lines.append("")
+
+    if len(ranked) > 5:
+        body_lines.append(f"+ {len(ranked) - 5} more in the tracker")
+
+    headers = {
+        "Title": ntfy_title[:150],
+        "Tags": "rotating_light,briefcase" if priority == "HIGH" else "briefcase",
+        "Priority": "5" if priority == "HIGH" else ("4" if priority == "MEDIUM" else "3"),
+    }
+
+    top_link = top.get("Application / Registration Link") or top.get("Instagram Source") or ""
+    if top_link:
+        headers["Click"] = top_link
+        headers["Actions"] = f"view, Apply / Open, {top_link}, clear=true"
+
+    response = requests.post(
+        f"https://ntfy.sh/{NTFY_TOPIC}",
+        data="\n".join(body_lines).strip().encode("utf-8"),
+        headers=headers,
+        timeout=30,
+    )
+    if response.status_code >= 300:
+        print(f"::warning::ntfy push failed: {response.status_code} {response.text}")
+    else:
+        print("Sent ntfy push notification.")
+
 def github_issue(rows):
     if not rows or not GITHUB_TOKEN or not GITHUB_REPOSITORY:
         return
@@ -547,7 +627,15 @@ def github_issue(rows):
     ])
 
     noun = "opportunity" if len(rows) == 1 else "opportunities"
-    title = f"Zero2Sudo: {len(rows)} new {noun} — {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}"
+    ranked = sorted(rows, key=lambda r: {"HIGH": 0, "MEDIUM": 1, "NORMAL": 2}[priority_for(r)])
+    top = ranked[0]
+    top_priority = priority_for(top)
+    top_title = clean_alert_title(top)
+    prefix = "🚨" if top_priority == "HIGH" else "📣"
+    if len(rows) == 1:
+        title = f"{prefix} [{top_priority}] {top_title} — APPLY / OPEN"
+    else:
+        title = f"{prefix} [{top_priority}] {top_title} + {len(rows) - 1} more"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github+json",
@@ -596,8 +684,13 @@ def main():
         print("No new actionable opportunities.")
         return
 
+    # Fill the spreadsheet Priority column automatically for new rows.
+    for row in new_rows:
+        row["Priority"] = priority_for(row).title()
+
     append_rows(new_rows)
     github_issue(new_rows)
+    ntfy_alert(new_rows)
     print(f"Added {len(new_rows)} new opportunity row(s).")
 
 if __name__ == "__main__":
