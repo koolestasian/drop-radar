@@ -1,11 +1,31 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-20T16:51:35.594147+00:00
+Last updated: 2026-09-20T19:32:00.694186+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Cmegroup — Software Engineering | Internship | New | Medium | [Apply / Register](https://cmegroup.wd1.myworkdayjobs.com/en-US/cme_careers/job/Chicago---20-S-Wacker/Software-Engineering-Internship---Summer-2027_34821) |
+| UX Design Internship - | Internship | New | Medium | [Apply / Register](https://corporate.target.com/jobs/w10/77/ux-design-internship-minneapolis,-mn-starting-summer,-2027) |
+| Summer Internship-. | Internship | New | Medium | [Apply / Register](https://corporate.target.com/jobs/w10/82/software-engineering-summer-internship-minneapolis,-mn-starting-june-2027) |
+| Microsoft — Software Engineering | Internship | Open | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393556982258?domain=microsoft.com&hl=en) |
+| Embed — Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://job-boards.greenhouse.io/embed/job_app?for=gemini&token=8214332&gh_jid=8214332) |
+| Metoxinternationalinc — Data Science | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/metoxinternationalinc/jobs/5427064008) |
+| Microsoft — Internship | Internship | Open | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393556982259) |
+| Microsoft — Internship | Internship | New | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393556982262) |
+| Celestica — Data Science | Internship | New | Medium | [Apply / Register](https://careers.celestica.com/job/San-Jose-Student-Intern%2C-AI-Data-Science-CA-95101/1439115933) |
+| contribute to as an intern within the | Internship | New | Medium | [Apply / Register](https://recruitment.macquarie.com/en_US/careers/JobDetail?jobId=24234&source=zero2sudo) |
+| Thrivent — Software Engineering | Internship | New | Medium | [Apply / Register](https://thrivent.wd5.myworkdayjobs.com/external/job/Remote-Minnesota/Associate-Software-Engineer---Sophomore-Intern-Summer-2027_REQ-48457) |
+| Jobvite — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.jobvite.com/tylertech/job/oAVOAfwD?nl=1&fr=false) |
+| Togetherai — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/togetherai/jobs/5232036007) |
+| Microsoft — Hardware | Internship | Open | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393557002608) |
+| Internship Dates: January 11, 2027 - | Internship | New | Medium | [Apply / Register](https://www.rubrik.com/company/careers/departments/job.8171088?gh_jid=8171088) |
+| Embed — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/embed/job_app?for=gemini&token=8214272&gh_jid=8214272) |
+| Tesla Summer 2027 SWE Intern | Internship | New | Medium | [Apply / Register](https://www.tesla.com/careers/search/job/284004) |
+| Cmegroup — Software Engineering | Internship | New | Medium | [Apply / Register](https://cmegroup.wd1.myworkdayjobs.com/en-US/cme_careers/job/Chicago---20-S-Wacker/Software-Engineering-Fellowship---Summer-2027_34824) |
+| Amazon — Software Engineering | Internship | Open | Medium | [Apply / Register](https://amazon.jobs/en/jobs/10553947/software-development-engineer-intern-summer-2027-can) |
+| Robinhood — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/robinhood/jobs/8214142?t=gh_src%3D&gh_jid=8214142) |
 | Two Sigma — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://careers.twosigma.com/careers/JobDetail/Houston-Texas-United-States-Software-Engineering-Full-Time-Campus-Hire-Houston/14018) |
 | machines will challenge your ideas | New Grad / Early Career | New | Medium | [Apply / Register](https://bloomberg.avature.net/careers/Private?jobId=21414) |
 | Coinbase — Product Management | Other Opportunity | New | Normal | [Apply / Register](https://www.gem.com/form?formID=4928fae1-3247-4eb2-9752-e5dfc087a4c1) |
