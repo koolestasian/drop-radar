@@ -1,11 +1,16 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-20T19:32:00.694186+00:00
+Last updated: 2026-09-20T22:32:31.349796+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Ashbyhq — Software Engineering | Other Opportunity | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/greenboard/e5deef5b-8667-48d7-be48-a0b6616eaba5) |
+| is a DoW Scholarship Program for | Internship | New | Medium | [Apply / Register](https://www.smartscholarship.org/smart/en) |
+| Microsoft — Other Opportunity | Other Opportunity | Open | Normal | [Apply / Register](https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR67drzZ_HMRKrjpUVBFkKE1UQ1JURDUySDk1REpJUk40WlY4UE5SNFdMSC4u) |
+| Amazon — Machine Learning / AI | Internship | New | Medium | [Apply / Register](https://amazon.jobs/en/jobs/10394278/2026-fall-applied-science-internship-reinforcement-learning-optimization-machine-learning-united-states-phd-student-science-recruiting) |
+| Google — Product Management | Workshop / Info Session | New | Normal | [Apply / Register](https://rsvp.withgoogle.com/events/uw-google-career-workshop-2026/forms/registration) |
 | Cmegroup — Software Engineering | Internship | New | Medium | [Apply / Register](https://cmegroup.wd1.myworkdayjobs.com/en-US/cme_careers/job/Chicago---20-S-Wacker/Software-Engineering-Internship---Summer-2027_34821) |
 | UX Design Internship - | Internship | New | Medium | [Apply / Register](https://corporate.target.com/jobs/w10/77/ux-design-internship-minneapolis,-mn-starting-summer,-2027) |
 | Summer Internship-. | Internship | New | Medium | [Apply / Register](https://corporate.target.com/jobs/w10/82/software-engineering-summer-internship-minneapolis,-mn-starting-june-2027) |
@@ -15,7 +20,7 @@ This page updates automatically. The Excel workbook remains available as a backu
 | Microsoft — Internship | Internship | Open | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393556982259) |
 | Microsoft — Internship | Internship | New | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393556982262) |
 | Celestica — Data Science | Internship | New | Medium | [Apply / Register](https://careers.celestica.com/job/San-Jose-Student-Intern%2C-AI-Data-Science-CA-95101/1439115933) |
-| contribute to as an intern within the | Internship | New | Medium | [Apply / Register](https://recruitment.macquarie.com/en_US/careers/JobDetail?jobId=24234&source=zero2sudo) |
+| Internship | Internship | New | Medium | [Apply / Register](https://recruitment.macquarie.com/en_US/careers/JobDetail?jobId=24234&source=zero2sudo) |
 | Thrivent — Software Engineering | Internship | New | Medium | [Apply / Register](https://thrivent.wd5.myworkdayjobs.com/external/job/Remote-Minnesota/Associate-Software-Engineer---Sophomore-Intern-Summer-2027_REQ-48457) |
 | Jobvite — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.jobvite.com/tylertech/job/oAVOAfwD?nl=1&fr=false) |
 | Togetherai — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/togetherai/jobs/5232036007) |
