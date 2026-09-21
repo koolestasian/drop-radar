@@ -1,11 +1,14 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-21T06:29:55.528176+00:00
+Last updated: 2026-09-21T14:18:34.573373+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Other Opportunity | Other Opportunity | Open | Normal | [Apply / Register](https://gunvorgroup.com/careers/graduate-program) |
+| Mercury — Apprenticeship / Externship | Apprenticeship / Externship | New | Normal | [Apply / Register](https://job-boards.greenhouse.io/mercury/jobs/6199367004) |
+| AutoZone's Top 100 Internship Program is | Internship | Open | Medium | [Apply / Register](https://egud.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/155461) |
 | Ashbyhq — Software Engineering | Other Opportunity | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/greenboard/e5deef5b-8667-48d7-be48-a0b6616eaba5) |
 | is a DoW Scholarship Program for | Internship | New | Medium | [Apply / Register](https://www.smartscholarship.org/smart/en) |
 | Microsoft — Other Opportunity | Other Opportunity | Open | Normal | [Apply / Register](https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR67drzZ_HMRKrjpUVBFkKE1UQ1JURDUySDk1REpJUk40WlY4UE5SNFdMSC4u) |
