@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-20T22:39:45.297327+00:00",
+  "checked_at": "2026-09-21T01:12:43.909263+00:00",
   "previous_rows": 67,
   "new_rows": 0,
   "total_rows": 67,
@@ -9,7 +9,7 @@
     "invalid_links_cleared": 0,
     "before": 67,
     "after": 67,
-    "changed": true
+    "changed": false
   },
   "notification_batch_id": "",
   "google_sheets_configured": true,
