@@ -1,75 +1,9 @@
 {
   "version": 1,
-  "pending_batches": [
-    {
-      "id": "239bd8234d8d2e35b214",
-      "created_at": "2026-09-21T14:18:34.573758+00:00",
-      "rows": [
-        {
-          "ID": "3a9542daa2d64f226608",
-          "First Seen": "2026-09-21T14:18:23.862514+00:00",
-          "Posted At": "2026-09-21T07:56:15+00:00",
-          "Organization": "",
-          "Opportunity": "AutoZone's Top 100 Internship Program is",
-          "Category": "Internship",
-          "Role / Track": "",
-          "Season / Year": "2027",
-          "Location": "",
-          "Deadline": "",
-          "Application / Registration Link": "https://egud.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/155461",
-          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
-          "Source Type": "Story",
-          "Raw Text": "“ WW +t View More Jobs\n\nAUTOZONE 2027\n\nINTERNSHIP =\n\nMemphis, TN, United States\n\n(2? AUTOZONE 2027 DS INTERN\n\n= :\nautozone why tf u opening at midnight\nes\n\nJOB DESCRIPTION\n\nAutoZone's Top 100 Internship Program is\nhttps://scontent-lax3-1.cdninstagram.com/v/t51.71878-15/819571867_27994706156897800_4967386248258520862_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=110&ig_cache_key=Mzk5MDk0MTk2Mjk2MTczMjI3Ng%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=TpqDh9iVW1oQ7kNvwH__1vP&_nc_oc=Adp9XxmQc8qWLoShR_11mDPOC_p2vdoi093kUQycPtWQBdpIv7AFmZOFg1QWiIKU7sU&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_gid=Cn4PepwDyqnKTj0fwmV0Jg&_nc_ss=7e3ba&oh=00_AQIxz92fXSOofjs7xaFsHBe4mqeC75kWGV6k7CVOQonaYQ&oe=6AB70D2F\nhttps://scontent-lax3-1.cdninstagram.com/v/t51.71878-15/819571867_27994706156897800_4967386248258520862_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=110&ig_cache_key=Mzk5MDk0MTk2Mjk2MTczMjI3Ng%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=TpqDh9iVW1oQ7kNvwH__1vP&_nc_oc=Adp9XxmQc8qWLoShR_11mDPOC_p2vdoi093kUQycPtWQBdpIv7AFmZOFg1QWiIKU7sU&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_gid=Cn4PepwDyqnKTj0fwmV0Jg&_nc_ss=7e3ba&oh=00_AQKeAK6m4Z5d5UrGwTbdWmMFpqsU4bRfOamnVD-JqxUM9w&oe=6AB70D2F\nhttps://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=2mRME1i9JoMQ7kNvwHz6Zza&_nc_oc=Ados52foxDaRgOz2rjFN2uLYLLubmYhy74n1gpJ6c4dFtFrl5bhef_WghqyGcqpn9lE&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQKJSiBrglOv7CQZfBHnZVk5YhxBN_m0OQ9dOkdu5P2rwg&oe=6AB70DD9\nhttps://l.instagram.com/?u=https%3A%2F%2Fegud.fa.us2.oraclecloud.com%2FhcmUI%2FCandidateExperience%2Fen%2Fsites%2FCX_1%2Fjob%2F155461%3Ffbclid%3DPAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAadAAx_znoxJFNCjR0CjhdXgO3PRPBaEJaVd_STZbU1QbnQoB_umSHM1APJxLw_aem_SqRf-qOgIlH9aM3D8VoJ9A&e=AUC0uS1czvnBwTOCEw9sT6dw3BlITnqwrAUDhJExWaEmfJ5g-KNhIJ7cRuwoK2UF-F6MCFmN5EaaIrf1Qc8_Uk8ukmWUpzln_5nLqL6apQ\nhttps://scontent-lax3-1.cdninstagram.com/o1/v/t2/f2/m78/AQPF5ckZXcYOq9UD_auW94Y9Pj98s-PCuXLQQ9QpyIItJCIZg5sDVNWJhvnd6Ddcmq_UzcdU1FPaC1uAAjui6UVg4GMvDx5KNmLORaY.mp4?_nc_cat=102&_nc_sid=5e9851&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=OsPIsjjMgEQQ7kNvwFEgEv4&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODc3MjExMDY2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=6d683f8be63e8f71&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzQwNDY3NjNBRjE1NjcyODFENjc1RDZENDIzMjE3NUIwX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkkuH196uhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=Cn4PepwDyqnKTj0fwmV0Jg&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQJa5Oy_s8udL-TtAo8QULaq9N5N_6sdoNjSWR7vUxf2Ag&oe=6AB30DA7",
-          "Status": "Open",
-          "Priority": "Medium",
-          "Actioned?": "No",
-          "Notes": ""
-        },
-        {
-          "ID": "96bf1d1645b8f12e0b12",
-          "First Seen": "2026-09-21T14:18:26.341605+00:00",
-          "Posted At": "2026-09-21T11:15:03+00:00",
-          "Organization": "Mercury",
-          "Opportunity": "Mercury — Apprenticeship / Externship",
-          "Category": "Apprenticeship / Externship",
-          "Role / Track": "",
-          "Season / Year": "",
-          "Location": "San Francisco, New York, Remote",
-          "Deadline": "",
-          "Application / Registration Link": "https://job-boards.greenhouse.io/mercury/jobs/6199367004",
-          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
-          "Source Type": "Story",
-          "Raw Text": "(@ 2% >dards.greenhouse.io +\n\n© San Francisco, CA, New York, NY,\nPortland, OR, or Remote within Canada or\nUnited States\n\nIt’s 1813, and Hump vy is dazzling\nLondon with scientifi onstrations and\nlectures. Soon enters the young bookbinder,\nMichael Faraday, dissatisfied with his own\nprospects and enamored by the mysteries of\nelectricity. Faraday gets a break and gains an\napprenticeship with Davy, and shortly\nthereafter (partially) blows himself and ~*~\nup in a nitrogen trichloride explosion. “\nhttps://scontent-lax3-1.cdninstagram.com/v/t51.71878-15/809519051_1939712363654373_728738205524773074_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=102&ig_cache_key=Mzk5MTA0MjAyNjUzMDk2MjMxNg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=NCSy1flv6UAQ7kNvwGmnY5C&_nc_oc=Adr-9NxF4CcGoPNLiQl6HcIUrp9n0a0QJzjYgxBkb3MhzoBkXsNtgrjUxBVS1kn5pkA&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_gid=Cn4PepwDyqnKTj0fwmV0Jg&_nc_ss=7e3ba&oh=00_AQL6hIHfmrk2jA68NkI2whNZ2YWtWgYpcILZniNujJmGTg&oe=6AB70515\nhttps://scontent-lax3-1.cdninstagram.com/v/t51.71878-15/809519051_1939712363654373_728738205524773074_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=102&ig_cache_key=Mzk5MTA0MjAyNjUzMDk2MjMxNg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=NCSy1flv6UAQ7kNvwGmnY5C&_nc_oc=Adr-9NxF4CcGoPNLiQl6HcIUrp9n0a0QJzjYgxBkb3MhzoBkXsNtgrjUxBVS1kn5pkA&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_gid=Cn4PepwDyqnKTj0fwmV0Jg&_nc_ss=7e3ba&oh=00_AQLm_za-ACf_8DwayVU1ra_UfQfG8lazXxipAcT8FCKMCw&oe=6AB70515\nhttps://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=2mRME1i9JoMQ7kNvwHz6Zza&_nc_oc=Ados52foxDaRgOz2rjFN2uLYLLubmYhy74n1gpJ6c4dFtFrl5bhef_WghqyGcqpn9lE&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQKJSiBrglOv7CQZfBHnZVk5YhxBN_m0OQ9dOkdu5P2rwg&oe=6AB70DD9\nhttps://l.instagram.com/?u=https%3A%2F%2Fjob-boards.greenhouse.io%2Fmercury%2Fjobs%2F6199367004%3Ffbclid%3DPAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAacJCNAHdnzabk_uo0rJT-Fvc3C7UNAX_PDAdIjSSCw18zy31q1rfSNDFYplFA_aem_I9cFUuzbnSkFsuuswjFwQQ&e=AUDccJRZiDJzaPnTfrtB6hEViemrkCr5GJCxlem0vcb3KyhCszhGB-pG5TCmunV1OTpSd3QffGdf3AXKz5D8iqoV1HHDAKPlHrk55X4TaQ\nhttps://scontent-lax7-1.cdninstagram.com/o1/v/t2/f2/m78/AQN9XkbAgLmeuM8wahq7hTzR7_ry9AUjBFmMo-viiSD7j24b2lYLpHmN55bSC4PXwj4AnV75EADhfeJVhELLfTgXSfJSyH_uY-tIwAk.mp4?_nc_cat=101&_nc_sid=5e9851&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_ohc=ZZGbzFd_9dwQ7kNvwHHTGSj&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODc3Mzc3ODY2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=b6776ccc2035727&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyL0NFNDdDM0ZCN0VFMjY3NjBBODkxRUFBQUY4QjVFOEFEX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbk-oWZ9KyhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=Cn4PepwDyqnKTj0fwmV0Jg&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQKuIGlB2NOCpSGGjMHY40wNKqHzKMICZpuLWIabjj44jg&oe=6AB3273A",
-          "Status": "New",
-          "Priority": "Normal",
-          "Actioned?": "No",
-          "Notes": ""
-        },
-        {
-          "ID": "75700025b96d17b2c33d",
-          "First Seen": "2026-09-21T14:18:27.786560+00:00",
-          "Posted At": "2026-09-21T11:49:54+00:00",
-          "Organization": "",
-          "Opportunity": "Other Opportunity",
-          "Category": "Other Opportunity",
-          "Role / Track": "",
-          "Season / Year": "",
-          "Location": "",
-          "Deadline": "",
-          "Application / Registration Link": "https://gunvorgroup.com/careers/graduate-program",
-          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
-          "Source Type": "Story",
-          "Raw Text": "Very prominent commodity\ntrading firm released their new\n\ngrad program tdy\n\nGraduate Program\nApplications are now open!\n\n| GUNVORGROUP.COM\n\" w\nhttps://scontent-lax3-1.cdninstagram.com/v/t51.71878-15/819601500_1818112526013753_6213701210293472223_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=110&ig_cache_key=Mzk5MTA1OTU2ODM4NTM5MjA4Nw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=iF2CZcU9UGcQ7kNvwFODqqP&_nc_oc=AdqUG7AHf414yby484mYqKMA1H2AJUZlDgndc5KCTFubUOPsz-p97MjwTFv-D2nVQGk&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_gid=Cn4PepwDyqnKTj0fwmV0Jg&_nc_ss=7e3ba&oh=00_AQLV-OM0d9m0_j4m4CZ1TFBdy0snaO8hYafamAZoRJ8YpQ&oe=6AB71BA7\nhttps://scontent-lax3-1.cdninstagram.com/v/t51.71878-15/819601500_1818112526013753_6213701210293472223_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=110&ig_cache_key=Mzk5MTA1OTU2ODM4NTM5MjA4Nw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=iF2CZcU9UGcQ7kNvwFODqqP&_nc_oc=AdqUG7AHf414yby484mYqKMA1H2AJUZlDgndc5KCTFubUOPsz-p97MjwTFv-D2nVQGk&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_gid=Cn4PepwDyqnKTj0fwmV0Jg&_nc_ss=7e3ba&oh=00_AQLPzrTsk5hBfrxsDCzTQgiWbQkjaN92tQoLqo5fw9uhDw&oe=6AB71BA7\nhttps://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=2mRME1i9JoMQ7kNvwHz6Zza&_nc_oc=Ados52foxDaRgOz2rjFN2uLYLLubmYhy74n1gpJ6c4dFtFrl5bhef_WghqyGcqpn9lE&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQKJSiBrglOv7CQZfBHnZVk5YhxBN_m0OQ9dOkdu5P2rwg&oe=6AB70DD9\nhttps://l.instagram.com/?u=https%3A%2F%2Fgunvorgroup.com%2Fcareers%2Fgraduate-program%2F%3Ffbclid%3DPAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAaf74PEAy-KfkQ5vwBbtJwR4W8UT0rOV_nBHM81a_kxaWScpIPV7Kg1nWuWVWg_aem_PfDhd4PwXkZ8DgGD-2XUpQ&e=AUBL03xfmujSD6d8JdR0ldzzngcDcSl8P9olg9d9lZK2jUFOD3dDgfctpz4bwGHF8qhMalAnvzyAjPhgjXu2vxcbiZUjpIOswxK7tGBYKQ\nhttps://scontent-lax7-1.cdninstagram.com/o1/v/t2/f2/m78/AQP1bnhlr1d6mlqACH8onib_-A1mbmPzNGVfT2OseZWwHPRyF2o1uxUZTUOIKmk_On1gvq-Dyfp-jyrfQmV2cViGvBeTVvaOK2qeS7Q.mp4?_nc_cat=101&_nc_sid=5e9851&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_ohc=P94U4H5MNDIQ7kNvwEJFmbf&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODc3NDI3MjE2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=a81427c1c1130ccc&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzQyNDA0NThCOTM3MDQ1Njg1Q0VDRENERjUwOTYxNEFFX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbk-bb7mK2hQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=Cn4PepwDyqnKTj0fwmV0Jg&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQIHQBHpuSr_sbG-aUjwu7F0kEWymEAKU0YycZ99llifbg&oe=6AB315E2",
-          "Status": "Open",
-          "Priority": "Normal",
-          "Actioned?": "No",
-          "Notes": ""
-        }
-      ]
-    }
-  ],
+  "pending_batches": [],
   "delivered_batch_ids": [
     "01f02af07d8ef004333d",
+    "239bd8234d8d2e35b214",
     "9bec5138259952110331",
     "d3df9fc7ca7b324cd916",
     "e1944e8ac400cff77ede"
