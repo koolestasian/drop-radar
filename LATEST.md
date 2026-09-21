@@ -1,11 +1,25 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-21T14:18:34.573373+00:00
+Last updated: 2026-09-21T19:37:00.760376+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Upbound — Software Engineering | Internship | New | Medium | [Apply / Register](https://upbound.wd501.myworkdayjobs.com/Upbound/job/Plano-TX/Software-Engineer-Intern_R-100762) |
+| 2027 Summer Intern - Quantitative | Internship | New | Medium | [Apply / Register](https://firstcitizens.jibeapply.com/jobs/35602?icims=1) |
+| Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://www.directconsideration.com/p/direct-consideration-007) |
+| Upbound — Software Engineering | Internship | New | Medium | [Apply / Register](https://upbound.wd501.myworkdayjobs.com/Acima/job/Draper-UT/Software-Engineer-Intern_R-100759-1) |
+| Figma — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/figma/jobs/6200626004?gh_jid=6200626004) |
+| Data Engineer Intern and help build | Internship | New | Medium | [Apply / Register](https://icbpjb.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/LazardStudentCareers/job/6605) |
+| Internship | Internship | New | Medium | [Apply / Register](https://icbpjb.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/LazardStudentCareers/job/6606) |
+| Thank you for applying to the Code for Good Hackathon - Software Engineer Program - 2027 Summer Inte | Internship | New | Medium | [View Instagram source](https://www.instagram.com/stories/zero2sudo/) |
+| SS eccanca Apply now | Fellowship | Open | Normal | [Apply / Register](https://www.perplexity.ai/hub/research/fellowship) |
+| Capitalone — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://capitalone.wd12.myworkdayjobs.com/en-US/Capital_One/job/McLean-VA/Technology-Development-Program-Associate---February-2027_R244320-1) |
+| Capitalone — Software Engineering | Internship | New | Medium | [Apply / Register](https://capitalone.wd12.myworkdayjobs.com/en-US/Capital_One/job/Toronto-ON/Intern--Mobile-Software-Engineer---Team-Gringotts-North---Winter-2027_R249015) |
+| Capitalone — Software Engineering | Internship | New | Medium | [Apply / Register](https://capitalone.wd12.myworkdayjobs.com/en-US/Capital_One/job/Toronto-ON/Intern--Backend-Software-Engineer---Team-Interstellar---Winter-2027_R249022) |
+| Fidelity — Internship | Internship | New | Medium | [Apply / Register](https://jobs.fidelity.com/en/jobs/2134164/summer-2027-undergraduate-internship-systems) |
+| Software Engineering | Internship | New | Medium | [Apply / Register](https://wd1.myworkdaysite.com/en-US/recruiting/fmr/FidelityCareers/job/Summer-2027-Undergraduate-Internship---Software_2134524) |
 | Other Opportunity | Other Opportunity | Open | Normal | [Apply / Register](https://gunvorgroup.com/careers/graduate-program) |
 | Mercury — Apprenticeship / Externship | Apprenticeship / Externship | New | Normal | [Apply / Register](https://job-boards.greenhouse.io/mercury/jobs/6199367004) |
 | AutoZone's Top 100 Internship Program is | Internship | Open | Medium | [Apply / Register](https://egud.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job/155461) |
