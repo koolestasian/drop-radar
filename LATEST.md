@@ -1,11 +1,21 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-21T19:37:00.760376+00:00
+Last updated: 2026-09-21T23:23:30.995172+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Data Science Intern | Internship | New | Medium | [Apply / Register](https://epicgames.com/careers/jobs/6202675004?gh_jid=6202675004) |
+| Assuredguaranty — Business / Operations | Other Opportunity | New | Normal | [Apply / Register](https://job-boards.greenhouse.io/assuredguaranty/jobs/8827458002) |
+| Headlandstechnologiesllc — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/headlandstechnologiesllc/jobs/4412947009) |
+| Adobe — Product Management, Design | Other Opportunity | New | Normal | [Apply / Register](https://form.typeform.com/to/supY07n5) |
+| Nvidia — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/US-CA-Santa-Clara/Compiler-Engineer--Agentic-Compilation-Systems---New-College-Grad-2027_JR2026218) |
+| Internship | Internship | New | Medium | [Apply / Register](http://prizepicks.com/position?gh_jid=7999266003) |
+| Internship | Internship | New | Medium | [Apply / Register](https://www.nasa.gov/careers/pathways) |
+| Join us for an informative session | Other Opportunity | Open | Normal | [Apply / Register](https://capitalone.eightfold.ai/events/candidate?plannedEventId=EPYJ0oNW) |
+| Scientific Join Talent Network English v | Internship | Open | Medium | [Apply / Register](https://bostonscientific.eightfold.ai/careers/job/563602813600504?domain=bostonscientific.com) |
+| Genevatrading — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/genevatrading/jobs/5242063007?gh_src=7bx7tr8c7us&t=3253f722teu) |
 | Upbound — Software Engineering | Internship | New | Medium | [Apply / Register](https://upbound.wd501.myworkdayjobs.com/Upbound/job/Plano-TX/Software-Engineer-Intern_R-100762) |
 | 2027 Summer Intern - Quantitative | Internship | New | Medium | [Apply / Register](https://firstcitizens.jibeapply.com/jobs/35602?icims=1) |
 | Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://www.directconsideration.com/p/direct-consideration-007) |
