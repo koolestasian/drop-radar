@@ -1,11 +1,16 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-22T15:02:30.573601+00:00
+Last updated: 2026-09-22T19:00:02.682585+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Program Internship Jobs and | Internship | New | Medium | [Apply / Register](https://www.att.jobs/en/job/dallas/at-and-t-technology-development-program-internship/117/100954809776) |
+| Rivian — Software Engineering | Internship | Open | Medium | [Apply / Register](https://careers.rivian.com/careers-home/jobs?keywords=intern&sortBy=relevance&page=1) |
+| Software Engineer Intern - | Internship | New | Medium | [Apply / Register](https://ats.rippling.com/rippling/jobs/a07e4e46-3721-4934-b57b-0d58412e22ba) |
+| @ RIPPLING MLE SWE INTERN | Internship | New | Medium | [Apply / Register](https://ats.rippling.com/rippling/jobs/f9de04c3-e2c5-41f9-8e46-a0684707f89d?_gl=1%2Aw2k05b%2A_gcl_au%2AMTg3NzcwNTIyNy4xNzkwMDkwMzM2) |
+| syst Rippling Fulstack a intern | Internship | New | Medium | [Apply / Register](https://ats.rippling.com/rippling/jobs/f64b6158-9534-4bab-9457-45556166b262) |
 | Gehealthcare — Internship | Internship | New | Medium | [Apply / Register](https://careers.gehealthcare.com/global/en/job/R4046487/Summer-2027-Data-Analytics-Intern) |
 | Meta — Other Opportunity | Other Opportunity | Open | Normal | [View Instagram source](https://www.instagram.com/stories/zero2sudo/) |
 | Genevatrading — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/genevatrading/jobs/5242196007?gh_src=vukgv78h7us&t=3253f722teu) |
