@@ -1,15 +1,19 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-22T19:00:02.682585+00:00
+Last updated: 2026-09-22T22:18:00.652573+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Optiverprivate — Software Engineering | Internship | Open | Medium | [Apply / Register](https://job-boards.greenhouse.io/optiverprivate/jobs/8784302002) |
+| Data Science | Internship | Open | Medium | [Apply / Register](https://ats.rippling.com/rippling/jobs/f255bf03-9173-4c0a-8a18-7cc43c27ded8?jr_id=6ab29b0778c69ff506c3f2d0) |
+| NFA — Internship | Internship | New | Medium | [Apply / Register](https://careers.nfa.org/job/Chicago-Summer-2027-Information-Security-Intern-IL-60606/1432516700) |
+| oS oy) Apply Now > | Internship | Open | Medium | [Apply / Register](https://mycareer.verizon.com/jobs/r-1101167/verizon-network-and-technology-ai-science-summer-2027-internship?source=zero2sudo) |
 | Program Internship Jobs and | Internship | New | Medium | [Apply / Register](https://www.att.jobs/en/job/dallas/at-and-t-technology-development-program-internship/117/100954809776) |
 | Rivian — Software Engineering | Internship | Open | Medium | [Apply / Register](https://careers.rivian.com/careers-home/jobs?keywords=intern&sortBy=relevance&page=1) |
 | Software Engineer Intern - | Internship | New | Medium | [Apply / Register](https://ats.rippling.com/rippling/jobs/a07e4e46-3721-4934-b57b-0d58412e22ba) |
-| @ RIPPLING MLE SWE INTERN | Internship | New | Medium | [Apply / Register](https://ats.rippling.com/rippling/jobs/f9de04c3-e2c5-41f9-8e46-a0684707f89d?_gl=1%2Aw2k05b%2A_gcl_au%2AMTg3NzcwNTIyNy4xNzkwMDkwMzM2) |
+| Software Engineering, Machine Learning / AI | Internship | New | Medium | [Apply / Register](https://ats.rippling.com/rippling/jobs/f9de04c3-e2c5-41f9-8e46-a0684707f89d?_gl=1%2Aw2k05b%2A_gcl_au%2AMTg3NzcwNTIyNy4xNzkwMDkwMzM2) |
 | syst Rippling Fulstack a intern | Internship | New | Medium | [Apply / Register](https://ats.rippling.com/rippling/jobs/f64b6158-9534-4bab-9457-45556166b262) |
 | Gehealthcare — Internship | Internship | New | Medium | [Apply / Register](https://careers.gehealthcare.com/global/en/job/R4046487/Summer-2027-Data-Analytics-Intern) |
 | Meta — Other Opportunity | Other Opportunity | Open | Normal | [View Instagram source](https://www.instagram.com/stories/zero2sudo/) |
