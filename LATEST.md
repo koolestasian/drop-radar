@@ -1,11 +1,20 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-22T10:06:01.153543+00:00
+Last updated: 2026-09-22T15:02:30.573601+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Gehealthcare — Internship | Internship | New | Medium | [Apply / Register](https://careers.gehealthcare.com/global/en/job/R4046487/Summer-2027-Data-Analytics-Intern) |
+| Meta — Other Opportunity | Other Opportunity | Open | Normal | [View Instagram source](https://www.instagram.com/stories/zero2sudo/) |
+| Genevatrading — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/genevatrading/jobs/5242196007?gh_src=vukgv78h7us&t=3253f722teu) |
+| Tesla X Virginia Tech\| Apply Now | Internship | Open | Medium | [Apply / Register](https://www.tesla.com/event/virginia-tech-resume) |
+| Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/cowboyspace/56d1d7e4-fa7e-4c25-aa8b-6828447fc64a?embed=true) |
+| Cisco — Software Engineering | Internship | New | Medium | [Apply / Register](https://careers.cisco.com/global/en/job/CISCISGLOBAL2026306EXTERNALENGLOBAL/Software-Engineer-Data-AI-I-Intern-United-States) |
+| Apple — Machine Learning / AI | Internship | New | Medium | [Apply / Register](https://jobs.apple.com/en-us/details/200683768/internship-machine-learning-research) |
+| Google — Mentorship / Cohort | Mentorship / Cohort | New | Normal | [Apply / Register](https://www.google.com/about/careers/applications/jobs/results/107272685397910214-associate-product-manager-university-graduate-2027-start) |
+| Google — Product Management | Internship | New | Medium | [Apply / Register](https://www.google.com/about/careers/applications/jobs/results/134770032394543814-associate-product-manager-intern-summer-2027) |
 | Google — Product Management | Other Opportunity | Open | Normal | [Apply / Register](https://www.google.com/about/careers/applications/jobs/results/107272685397910214-associate-product-manager-university-graduate-2027-start) |
 | Genevatrading — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/genevatrading/jobs/5240107007) |
 | Data Science Intern | Internship | New | Medium | [Apply / Register](https://epicgames.com/careers/jobs/6202675004?gh_jid=6202675004) |
