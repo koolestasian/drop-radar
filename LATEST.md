@@ -1,11 +1,13 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-21T23:23:30.995172+00:00
+Last updated: 2026-09-22T05:08:57.813691+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Google — Product Management | Other Opportunity | Open | Normal | [Apply / Register](https://www.google.com/about/careers/applications/jobs/results/107272685397910214-associate-product-manager-university-graduate-2027-start) |
+| Genevatrading — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/genevatrading/jobs/5240107007) |
 | Data Science Intern | Internship | New | Medium | [Apply / Register](https://epicgames.com/careers/jobs/6202675004?gh_jid=6202675004) |
 | Assuredguaranty — Business / Operations | Other Opportunity | New | Normal | [Apply / Register](https://job-boards.greenhouse.io/assuredguaranty/jobs/8827458002) |
 | Headlandstechnologiesllc — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/headlandstechnologiesllc/jobs/4412947009) |

@@ -1,6 +1,53 @@
 {
   "version": 1,
-  "pending_batches": [],
+  "pending_batches": [
+    {
+      "id": "eeddae491c528c0cd08c",
+      "created_at": "2026-09-22T05:08:57.814184+00:00",
+      "rows": [
+        {
+          "ID": "876735cc0f6788bc05a8",
+          "First Seen": "2026-09-22T05:07:44.835748+00:00",
+          "Posted At": "2026-09-21T20:31:14+00:00",
+          "Organization": "Genevatrading",
+          "Opportunity": "Genevatrading — Internship",
+          "Category": "Internship",
+          "Role / Track": "",
+          "Season / Year": "",
+          "Location": "Chicago",
+          "Deadline": "",
+          "Application / Registration Link": "https://job-boards.greenhouse.io/genevatrading/jobs/5240107007",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "@ job-boards.greenhouse.io G\n\nGENEVA-TRADING-CAREERS:\n\n< Back to jobs\n\nNew\nAl Engineer Internship\n- Summer 202/\n\n© Chicago Office\n\nFounded in 1999, Trading isa\npremier global prin trading firm\nwith strategically located offices in\nChicago, Dublin, and London. Our\nrelentless focus on trading excellence\ncombined with technological\ninnovation has equipped us witha\nbest-in-class proprietary trading\nhttps://scontent-lax3-2.cdninstagram.com/v/t51.71878-15/820047577_1099887412396204_1018735392579206909_n.jpg?stp=dst-jpg_e15_p480x480_tt6&_nc_cat=103&ig_cache_key=Mzk5MTMyMTk2MjM5MTA2MDM0NQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=NSP_ZIi3yakQ7kNvwFpxRN-&_nc_oc=AdotQezOw5ZJCXWm3hwN5sCy3alm4GQK_yMH8E9UK8SMdfMdLb7o1KKrWOqVL-WisWA&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_gid=md5Q3Dr-jMEUJnELosuyRQ&_nc_ss=7e3ba&oh=00_AQI2tphHvZfZynP0cdQj3Gkm1CTbaKizJ3VEKtTIcvU-RA&oe=6AB7FA2D\nhttps://scontent-lax3-2.cdninstagram.com/v/t51.71878-15/820047577_1099887412396204_1018735392579206909_n.jpg?stp=dst-jpg_e15_p160x160_tt6&_nc_cat=103&ig_cache_key=Mzk5MTMyMTk2MjM5MTA2MDM0NQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=NSP_ZIi3yakQ7kNvwFpxRN-&_nc_oc=AdotQezOw5ZJCXWm3hwN5sCy3alm4GQK_yMH8E9UK8SMdfMdLb7o1KKrWOqVL-WisWA&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_gid=md5Q3Dr-jMEUJnELosuyRQ&_nc_ss=7e3ba&oh=00_AQKe8gC_O5CXc-_YbQz7cvUillMLSPpSbRskNSDKXmQivQ&oe=6AB7FA2D\nhttps://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=1&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=2mRME1i9JoMQ7kNvwF-VKwY&_nc_oc=AdpDJmrBQvx3kPysJ4B_CVYLzhS48ZL4hwxJhbIqpV_kHOa6nOQJ4QhuJ88S_Iaxmgw&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQKZB5jN9oD-nNu-Dvp2KCgEQWiyxWWW4_tr-fpoaVyOAQ&oe=6AB7EED9\nhttps://l.instagram.com/?u=https%3A%2F%2Fjob-boards.greenhouse.io%2Fgenevatrading%2Fjobs%2F5240107007%3Ffbclid%3DPAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAadvImimjevixXyaQfBL8KxxFFai2BkOM91zh7UPBRuQcHR4cAo2GfWyYcv59A_aem_xXsIpf0e6EycjGLc9dtaew&e=AUAlfPugS0bc6pqUdGjRYSxBO8d1-souA_-ZopuWeAY-5KY_zsGZ-16jKOK9FW49wAcHPCJuxSPXR-fbU8kZmQgVFIEG27bSGyjdItdkfw\nhttps://scontent-lax3-1.cdninstagram.com/o1/v/t2/f2/m78/AQOX_-hqzvhiWqcw5y0XUYvmBnypdogpPw3wlTJn0u0S91wOb5PP_dEHJAlnO8iJzPWrUmLAU41RzUWHGRgzk9CGeUgrzFc9f3vqopU.mp4?_nc_cat=110&_nc_sid=5e9851&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=pNP-YNV3bqsQ7kNvwH4mCTk&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODc4MDA1NTI2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=55bd3c22d204d7ea&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzI1NDg5QTk3QUNCNEVGQ0JBQjI3RjQyQjQ1NDU4Qjk1X3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkmK_rx7ChQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=md5Q3Dr-jMEUJnELosuyRQ&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQLFeHgB64_so8rZuwBclW5TLrETKTkr-Bmy7SbZ4OGvMw&oe=6AB4003F",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        },
+        {
+          "ID": "7ba23b888fa571365000",
+          "First Seen": "2026-09-22T05:08:23.182193+00:00",
+          "Posted At": "2026-09-21T23:25:38+00:00",
+          "Organization": "Google",
+          "Opportunity": "Google — Product Management",
+          "Category": "Other Opportunity",
+          "Role / Track": "Product Management",
+          "Season / Year": "Spring 2027",
+          "Location": "Mountain View",
+          "Deadline": "",
+          "Application / Registration Link": "https://www.google.com/about/careers/applications/jobs/results/107272685397910214-associate-product-manager-university-graduate-2027-start",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "= Google Careers OSH: ©\n\n€ Back to jobs search\n\nAssociate Product\nManager, University\nGraduate, 2027 Start\n\n=e) Google © Mountain View, CA, USA; +3 more\n\nil, Early\n\n: =\n\nGoogle APM opens tomorrow and we'll be\n\nposting it first bc of our community A,\n\nSEWEM LAM Google posting is LIVE:\nVAWWA em delineate) associate product manager\napplication *b university graduate 2027 start\nOctober 6, 20 |\nyou in advanc\nour team revig\napplicants wil\nSpring 2027\n\neen\nhttps://scontent-lax7-1.cdninstagram.com/v/t51.71878-15/809209234_28166127426401533_5923146350242077187_n.jpg?stp=dst-jpg_e15_p480x480_tt6&_nc_cat=101&ig_cache_key=Mzk5MTQwOTc0MTM5NzA1MTU1Mw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=Ff_f_cODUw4Q7kNvwE-PjnT&_nc_oc=AdqgVMFyYtVxAXPZmOSLcRFBLOfm0gHU7Q7P69Pb0Tcp0sfOPcQ81-Ef8MhAjTnEwsE&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_gid=md5Q3Dr-jMEUJnELosuyRQ&_nc_ss=7e3ba&oh=00_AQJyWVNXfx-3vDAVf0M5jztU7xVJ89D04yrCYh0S_Zj9sg&oe=6AB7D136\nhttps://scontent-lax7-1.cdninstagram.com/v/t51.71878-15/809209234_28166127426401533_5923146350242077187_n.jpg?stp=dst-jpg_e15_p160x160_tt6&_nc_cat=101&ig_cache_key=Mzk5MTQwOTc0MTM5NzA1MTU1Mw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=Ff_f_cODUw4Q7kNvwE-PjnT&_nc_oc=AdqgVMFyYtVxAXPZmOSLcRFBLOfm0gHU7Q7P69Pb0Tcp0sfOPcQ81-Ef8MhAjTnEwsE&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_gid=md5Q3Dr-jMEUJnELosuyRQ&_nc_ss=7e3ba&oh=00_AQLnAF0GeFFf1LgLWHJnu5vN0MnBmjx5rfg7ihyi4k2cqw&oe=6AB7D136\nhttps://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=1&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=2mRME1i9JoMQ7kNvwF-VKwY&_nc_oc=AdpDJmrBQvx3kPysJ4B_CVYLzhS48ZL4hwxJhbIqpV_kHOa6nOQJ4QhuJ88S_Iaxmgw&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQKZB5jN9oD-nNu-Dvp2KCgEQWiyxWWW4_tr-fpoaVyOAQ&oe=6AB7EED9\nhttps://l.instagram.com/?u=https%3A%2F%2Fwww.google.com%2Fabout%2Fcareers%2Fapplications%2Fjobs%2Fresults%2F107272685397910214-associate-product-manager-university-graduate-2027-start%3Ffbclid%3DPAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAaeb70M3og2lAENFjaN2gFN7NbJTiaOQhwsaGuvQgWJaC3zTdEbHyf3xQce-1g_aem_tUDx6YIFsbeCuL1vJBI95Q&e=AUD5FXqj1uvxwGehF2IjW_fkge8LzN1AbWQE6YmLD1WrqM7OvRdaEj3sKWUyTwXZ1Kez4bDhtfTkyJLeus-TizKvGPUJ762Aqtavs10KXg\nhttps://scontent-lax3-1.cdninstagram.com/o1/v/t2/f2/m78/AQMJW_ngz-gzGap_vDA33_Kp9r6DhN0IRpL2wJO7eFKXKdcbFtXFITx1L5a0CmzXauor7qCuvQPkPuW6ks5Fe4HidSRBHa-PvyJ-l-c.mp4?_nc_cat=109&_nc_sid=5e9851&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=sQPXBpZbcygQ7kNvwEBIMql&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODc4MTYyMDk2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=13a81b3f00beba2c&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzYzNENDQUZEMzI4MDE2NEU5QzY1RTQyOTAyMjhFMzg2X3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkiYa_vLGhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=md5Q3Dr-jMEUJnELosuyRQ&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQJx68l6BAXUWyLqvVQRKSRFcjfKw3dLCD0k8BLOCOWx3Q&oe=6AB3F02A",
+          "Status": "Open",
+          "Priority": "Normal",
+          "Actioned?": "No",
+          "Notes": ""
+        }
+      ]
+    }
+  ],
   "delivered_batch_ids": [
     "01f02af07d8ef004333d",
     "239bd8234d8d2e35b214",
