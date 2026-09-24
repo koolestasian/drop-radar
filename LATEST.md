@@ -1,11 +1,45 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-22T22:18:00.652573+00:00
+Last updated: 2026-09-24T10:10:28.207274+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Astranis — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/astranis/jobs/4716088006) |
+| Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/ramp/b66be397-240b-41a6-9b05-493299b270a9) |
+| Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/ramp/fcf118cc-521a-4a62-9d13-945e5b6e3cb8) |
+| Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/ramp/a13ae586-f4cb-4385-8822-c42b9b54ed74) |
+| Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/ramp/acf6b28d-767f-483f-8ff2-114620cd7e04) |
+| Atlassian — Data Science | Internship | New | Medium | [Apply / Register](https://www.atlassian.com/company/careers/details/26271) |
+| Databricks — Software Engineering | Internship | New | High | [Apply / Register](https://www.databricks.com/company/careers/university-recruiting---engineering/software-engineering-intern-2027-start---winter-8732364002) |
+| Product Management | Other Opportunity | New | Normal | [Apply / Register](https://luma.com/ramp-waterloo-coffee) |
+| Smartrecruiters — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.smartrecruiters.com/LinkedIn3/744000151447279-software-engineer) |
+| Microsoft — Product Management | Internship | Reopened | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393557004836?domain=microsoft.com) |
+| New Grad | New Grad / Early Career | New | Medium | [Apply / Register](https://seatgeek.com/jobs/8227548) |
+| Software Engineering | Internship | New | Medium | [Apply / Register](https://seatgeek.com/jobs/8227553) |
+| Ziprecruiter — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/ziprecruiter/jobs/8180455) |
+| Roblox — Software Engineering | Other Opportunity | New | Medium | [Apply / Register](https://oncampus2026berkeleybuilderpan.splashthat.com) |
+| Applications Open Technology ; _ | Internship | Open | Medium | [View Instagram source](https://www.instagram.com/stories/zero2sudo/) |
+| Nvidia — Design | Internship | New | Medium | [Apply / Register](https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/US-CA-Santa-Clara/Product-Design-Intern--AI-Infrastructure---Summer-2027_JR2025784) |
+| Microsoft — Software Engineering | Internship | Open | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393557004819?domain=microsoft.com&hl=en) |
+| Registration Deadline: Oct 2, 2026 12:00 PM | Workshop / Info Session | New | Normal | [Apply / Register](https://connect.uwo.ca/events/events.htm?eventId=12914) |
+| Figma — Data Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/figma/jobs/6178851004?gh_jid=6178851004&gh_src=28109e334us) |
+| Graduate-Level Hiring Information Session | Job / Hiring | New | Normal | [Apply / Register](https://app.eightfold.ai/events/candidate/landing?plannedEventId=agEXbYjN4) |
+| opportunity for Summer Analyst. This is | Internship | Open | Medium | [Apply / Register](https://recruiting.ultipro.com/LOS1000LADOD/JobBoard/5365ad6e-23ff-4703-bb77-1e9451fb855e/OpportunityDetail?opportunityId=fb796a9d-16f1-4514-8f6b-e5c5dbbb6019) |
+| Scaleai — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/scaleai/jobs/4736426005) |
+| Ashbyhq — Internship | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/bedrock-robotics/07b55743-d5c4-4347-bfac-000821317b13) |
+| Join Zipline as Droid Autonomy Intern | Internship | New | Medium | [Apply / Register](https://www.zipline.com/open-roles/8002829003?gh_jid=8002829003) |
+| Capital One — Product Management | New Grad / Early Career | New | Medium | [Apply / Register](https://www.capitalonecareers.com/job/mclean/product-development-program-associate-2027/31238/97421687328) |
+| Google — Product Management | New Grad / Early Career | New | Medium | [Apply / Register](https://share.google/tFtOqKK3aiGWfjkSI) |
+| REGISTER NOW | Other Opportunity | New | Normal | [Apply / Register](https://predictionscup.com) |
+| Data Science | Other Opportunity | New | Medium | [Apply / Register](https://bostonscientific.eightfold.ai/careers/job/563602813638090) |
+| Embed — Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://job-boards.greenhouse.io/embed/job_app?for=coinbase&token=8168315&jr_id=6aa08bd3dbc0e60e37e0e53a) |
+| Vercel — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/vercel/jobs/6181759004) |
+| Palantir — Internship | Internship | New | High | [Apply / Register](https://jobs.lever.co/palantir/ef725594-42dd-4f0d-ba8e-df8179dbc6cb) |
+| PWC Security Consultant Intern [visetn ere | Internship | New | Medium | [Apply / Register](https://jobs-us.pwc.com/us/en/job/PUVPUIUS757226WDEXTERNALENUS/Cybersecurity-Consulting-Intern-Summer-2027) |
+| Amazon — Internship | Internship | New | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10557133/security-engineer-internship-2027-us) |
+| Smartrecruiters — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.smartrecruiters.com/Wise/744000151030889-graduate-software-engineer) |
 | Optiverprivate — Software Engineering | Internship | Open | Medium | [Apply / Register](https://job-boards.greenhouse.io/optiverprivate/jobs/8784302002) |
 | Data Science | Internship | Open | Medium | [Apply / Register](https://ats.rippling.com/rippling/jobs/f255bf03-9173-4c0a-8a18-7cc43c27ded8?jr_id=6ab29b0778c69ff506c3f2d0) |
 | NFA — Internship | Internship | New | Medium | [Apply / Register](https://careers.nfa.org/job/Chicago-Summer-2027-Information-Security-Intern-IL-60606/1432516700) |
