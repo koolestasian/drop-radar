@@ -1,6 +1,53 @@
 {
   "version": 1,
-  "pending_batches": [],
+  "pending_batches": [
+    {
+      "id": "2e6bd4fee577cd8192d6",
+      "created_at": "2026-09-24T22:32:47.995730+00:00",
+      "rows": [
+        {
+          "ID": "079f963bee22206d00b2",
+          "First Seen": "2026-09-24T22:32:39.512038+00:00",
+          "Posted At": "2026-09-24T22:26:53+00:00",
+          "Organization": "Amazon",
+          "Opportunity": "Amazon — Software Engineering",
+          "Category": "Internship",
+          "Role / Track": "Software Engineering",
+          "Season / Year": "Summer 2027",
+          "Location": "",
+          "Deadline": "",
+          "Application / Registration Link": "https://www.amazon.jobs/en/jobs/10559746/software-development-engineer-intern-summer-2027-usa-amazon-dedicated-cloud-adc",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "— amazonjobs\n— ——7\n\nSoftware Development\nEngineer Intern -\nSummer 2027 (USA) ,\n\nAmazon Dedicated Cloud\n(ADC)\n\nJob ID: 10559746 | Amazon.com Services LLC\n\nAmazon SWE Intern 2027\n\nDescription\n\nAppli:\naccep\n\nShape what comes n er careers in\nTech\n\nAt Amazon, our tech isn't just a tool, it's your\nplayground. Our engineers work on scalable\nsystems, cloud services, and customer-facing\nproducts that operate at global scale. This is an\nhttps://scontent-sjc3-1.cdninstagram.com/v/t51.71878-15/819286880_2053043681982473_3180953103862228712_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=111&ig_cache_key=Mzk5MzU1NDQ5NTY3NzI1MzIzNg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=qrswl5tbRQQQ7kNvwF9nf36&_nc_oc=Adp7yp18LDcnpb7ykf3RgTJbbOJFwJD1wX292YQoirX3VpAcPdiSvPmYvCnY64eRsD8&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-sjc3-1.cdninstagram.com&_nc_gid=SOesJhqVBmx7iTDoBcaAyg&_nc_ss=7e3ba&oh=00_AQKHSMgyUR12wo0Ec6gJfNlWz2W9VPWnCD95pxMXRnSzcA&oe=6ABB8247\nhttps://scontent-sjc3-1.cdninstagram.com/v/t51.71878-15/819286880_2053043681982473_3180953103862228712_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=111&ig_cache_key=Mzk5MzU1NDQ5NTY3NzI1MzIzNg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=qrswl5tbRQQQ7kNvwF9nf36&_nc_oc=Adp7yp18LDcnpb7ykf3RgTJbbOJFwJD1wX292YQoirX3VpAcPdiSvPmYvCnY64eRsD8&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-sjc3-1.cdninstagram.com&_nc_gid=SOesJhqVBmx7iTDoBcaAyg&_nc_ss=7e3ba&oh=00_AQLYBHxoSljOTAcxcPPocOoqqcutMzHxlJEUv0nGEmNoqw&oe=6ABB8247\nhttps://scontent-sjc6-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=N-Z37ibGQsQQ7kNvwEdDP0S&_nc_oc=AdqYz2sDp9rPCzqccaTXWuWkQwrF4bE5McRbAEbCa0j2qyZeMszAjVV5DEiRb8q-gAc&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-sjc6-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQILkUxnhURfUKLd-NWFFhQoU-tmq8FzYL7HyIcRIyfXyA&oe=6ABB72D9\nhttps://l.instagram.com/?u=https%3A%2F%2Fwww.amazon.jobs%2Fen%2Fjobs%2F10559746%2Fsoftware-development-engineer-intern-summer-2027-usa-amazon-dedicated-cloud-adc%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAaen_-1mqOY4RMpj-k4GGatmyO2mh5TVvsrif2o5GbptUtovHji0q23drCUAHA_aem_MF3w7qn__L02vtLwVl0h1g&e=AUBEPZx0pZVgvq_ukGXDfy4V78YR7dxlwq2GvNiEWY7_eaPOfsZBp1pPlns_ndoNDNCEgL3ZIOsH2_HqYT8nnDRmzXF32PWD8Y6pmTjVHQ\nhttps://scontent-sjc6-1.cdninstagram.com/o1/v/t2/f2/m78/AQPkJc2q6cN8DE54LvVf0XCNHtDGlX0__H4YNdBmI2CIvf3WI5EWDWAeDtN7GyzavtV8C6nt4Xih4AtpCmQIKdpFzYaJLk3qmKITAK8.mp4?_nc_cat=107&_nc_sid=5e9851&_nc_ht=scontent-sjc6-1.cdninstagram.com&_nc_ohc=IkJAZpSJqlsQ7kNvwFOpOss&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODgyMzg5MzY2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=f2d7d47528f15552&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzI5NDk1MjNDRTU3MkVBQUVCQUE4NTc1NDE4QjI3Q0EzX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkiPeGisqhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=SOesJhqVBmx7iTDoBcaAyg&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQLogHl5PPwykkbECsMRRqU9hNDsd-ccM6X9x4xxMdqRIw&oe=6AB78074",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        },
+        {
+          "ID": "73b1fd99847db3f2b05d",
+          "First Seen": "2026-09-24T22:32:41.326307+00:00",
+          "Posted At": "2026-09-24T22:30:28+00:00",
+          "Organization": "Amazon",
+          "Opportunity": "Amazon — Software Engineering, Machine Learning / AI",
+          "Category": "Internship",
+          "Role / Track": "Software Engineering, Machine Learning / AI",
+          "Season / Year": "Summer 2027",
+          "Location": "",
+          "Deadline": "",
+          "Application / Registration Link": "https://www.amazon.jobs/en/jobs/10559762/software-development-engineer-intern-amazon-leo-summer-2027-usa",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "— amazonjobs\n— 7\n\nSoftware Development\nEngineer Intern, Amazon\n\nLeo - Summer 2027\n(USA)\n\nJob ID: 10559762 | Amazon.com Services LLC\n\nApply now\n\nDescription\n\nShape what comes next | Discover careers in\nTech\n\n(2) AMAZON LEO 2027 SWE INTERN\n\ncustomer-facing\n\nsystems, cloud services\nproducts that opera l scale. This is an\nenvironment where y y building.\nWhether you're creating cloud-native solutions,\noptimizing machine learning models, or building\nproducts that drive experiences for millions of\n\na ee ee eee ee\nhttps://scontent-sjc6-1.cdninstagram.com/v/t51.71878-15/825016832_1627987385395137_4428288922100101405_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=102&ig_cache_key=Mzk5MzU1NjMwMDYyMTM2NjkzOQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=HYoKPnWqRekQ7kNvwFbO9h1&_nc_oc=Adp3giWpKvtD6_d9eMHn7flYMsBFHqjPY1Z7gwidTVtOlcg7kM_7H7S283uOQjLGNIk&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-sjc6-1.cdninstagram.com&_nc_gid=SOesJhqVBmx7iTDoBcaAyg&_nc_ss=7e3ba&oh=00_AQLxi3RUJ80PCgb4gXAozI2Vyz_QJfMNcbZrfmoqBxF1nw&oe=6ABB6997\nhttps://scontent-sjc6-1.cdninstagram.com/v/t51.71878-15/825016832_1627987385395137_4428288922100101405_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=102&ig_cache_key=Mzk5MzU1NjMwMDYyMTM2NjkzOQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=HYoKPnWqRekQ7kNvwFbO9h1&_nc_oc=Adp3giWpKvtD6_d9eMHn7flYMsBFHqjPY1Z7gwidTVtOlcg7kM_7H7S283uOQjLGNIk&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-sjc6-1.cdninstagram.com&_nc_gid=SOesJhqVBmx7iTDoBcaAyg&_nc_ss=7e3ba&oh=00_AQJmP3Hp-Q9dblGsk049tZbvxaqpoCfk7idhvO-C2VTjrg&oe=6ABB6997\nhttps://scontent-sjc6-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=N-Z37ibGQsQQ7kNvwEdDP0S&_nc_oc=AdqYz2sDp9rPCzqccaTXWuWkQwrF4bE5McRbAEbCa0j2qyZeMszAjVV5DEiRb8q-gAc&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-sjc6-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQILkUxnhURfUKLd-NWFFhQoU-tmq8FzYL7HyIcRIyfXyA&oe=6ABB72D9\nhttps://l.instagram.com/?u=https%3A%2F%2Fwww.amazon.jobs%2Fen%2Fjobs%2F10559762%2Fsoftware-development-engineer-intern-amazon-leo-summer-2027-usa%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafiO2CMcFm8usOMMJiP-_PwH9zodoOMS8H9Sj535x1eteVjugjvdJaBu-MUHw_aem_G1BupsyrD1owWbx-YFXENQ&e=AUAEj5Hd5-HXZK9JXeZ3U1laIPSltDDGFYNAT7XFmA7zsVKZuPWPyg-gltGPJT8yRGcqOm9jC7DsUiPYnMMuiYw0gGgebOKWXbW9dm2AvQ\nhttps://scontent-sjc3-1.cdninstagram.com/o1/v/t2/f2/m78/AQNmREXTqOTgJSUFowfKluvYdxZ-53D8ldeHxyXycYp2ZlMWwz76p5Hgs4Ac8TmyIn-wq7Bkd5xgodYz8c3zl7-izUPkLuwFt3Mqzpc.mp4?_nc_cat=110&_nc_sid=5e9851&_nc_ht=scontent-sjc3-1.cdninstagram.com&_nc_ohc=Ttpa8bTtpSMQ7kNvwEVGQl5&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODgyMzkyMjE2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=e00fc5a0020b7c84&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzEyNDQwNTZCMjU0NjM3NDdENDk4MDQwNzZDMjdBRkI2X3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkjd2WjMqhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=SOesJhqVBmx7iTDoBcaAyg&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQIxzCGPzt1uwancgX3lKionWcI9E_EDzBvx14_VHuS0sg&oe=6AB7934B",
+          "Status": "Open",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        }
+      ]
+    }
+  ],
   "delivered_batch_ids": [
     "01f02af07d8ef004333d",
     "239bd8234d8d2e35b214",

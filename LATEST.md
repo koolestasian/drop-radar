@@ -1,13 +1,15 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-24T19:16:56.817459+00:00
+Last updated: 2026-09-24T22:32:47.995051+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Amazon — Software Engineering, Machine Learning / AI | Internship | Open | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10559762/software-development-engineer-intern-amazon-leo-summer-2027-usa) |
+| Amazon — Software Engineering | Internship | New | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10559746/software-development-engineer-intern-summer-2027-usa-amazon-dedicated-cloud-adc) |
 | Amazon — Software Engineering | New Grad / Early Career | Open | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10558915/software-development-engineer-i-annapurna-labs-early-career-2027) |
-| As an intern, you'll work with our technologists and | Internship | New | Medium | [Apply / Register](https://ecnf.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/job/301908) |
+| Internship | Internship | New | Medium | [Apply / Register](https://ecnf.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/job/301908) |
 | RecSys 2026 — Intern \| Life at | Internship | New | Medium | [Apply / Register](https://www.lifeatspotify.com/jobs/recsys-2026-intern) |
 | Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://luma.com/ptsnzkkl) |
 | Apple — Internship | Internship | New | Medium | [Apply / Register](https://jobs.apple.com/en-us/details/200674758/2026-Fall-UT-Austin-Intern-Event) |
