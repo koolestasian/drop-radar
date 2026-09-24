@@ -1,18 +1,34 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-24T15:14:57.922752+00:00
+Last updated: 2026-09-24T19:16:56.817459+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Amazon — Software Engineering | New Grad / Early Career | Open | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10558915/software-development-engineer-i-annapurna-labs-early-career-2027) |
+| As an intern, you'll work with our technologists and | Internship | New | Medium | [Apply / Register](https://ecnf.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/job/301908) |
+| RecSys 2026 — Intern \| Life at | Internship | New | Medium | [Apply / Register](https://www.lifeatspotify.com/jobs/recsys-2026-intern) |
+| Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://luma.com/ptsnzkkl) |
+| Apple — Internship | Internship | New | Medium | [Apply / Register](https://jobs.apple.com/en-us/details/200674758/2026-Fall-UT-Austin-Intern-Event) |
+| Revantage — Quant | Internship | New | Medium | [Apply / Register](https://revantage.wd1.myworkdayjobs.com/Revantage/job/Remote---Illinois/Quantitative-Developer-Intern_JR104315) |
+| Home > JobSearchResults > _ Intern - Data | Internship | New | Medium | [Apply / Register](https://www.enterprisemobility.com/en/careers/job.html/567651/st-louis/intern-data-engineer-efm-it?mcid=jobboard%3A45130921&gad_source=7) |
+| Ashbyhq — Research | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/genesis-molecular-ai/42fc0631-3f81-481a-b496-daa875c9e92e?src=zero2sudo) |
+| Ashbyhq — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/perplexity/8a99d9be-6955-4f28-8150-80c8ce72c523) |
+| Adobe — Product Management | New Grad / Early Career | New | Medium | [Apply / Register](https://adobe.wd5.myworkdayjobs.com/external_experienced/job/San-Jose/XMLNAME-2027-University-Graduate---Product-Manager_R171844) |
+| Adobe — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://adobe.wd5.myworkdayjobs.com/en-US/external_experienced/job/San-Jose/XMLNAME-2027-University-Graduate---Software-Engineer_R172083) |
+| Boxinc — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/boxinc/jobs/8226667) |
+| Meta — Internship | Internship | Open | Medium | [Apply / Register](https://www.metacareers.com/profile/job_details/1412139847020398) |
+| Klaviyocampus — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/klaviyocampus/jobs/8003260003) |
+| Amazon — Software Engineering | New Grad / Early Career | Open | Medium | [Apply / Register](https://amazon.jobs/en/jobs/3177934/software-development-engineer-2026-us) |
+| join! RSVP to confirm your attendance. | New Grad / Early Career | New | Medium | [Apply / Register](https://events.riviancareers.com/plugin-earlycareer2027) |
 | Category Internships / Co-op - IT Internship | Internship | Open | Medium | [Apply / Register](https://us-erac.icims.com/jobs/567651/job?mobile=true&needsRedirect=false) |
 | Kitware — Internship | Internship | New | Medium | [Apply / Register](https://jobs.lever.co/kitware/e76197d1-4dc3-4f7c-a30a-597713283bb3/apply) |
 | APPLY NOW | Internship | Open | Medium | [Apply / Register](https://hdnn.fa.us6.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/job/114233) |
 | Wurljobs — Data Science | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/wurljobs/jobs/4716249006) |
 | Meta — Quant | Internship | Open | Medium | [Apply / Register](https://www.metacareers.com/profile/job_details/1609178343953401) |
 | Summer Internship Program Whippany | Internship | New | Medium | [Apply / Register](https://search.jobs.barclays/search-jobs?acm=8736272&alrpm=ALL&ascf=%5B%7B%22key%22%3A%22custom_fields.MultiValueField3%22%2C%22value%22%3A%22Internships+Technology%22%7D%5D) |
-| @ LIBMU NEW GRAD SWE | New Grad / Early Career | New | Medium | [Apply / Register](https://campus-libertymutual.icims.com/jobs/77144/2027-techstart-full-time-program/job?mode=view&mobile=false&width=735&height=500&bga=true&needsRedirect=false&jan1offset=-300&jun1offset=-240) |
+| Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://campus-libertymutual.icims.com/jobs/77144/2027-techstart-full-time-program/job?mode=view&mobile=false&width=735&height=500&bga=true&needsRedirect=false&jan1offset=-300&jun1offset=-240) |
 | Our Summer 2027 Early Talent internships are a | Internship | New | Medium | [Apply / Register](https://campus-libertymutual.icims.com/jobs/77035/2027-techstart-summer-internship-program/job?mode=view) |
 | Ashbyhq — Internship | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/cerebras/c4faac59-3dbb-4ab7-9f74-d1fcbcddc7c6/application?source=zero2sudo) |
 | Ashbyhq — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/cerebras/99c289fa-8fc6-49f7-b7e8-78ac4e9d99ac/application?source=zero2sudo) |
