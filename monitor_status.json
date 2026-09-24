@@ -1,17 +1,17 @@
 {
-  "checked_at": "2026-09-24T10:10:28.209232+00:00",
-  "previous_rows": 114,
-  "new_rows": 34,
-  "total_rows": 148,
-  "tracker_sha256": "6becef471e03e5a2295146060fff7ee003b77b2c04b3e84e684da06a5f20de8d",
+  "checked_at": "2026-09-24T15:14:57.924073+00:00",
+  "previous_rows": 148,
+  "new_rows": 10,
+  "total_rows": 158,
+  "tracker_sha256": "cf4f017448ddcbcc46cbda789111836ee6fd3eaec6ef156e08ea5382dc179753",
   "cleanup": {
     "duplicates_removed": 0,
     "invalid_links_cleared": 0,
-    "before": 114,
-    "after": 114,
+    "before": 148,
+    "after": 148,
     "changed": true
   },
-  "notification_batch_id": "ece0360b1aa152434a45",
+  "notification_batch_id": "f1ae861a72f31974c8a7",
   "google_sheets_configured": true,
   "live_tracker_url": "https://docs.google.com/spreadsheets/d/1Ih0T0EkndMrzj9N6uYwknKxvZhgL05m1Y5kfu3boErU/edit"
 }

@@ -1,11 +1,21 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-24T10:10:28.207274+00:00
+Last updated: 2026-09-24T15:14:57.922752+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Category Internships / Co-op - IT Internship | Internship | Open | Medium | [Apply / Register](https://us-erac.icims.com/jobs/567651/job?mobile=true&needsRedirect=false) |
+| Kitware — Internship | Internship | New | Medium | [Apply / Register](https://jobs.lever.co/kitware/e76197d1-4dc3-4f7c-a30a-597713283bb3/apply) |
+| APPLY NOW | Internship | Open | Medium | [Apply / Register](https://hdnn.fa.us6.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/job/114233) |
+| Wurljobs — Data Science | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/wurljobs/jobs/4716249006) |
+| Meta — Quant | Internship | Open | Medium | [Apply / Register](https://www.metacareers.com/profile/job_details/1609178343953401) |
+| Summer Internship Program Whippany | Internship | New | Medium | [Apply / Register](https://search.jobs.barclays/search-jobs?acm=8736272&alrpm=ALL&ascf=%5B%7B%22key%22%3A%22custom_fields.MultiValueField3%22%2C%22value%22%3A%22Internships+Technology%22%7D%5D) |
+| @ LIBMU NEW GRAD SWE | New Grad / Early Career | New | Medium | [Apply / Register](https://campus-libertymutual.icims.com/jobs/77144/2027-techstart-full-time-program/job?mode=view&mobile=false&width=735&height=500&bga=true&needsRedirect=false&jan1offset=-300&jun1offset=-240) |
+| Our Summer 2027 Early Talent internships are a | Internship | New | Medium | [Apply / Register](https://campus-libertymutual.icims.com/jobs/77035/2027-techstart-summer-internship-program/job?mode=view) |
+| Ashbyhq — Internship | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/cerebras/c4faac59-3dbb-4ab7-9f74-d1fcbcddc7c6/application?source=zero2sudo) |
+| Ashbyhq — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/cerebras/99c289fa-8fc6-49f7-b7e8-78ac4e9d99ac/application?source=zero2sudo) |
 | Astranis — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/astranis/jobs/4716088006) |
 | Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/ramp/b66be397-240b-41a6-9b05-493299b270a9) |
 | Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/ramp/fcf118cc-521a-4a62-9d13-945e5b6e3cb8) |
