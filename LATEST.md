@@ -1,11 +1,22 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-25T18:42:06.046720+00:00
+Last updated: 2026-09-25T22:28:04.623868+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Withwaymo — Software Engineering | Internship | New | Medium | [Apply / Register](https://careers.withwaymo.com/jobs/2027-summer-intern-bs-software-engineer-driver-refinement-foundations-mountain-view-california-united-states) |
+| Software Engineering | Internship | New | Medium | [Apply / Register](https://tinyurl.com/easyf100-2026) |
+| Smartrecruiters — Research | Internship | New | Medium | [Apply / Register](https://jobs.smartrecruiters.com/Intuitive/744000151714759-ai-research-intern) |
+| Lyft Content Systems Intern (Summer | Internship | New | Medium | [Apply / Register](https://app.careerpuck.com/job-board/lyft/job/8817900002?gh_jid=8817900002) |
+| Lutron — Software Engineering | Other Opportunity | New | Medium | [Apply / Register](https://careers.lutron.com/jobs/5616?icims=1) |
+| 2027 IT Summer Intern - Software | Internship | New | Medium | [Apply / Register](https://firstcitizens.jibeapply.com/jobs/35709?icims=1) |
+| Bluestaq — Software Engineering, Product Management | Other Opportunity | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/bluestaq/jobs/4420189009) |
+| Data and Computer Eng/Sci Intern - | Internship | New | Medium | [Apply / Register](https://careers-barrios.icims.com/jobs/2897/job?mobile=true&needsRedirect=false) |
+| Google — Software Engineering, Machine Learning / AI | New Grad / Early Career | New | Medium | [Apply / Register](https://www.google.com/about/careers/applications/jobs/results/123087196289671878-software-engineer-aimachine-learning-phd-early-career-2027-start) |
+| Google — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://www.google.com/about/careers/applications/jobs/results/84680705375642310-software-engineer-infrastructure-phd-early-career-2027-start) |
+| Statefarm — Internship | Internship | New | Medium | [Apply / Register](https://jobs.statefarm.com/main/jobs/45928?lang=en-us&iis=zero2sudo&iisn=zero2sudo) |
 | Smartrecruiters — Internship | Internship | New | Medium | [Apply / Register](https://jobs.smartrecruiters.com/WabashValleyPowerAlliance/744000149889459-power-supply-energy-services-internship-summer-2027) |
 | Astranis — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/astranis/jobs/4708369006?gh_src=602966e76us) |
 | Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/snowflake/7bd393df-67d7-4009-ba4f-1cd79a82b0be) |
