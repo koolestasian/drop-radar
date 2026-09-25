@@ -1,6 +1,73 @@
 {
   "version": 1,
-  "pending_batches": [],
+  "pending_batches": [
+    {
+      "id": "dec311e6e5fd9de34c84",
+      "created_at": "2026-09-25T01:37:57.975718+00:00",
+      "rows": [
+        {
+          "ID": "86b3676ac0b8b8702ae1",
+          "First Seen": "2026-09-25T01:37:35.148140+00:00",
+          "Posted At": "2026-09-24T22:49:31+00:00",
+          "Organization": "AMD",
+          "Opportunity": "AMD — Internship",
+          "Category": "Internship",
+          "Role / Track": "",
+          "Season / Year": "2027",
+          "Location": "Austin",
+          "Deadline": "",
+          "Application / Registration Link": "https://careers.amd.com/careers-home/jobs/92880?lang=en-us&iis=Job+Board&iisn=zero2sudo",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "x @ careers.amd.com C:\n\nInstagram\n\nAMD ¢1 | Careers —\n\n€ Back\n\n2027 Undergrad Program Management\nIntern/Co-op\n\nLocations: Austin, Texas\n\nCategories: Student / Intern / Temp\nReq ID: 92880\n\nHiring Target Min: USD $59,072.00/Yr.\nHiring Target Max: USD $88,608.00/Yr.\nhttps://scontent-atl3-2.cdninstagram.com/v/t51.71878-15/819002825_1506945411257933_1840454424843831975_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=111&ig_cache_key=Mzk5MzU2NTg4NTQ4NjgxMzgxNw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=YiD4vSOBmtsQ7kNvwFJ4ABa&_nc_oc=AdqUdJDlTJ9TBaSdlBAtiO8DMfrMswE-BeofmeLpgorgOrNEFzWtWVbtE1kRzMpEZ9c&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-atl3-2.cdninstagram.com&_nc_gid=YmeEk6d89TUVk09YjtsUeg&_nc_ss=7e3ba&oh=00_AQLeYAW4pSc7b2AMx3QorHpp3P8YBxERmVwRxo7pQWBgLQ&oe=6ABBA007\nhttps://scontent-atl3-2.cdninstagram.com/v/t51.71878-15/819002825_1506945411257933_1840454424843831975_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=111&ig_cache_key=Mzk5MzU2NTg4NTQ4NjgxMzgxNw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=YiD4vSOBmtsQ7kNvwFJ4ABa&_nc_oc=AdqUdJDlTJ9TBaSdlBAtiO8DMfrMswE-BeofmeLpgorgOrNEFzWtWVbtE1kRzMpEZ9c&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-atl3-2.cdninstagram.com&_nc_gid=YmeEk6d89TUVk09YjtsUeg&_nc_ss=7e3ba&oh=00_AQIWXr3E2uhFJNPfO8SbpDQze1Am9SoGF1unzPWSZXYzMg&oe=6ABBA007\nhttps://scontent-atl3-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=N-Z37ibGQsQQ7kNvwHvkmAd&_nc_oc=AdriCIokFaRj7V5yZ_bglFa8ayVBw2MbKEzbbSZuIxlXEq6ygicYgSOaFddhh0hwCJw&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQI-XhE2q_sVW-ToSKarkhW0NvAZdMrbDALBaz8flCzYjg&oe=6ABBAB19\nhttps://l.instagram.com/?u=https%3A%2F%2Fcareers.amd.com%2Fcareers-home%2Fjobs%2F92880%3Flang%3Den-us%26iis%3DJob%2BBoard%26iisn%3Dzero2sudo%26fbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAadoiYhz2Xky8whjOXPO2SCg0xLH8WH1IbIUUl0K2n17XTkEgod_Vmud8PKK1A_aem_ddPZGrD8umk_kfEJUcM_Pg&e=AUBsmg6tzej2Gulr0glgdEkgHorC1bRFQy8_trluVp8x4W5sL3ZSfkOjtUk-20knyu4pf19bhylMrDDMm_PDJ6J1vj0TOx-5HEo8fz42nQ\nhttps://scontent-atl3-1.cdninstagram.com/o1/v/t2/f2/m78/AQOtqt3VxTutxQlwyxK2eD7FTOl9LMstqbINM9GlHa_oFvKOq91Qr9Pd9qE4x5vqDQPnVH-MOfUyZWltAmByMm0otJwxyO3vUzKsGeY.mp4?_nc_cat=109&_nc_sid=5e9851&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_ohc=QdOcJHiAUDwQ7kNvwHlI5AC&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODgyNDA5NDk2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=4d5c298a190c4f53&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzZGNEExMDEzNzc2QUJEQjlEMkUwRDk2RjM2NTc3RDlDX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkzdaGmcqhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=YmeEk6d89TUVk09YjtsUeg&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQKa0LQOcAcsrDlrhPFPLJxC7dNKcMBC_ema1t4jeLxCFA&oe=6AB7B342",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        },
+        {
+          "ID": "1a5eb89da90c25a42ef6",
+          "First Seen": "2026-09-25T01:37:43.826160+00:00",
+          "Posted At": "2026-09-24T23:26:23+00:00",
+          "Organization": "Ziprecruiter",
+          "Opportunity": "Ziprecruiter — Software Engineering",
+          "Category": "New Grad / Early Career",
+          "Role / Track": "Software Engineering",
+          "Season / Year": "",
+          "Location": "",
+          "Deadline": "",
+          "Application / Registration Link": "https://job-boards.greenhouse.io/ziprecruiter/jobs/8127108",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "@ job-boards.greenhouse.io C:\n\n< Back to jobs\n\nSoftware Engineer -\nNew Grad\n\n© Santa Monica, CA\n\nWe offer a hybrid work environment. Most\nUS-based positions can also be performed\nremotely (any exceptions will be noted in the\nMinimum Qualifications below.)\n\n(2) ZIP RECRUITER NEW GRAD SWE\n\nTo actively connec their next great\nopportunity.\n\nWho We Are:\n\nZipRecruiter is the fastest-growing onli\nemployment marketplace for both desk —\nand mobile traffic. Powered by Al-driven\nhttps://scontent-atl3-1.cdninstagram.com/v/t51.71878-15/824596092_1613595780486530_6605253838494115175_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=110&ig_cache_key=Mzk5MzU4NDQ0MjMxMjQ2OTIzMQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=utHJS-VLKjcQ7kNvwGEbQHJ&_nc_oc=AdoQ6y_2FaYlLcyQ4kK8U9FxIPAUx-o8CI6SVeZSrwUVt7asvqwJo0J_HZVGU8rgnVw&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_gid=YmeEk6d89TUVk09YjtsUeg&_nc_ss=7e3ba&oh=00_AQJumxHfWgF2G7YF2TbAjuBlKGKuSIt5z2PAVSrWpXhEvA&oe=6ABBBB6A\nhttps://scontent-atl3-1.cdninstagram.com/v/t51.71878-15/824596092_1613595780486530_6605253838494115175_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=110&ig_cache_key=Mzk5MzU4NDQ0MjMxMjQ2OTIzMQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=utHJS-VLKjcQ7kNvwGEbQHJ&_nc_oc=AdoQ6y_2FaYlLcyQ4kK8U9FxIPAUx-o8CI6SVeZSrwUVt7asvqwJo0J_HZVGU8rgnVw&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_gid=YmeEk6d89TUVk09YjtsUeg&_nc_ss=7e3ba&oh=00_AQJLuBVoJlApSnF1Q1B8fvNRMgPsEG4wChnnonq5EgMJPw&oe=6ABBBB6A\nhttps://scontent-atl3-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=N-Z37ibGQsQQ7kNvwHvkmAd&_nc_oc=AdriCIokFaRj7V5yZ_bglFa8ayVBw2MbKEzbbSZuIxlXEq6ygicYgSOaFddhh0hwCJw&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQI-XhE2q_sVW-ToSKarkhW0NvAZdMrbDALBaz8flCzYjg&oe=6ABBAB19\nhttps://l.instagram.com/?u=https%3A%2F%2Fjob-boards.greenhouse.io%2Fziprecruiter%2Fjobs%2F8127108%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafTmh4_6HH7AcjmKCDE6KnKrIOZoEg9Vxk_9PStTr--8JYsRLHKRahk4A-0rg_aem_WBN3WDCKpmxyicuTdbFHkw&e=AUC0G0ViRwvsIhq7shKQXEa2oe0GBJ_xxOuVaPTCzJLiGNUtLkbR3D87LaSlWhWeOZnFa1l_dCgmq9rN-tE9KmPArsO0E2J_whSjqvIT7g\nhttps://scontent-atl3-1.cdninstagram.com/o1/v/t2/f2/m78/AQOHun8MAeFsm_w8J4eHGjzweahnKQS_F4yOthXFQAsVWQSamw02BQRj2Exl19fTLAarB5V59DRG5Wj2WxBiVdj23fX7a3vfFY0m7M8.mp4?_nc_cat=107&_nc_sid=5e9851&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_ohc=34To4MeDZOAQ7kNvwGqLOY1&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODgyNDMxNjk2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=b4e21795176a9dde&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyL0EzNEQ5QjBCNEJEQzYwQUI4QUUyQTkzNjZEQzQyQkE4X3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbk2erLqcqhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=YmeEk6d89TUVk09YjtsUeg&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQKs5wa3l0H3dBQ70VBsI4WepRIu1eCdzKGbStyoVRhxLQ&oe=6AB7C130",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        },
+        {
+          "ID": "62b03babf0905ea52cc4",
+          "First Seen": "2026-09-25T01:37:45.213426+00:00",
+          "Posted At": "2026-09-24T23:36:24+00:00",
+          "Organization": "Ashbyhq",
+          "Opportunity": "Ashbyhq — Software Engineering",
+          "Category": "Internship",
+          "Role / Track": "Software Engineering",
+          "Season / Year": "Winter 2027",
+          "Location": "San Francisco, New York",
+          "Deadline": "",
+          "Application / Registration Link": "https://jobs.ashbyhq.com/notion/2b587e66-deac-421a-a824-9415ba78b5a7?source=zero2sudo",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "@ jobs.ashbyhg.com CG:\n\n: [N) Notion\n\nSoftware Engineer Intern, Mobile\n(Winter 2027)\nLocation\n\nSan Francisco, California; New York, New\nYork\n\nEmployment Type\n\nIntern\n\n. 2 JOBS.ASHBYHO.COM\n\nDepartment\n\nEarly Career\nhttps://scontent-atl3-1.cdninstagram.com/v/t51.71878-15/817679086_1643182407467634_4831393841502179161_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=110&ig_cache_key=Mzk5MzU4OTQ4NzU3MzYwMTI4Nw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=bLxMaHDHw9UQ7kNvwH4kqye&_nc_oc=AdqTpF40o8QjubJOlOXkiys4vt5a2orJF3-xzGGe6MfKC8vyHDdrtEbPu-_oSHnwM8s&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_gid=YmeEk6d89TUVk09YjtsUeg&_nc_ss=7e3ba&oh=00_AQKJIe9C8hzkd8Ym0Gipr_aUFY9CA0On8QDIHreUuyMeVw&oe=6ABB9C07\nhttps://scontent-atl3-1.cdninstagram.com/v/t51.71878-15/817679086_1643182407467634_4831393841502179161_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=110&ig_cache_key=Mzk5MzU4OTQ4NzU3MzYwMTI4Nw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=bLxMaHDHw9UQ7kNvwH4kqye&_nc_oc=AdqTpF40o8QjubJOlOXkiys4vt5a2orJF3-xzGGe6MfKC8vyHDdrtEbPu-_oSHnwM8s&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_gid=YmeEk6d89TUVk09YjtsUeg&_nc_ss=7e3ba&oh=00_AQIwD6YJFUkXAg9zQaDYPJMN-2mbKUGeeUFnyWcZssTJtA&oe=6ABB9C07\nhttps://scontent-atl3-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=N-Z37ibGQsQQ7kNvwHvkmAd&_nc_oc=AdriCIokFaRj7V5yZ_bglFa8ayVBw2MbKEzbbSZuIxlXEq6ygicYgSOaFddhh0hwCJw&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQI-XhE2q_sVW-ToSKarkhW0NvAZdMrbDALBaz8flCzYjg&oe=6ABBAB19\nhttps://l.instagram.com/?u=https%3A%2F%2Fjobs.ashbyhq.com%2Fnotion%2F2b587e66-deac-421a-a824-9415ba78b5a7%3Fsource%3Dzero2sudo%26fbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAafnukkFMrb857qYG2fZUprBVoMJTlsdsOvAO7gwIrScGwzkJzFOZugR-YkKKg_aem_Dtb5PDFKXCsjnNWVT8g7NA&e=AUD1_456yrW6Yhwl0lwvJKUpAeeweAGpg_nINiFzr0BkWR9gP3ZwjY6dBdCE-O6D2kGeUAyTD_EA9RIqkfxNPRMm7FvPwB9fIFzbaIjHCQ\nhttps://scontent-atl3-2.cdninstagram.com/o1/v/t2/f2/m78/AQOiPItmFvaWB2QrLePL0fXG4WJEzneln0Pd7QiHfTmgFLUUo538MKKHS58l14fCsy39AiMKcQ7gDUTFJPsdBr9Vj-jT60xzsQP_qLU.mp4?_nc_cat=111&_nc_sid=5e9851&_nc_ht=scontent-atl3-2.cdninstagram.com&_nc_ohc=YFq1LKpG7sIQ7kNvwElPP2_&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODgyNDM5NzY2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=ca0644e15d8c7b3e&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyL0VDNEYzRjU5MDM5MDZFMDQzOEI2REVGQkY1RkVGMDg5X3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkuLnNr8qhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=YmeEk6d89TUVk09YjtsUeg&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQK0jKYmYpo_hazvvw8CTG6KC5gt95-lAtC3CRosO5RFug&oe=6AB7BDE4",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        }
+      ]
+    }
+  ],
   "delivered_batch_ids": [
     "01f02af07d8ef004333d",
     "239bd8234d8d2e35b214",

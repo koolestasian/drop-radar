@@ -1,11 +1,14 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-24T22:32:47.995051+00:00
+Last updated: 2026-09-25T01:37:57.974955+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/notion/2b587e66-deac-421a-a824-9415ba78b5a7?source=zero2sudo) |
+| Ziprecruiter — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/ziprecruiter/jobs/8127108) |
+| AMD — Internship | Internship | New | Medium | [Apply / Register](https://careers.amd.com/careers-home/jobs/92880?lang=en-us&iis=Job+Board&iisn=zero2sudo) |
 | Amazon — Software Engineering, Machine Learning / AI | Internship | Open | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10559762/software-development-engineer-intern-amazon-leo-summer-2027-usa) |
 | Amazon — Software Engineering | Internship | New | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10559746/software-development-engineer-intern-summer-2027-usa-amazon-dedicated-cloud-adc) |
 | Amazon — Software Engineering | New Grad / Early Career | Open | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10558915/software-development-engineer-i-annapurna-labs-early-career-2027) |
