@@ -1,11 +1,16 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-25T01:37:57.974955+00:00
+Last updated: 2026-09-25T07:57:55.721748+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Smartrecruiters — Internship | Internship | New | Medium | [Apply / Register](https://jobs.smartrecruiters.com/WabashValleyPowerAlliance/744000149889459-power-supply-energy-services-internship-summer-2027) |
+| Astranis — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/astranis/jobs/4708369006?gh_src=602966e76us) |
+| Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/snowflake/7bd393df-67d7-4009-ba4f-1cd79a82b0be) |
+| Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/snowflake/5315b6f6-2c14-4cb9-a884-c2bae69f2c69) |
+| Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/snowflake/4be290ae-dd9d-488c-9d90-56fcd69101ca/application?jr_id=6ab5cf5f634ec6aa7c0d1431) |
 | Ashbyhq — Software Engineering | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/notion/2b587e66-deac-421a-a824-9415ba78b5a7?source=zero2sudo) |
 | Ziprecruiter — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/ziprecruiter/jobs/8127108) |
 | AMD — Internship | Internship | New | Medium | [Apply / Register](https://careers.amd.com/careers-home/jobs/92880?lang=en-us&iis=Job+Board&iisn=zero2sudo) |
