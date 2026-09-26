@@ -1,11 +1,18 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-25T22:28:04.623868+00:00
+Last updated: 2026-09-26T01:39:51.782208+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Ashbyhq — Software Engineering, Machine Learning / AI | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/quora/cf34f80e-fe5c-454d-bc9a-4c59993ffda0/application?jr_id=6ab7035a39fd8792cb73d1fe) |
+| Interview Workshop | Workshop / Info Session | New | Medium | [Apply / Register](https://bloomberg.avature.net/events/EventDetailsPage?jobId=22022) |
+| Microsoft — Software Engineering | Internship | New | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393557008714) |
+| Withwaymo — Internship | Internship | New | Medium | [Apply / Register](https://careers.withwaymo.com/jobs/2027-summer-intern-ms-phd-systems-engineer-autonomous-vehicle-networks-diagnostics-mountain-view-california-united-states?gh_jid=8231711) |
+| Withwaymo — Internship | Internship | New | Medium | [Apply / Register](https://careers.withwaymo.com/jobs/2027-summer-intern-bs-software-engineer-driver-refinement-foundations-mountain-view-california-united-states?gh_jid=8224900) |
+| Intuit — Software Engineering | Internship | Open | Medium | [Apply / Register](https://jobs.intuit.com/job/toronto/winter-2027-software-developer-co-op-4-or-8-months/27595/101130613680?cid=unknownReferringDomains_unknownReferringDomains) |
+| internship period with the goal | Internship | Open | Medium | [Apply / Register](https://www.redventures.com/careers/positions/open?gh_jid=8233284) |
 | Withwaymo — Software Engineering | Internship | New | Medium | [Apply / Register](https://careers.withwaymo.com/jobs/2027-summer-intern-bs-software-engineer-driver-refinement-foundations-mountain-view-california-united-states) |
 | Software Engineering | Internship | New | Medium | [Apply / Register](https://tinyurl.com/easyf100-2026) |
 | Smartrecruiters — Research | Internship | New | Medium | [Apply / Register](https://jobs.smartrecruiters.com/Intuitive/744000151714759-ai-research-intern) |
