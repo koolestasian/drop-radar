@@ -1,11 +1,13 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-26T19:57:35.572618+00:00
+Last updated: 2026-09-26T22:57:14.148160+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Roblox — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://careers.roblox.com/jobs/8171283) |
+| Doordashusa — Machine Learning / AI | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/doordashusa/jobs/8204111) |
 | Humana — Internship | Internship | New | Medium | [Apply / Register](https://careers.humana.com/us/en/event/6a9896e6539e900c3a9d9ff6/Humana-Technology-Internship-Program-Virtual-Information-Session) |
 | Point72 — Hackathon / Competition | Hackathon / Competition | New | Normal | [Apply / Register](https://careers.point72.com/CSJobDetail?jobName=2026-point72-academy-national-case-competition-us&jobCode=CPC-0015213&location=New+York&locale=English&retURL=%2FCSCareerSearch) |
 | Great hiring at every step. Make | Job / Hiring | New | Normal | [Apply / Register](https://app3.greenhouse.io/e/arnmvw) |
