@@ -1,11 +1,14 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-26T13:12:07.274778+00:00
+Last updated: 2026-09-26T17:16:11.706177+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Humana — Internship | Internship | New | Medium | [Apply / Register](https://careers.humana.com/us/en/event/6a9896e6539e900c3a9d9ff6/Humana-Technology-Internship-Program-Virtual-Information-Session) |
+| Point72 — Hackathon / Competition | Hackathon / Competition | New | Normal | [Apply / Register](https://careers.point72.com/CSJobDetail?jobName=2026-point72-academy-national-case-competition-us&jobCode=CPC-0015213&location=New+York&locale=English&retURL=%2FCSCareerSearch) |
+| Great hiring at every step. Make | Job / Hiring | New | Normal | [Apply / Register](https://app3.greenhouse.io/e/arnmvw) |
 | Ashbyhq — Software Engineering, Machine Learning / AI | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/quora/cf34f80e-fe5c-454d-bc9a-4c59993ffda0/application?jr_id=6ab7035a39fd8792cb73d1fe) |
 | Interview Workshop | Workshop / Info Session | New | Medium | [Apply / Register](https://bloomberg.avature.net/events/EventDetailsPage?jobId=22022) |
 | Microsoft — Software Engineering | Internship | New | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393557008714) |
