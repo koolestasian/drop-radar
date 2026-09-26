@@ -1,73 +1,6 @@
 {
   "version": 1,
-  "pending_batches": [
-    {
-      "id": "c7d0f51a3adce9cd5d4a",
-      "created_at": "2026-09-26T17:16:11.706815+00:00",
-      "rows": [
-        {
-          "ID": "30c0238916547f390698",
-          "First Seen": "2026-09-26T17:16:02.692906+00:00",
-          "Posted At": "2026-09-26T15:52:31+00:00",
-          "Organization": "",
-          "Opportunity": "Great hiring at every step. Make",
-          "Category": "Job / Hiring",
-          "Role / Track": "",
-          "Season / Year": "",
-          "Location": "Bay Area",
-          "Deadline": "",
-          "Application / Registration Link": "https://app3.greenhouse.io/e/arnmvw",
-          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
-          "Source Type": "Story",
-          "Raw Text": "Greenhouse\nGreat hiring at every step. Make\n\nsmarter and more effective hiring\ndecisions with Greenhouse.\n\nFor Bay Area students or\nstudents interning in the bay.\nNeuralink meetup\nhttps://scontent-nrt6-1.cdninstagram.com/v/t51.71878-15/828495622_1724468365303455_7036887462026342041_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=105&ig_cache_key=Mzk5NDgwNTU1NDg3NDIyODAzNQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=aE3Lgq3NNvMQ7kNvwF2YNNn&_nc_oc=AdoNMLSejAKfNPT1kd-jLxtuFofN8FOhchJfzjGnW-_ZGkIW6kTVqI3ZbvVm5S8oX8c&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-nrt6-1.cdninstagram.com&_nc_gid=Qc2NZTXl8-9ZHJw4zaUK3A&_nc_ss=7e3ba&oh=00_AQIcBG7NZ4KezN0RqAmNbMKOPriYOzAVIFvoh4tFdGW3Gg&oe=6ABDBC02\nhttps://scontent-nrt6-1.cdninstagram.com/v/t51.71878-15/828495622_1724468365303455_7036887462026342041_n.jpg?stp=dst-jpg_e15_p240x240_tt6&_nc_cat=105&ig_cache_key=Mzk5NDgwNTU1NDg3NDIyODAzNQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=aE3Lgq3NNvMQ7kNvwF2YNNn&_nc_oc=AdoNMLSejAKfNPT1kd-jLxtuFofN8FOhchJfzjGnW-_ZGkIW6kTVqI3ZbvVm5S8oX8c&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-nrt6-1.cdninstagram.com&_nc_gid=Qc2NZTXl8-9ZHJw4zaUK3A&_nc_ss=7e3ba&oh=00_AQLKXsu16xbWHOHz3VjPe8osE71Vxcmy50e74vbgOPubrQ&oe=6ABDBC02\nhttps://scontent-nrt6-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=N-Z37ibGQsQQ7kNvwHlVQI4&_nc_oc=AdrI8qE5qAsa-pvZdXswNnOvAzzee0vWIqv9RAc1sSzHIxgF_UBvPG-49tTjbbIfyts&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-nrt6-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQIYHmIfCnVsrb-5zNjzuz5Umcv4vaupivEWnJJWUhODuA&oe=6ABDDD99\nhttps://l.instagram.com/?u=https%3A%2F%2Fapp3.greenhouse.io%2Fe%2Farnmvw%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAac-FfHvoujdzZJUJYaDimON9_rUpInCc2GjRalkm0Cx7fmu6qjMmqQJOtDOCw_aem_-a3p0OH3sfgNpNL7qd0wdQ&e=AUBOuUufcjPKtiJElsWcj8Wp_B2s6CWjUwL1kiGp9EijN_K_bt66qOUoLJ-eQb2Q-uzQrrBrtZAv_0g2sX1ol_YvkA_5DbWf05jdtYMfdw\nhttps://scontent-nrt6-1.cdninstagram.com/o1/v/t2/f2/m78/AQMtk-kNVKGG3V4wWTYwg3eW4A2b65yTY2opPhUp3n53ybBu8E6X11__MM16Y1v7QYiq9iUsKWdhEkAk_H3nZh7frtN2YshN9Ymr8yE.mp4?_nc_cat=100&_nc_sid=5e9851&_nc_ht=scontent-nrt6-1.cdninstagram.com&_nc_ohc=yEDZX2E8Mk4Q7kNvwECJxPK&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODg1MTQwMzM2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=a6970dc5cd6881e5&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyL0RENDUzRDdFN0E0MUQ5NjExMkQwRDZGMzcxRkFCQzhDX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbk6e_Xi9qhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=Qc2NZTXl8-9ZHJw4zaUK3A&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQLxbDVqjve3oa2byrb_iQVUm1n2MAwc910o0IRb7eJ-Gg&oe=6AB9D6AD",
-          "Status": "New",
-          "Priority": "Normal",
-          "Actioned?": "No",
-          "Notes": ""
-        },
-        {
-          "ID": "2428ae6469e3c6649fb9",
-          "First Seen": "2026-09-26T17:16:04.619596+00:00",
-          "Posted At": "2026-09-26T15:53:30+00:00",
-          "Organization": "Point72",
-          "Opportunity": "Point72 — Hackathon / Competition",
-          "Category": "Hackathon / Competition",
-          "Role / Track": "",
-          "Season / Year": "2026",
-          "Location": "",
-          "Deadline": "",
-          "Application / Registration Link": "https://careers.point72.com/CSJobDetail?jobName=2026-point72-academy-national-case-competition-us&jobCode=CPC-0015213&location=New+York&locale=English&retURL=%2FCSCareerSearch",
-          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
-          "Source Type": "Story",
-          "Raw Text": "eens\nee\n.\n\n2026 Point72 -\nAcademy\nNational Case\nCompetition -\n\n@ CAREERS.POINT/2.COM\nhttps://scontent-nrt1-1.cdninstagram.com/v/t51.71878-15/825277031_1593016731751919_7959214073825477533_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=108&ig_cache_key=Mzk5NDgwNjA1MDE2MzM4ODI2Mw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=6l7xNNePODkQ7kNvwERvSpj&_nc_oc=Adrd847rjdFaqXhYNsfTMD4PW7zFOTSFidd9KqbjiX0BHFwT7odjXLyeMp4HEnRQ9lY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-nrt1-1.cdninstagram.com&_nc_gid=Qc2NZTXl8-9ZHJw4zaUK3A&_nc_ss=7e3ba&oh=00_AQJCtQq5LGB6mIOzQQHzmSmX5xAivYIgg3FBnk_VqCEMWg&oe=6ABDEAC2\nhttps://scontent-nrt1-1.cdninstagram.com/v/t51.71878-15/825277031_1593016731751919_7959214073825477533_n.jpg?stp=dst-jpg_e15_p240x240_tt6&_nc_cat=108&ig_cache_key=Mzk5NDgwNjA1MDE2MzM4ODI2Mw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=6l7xNNePODkQ7kNvwERvSpj&_nc_oc=Adrd847rjdFaqXhYNsfTMD4PW7zFOTSFidd9KqbjiX0BHFwT7odjXLyeMp4HEnRQ9lY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-nrt1-1.cdninstagram.com&_nc_gid=Qc2NZTXl8-9ZHJw4zaUK3A&_nc_ss=7e3ba&oh=00_AQK99V6WaHKJ8ei3623n3DWjMtTJg9kU4f38TjBxfDnIog&oe=6ABDEAC2\nhttps://scontent-nrt6-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=N-Z37ibGQsQQ7kNvwHlVQI4&_nc_oc=AdrI8qE5qAsa-pvZdXswNnOvAzzee0vWIqv9RAc1sSzHIxgF_UBvPG-49tTjbbIfyts&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-nrt6-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQIYHmIfCnVsrb-5zNjzuz5Umcv4vaupivEWnJJWUhODuA&oe=6ABDDD99\nhttps://l.instagram.com/?u=https%3A%2F%2Fcareers.point72.com%2FCSJobDetail%3FjobName%3D2026-point72-academy-national-case-competition-us%26jobCode%3DCPC-0015213%26location%3DNew%2BYork%26locale%3DEnglish%26retURL%3D%252FCSCareerSearch%26fbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAaeRlKyIaNb5cgfzmUzWf4U2GZHpa37CbmvX4iMgA161R7rwnyjwD7YppDs4Dg_aem_6csytSU0YqfV_s0l95RpUw&e=AUDsBCIAAIKXbE5buxoQDz5Q0V6o23n5N_C9imvLhV65D83dJ6QRQUE18oKYuuwfxDRzoJRyc7J7llBejaNCGyYo876QGEV7vjHnGSAckg\nhttps://scontent-nrt1-1.cdninstagram.com/o1/v/t2/f2/m78/AQMThh9d4nOupq_DyzU6DdFWKIRG6WchDu8mxV_bbdonTUdpWgqHpbwgTQ_611l-gbWeSzOHSjhowniUQzkQzq2UuFRtdFWLs_dXtvM.mp4?_nc_cat=103&_nc_sid=5e9851&_nc_ht=scontent-nrt1-1.cdninstagram.com&_nc_ohc=j_J2EsQ4i8IQ7kNvwFvJQqc&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODg1MTQ1NjE2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=a6ffd2c35e739b60&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzY5NEVFMjNDQUI5QzU5QTZCNTAzNUNEMzQ3QUVEMDk1X3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbk-bTPj9qhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=Qc2NZTXl8-9ZHJw4zaUK3A&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQJyUuHrQXGW_buflpyWGljopCce7w9X8s3ZDsgdFCrEDQ&oe=6AB9D3DC",
-          "Status": "New",
-          "Priority": "Normal",
-          "Actioned?": "No",
-          "Notes": ""
-        },
-        {
-          "ID": "c71d7cc5af9f71c7ad05",
-          "First Seen": "2026-09-26T17:16:06.809442+00:00",
-          "Posted At": "2026-09-26T15:54:18+00:00",
-          "Organization": "Humana",
-          "Opportunity": "Humana — Internship",
-          "Category": "Internship",
-          "Role / Track": "",
-          "Season / Year": "",
-          "Location": "",
-          "Deadline": "",
-          "Application / Registration Link": "https://careers.humana.com/us/en/event/6a9896e6539e900c3a9d9ff6/Humana-Technology-Internship-Program-Virtual-Information-Session",
-          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
-          "Source Type": "Story",
-          "Raw Text": "@ careers.humana.com C:\n\nInstagram\n\nHumana Technology Internship\nProgram Virtual Information Session\n\nDescription\n\nlAin ie Fav Ur amanade Crammmayv INIT\nhttps://scontent-nrt1-1.cdninstagram.com/v/t51.71878-15/825326082_1134575909251030_4742473803823853372_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=108&ig_cache_key=Mzk5NDgwNjQ1MTM0OTUxMTQ0MQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=VUd2hlQtew8Q7kNvwEdtG_Q&_nc_oc=Ado5fKrXS6LGr6Er6lOv09hw5et57PRTlyDLHNvT4wwEtIQMkfL0LEH9UEpjkvh3cOY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-nrt1-1.cdninstagram.com&_nc_gid=Qc2NZTXl8-9ZHJw4zaUK3A&_nc_ss=7e3ba&oh=00_AQLxTBtUITl5eQNCXDbEwxQiPP_Kc3hCvvxOidoJSsPyKQ&oe=6ABDEBE8\nhttps://scontent-nrt1-1.cdninstagram.com/v/t51.71878-15/825326082_1134575909251030_4742473803823853372_n.jpg?stp=dst-jpg_e15_p240x240_tt6&_nc_cat=108&ig_cache_key=Mzk5NDgwNjQ1MTM0OTUxMTQ0MQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=VUd2hlQtew8Q7kNvwEdtG_Q&_nc_oc=Ado5fKrXS6LGr6Er6lOv09hw5et57PRTlyDLHNvT4wwEtIQMkfL0LEH9UEpjkvh3cOY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-nrt1-1.cdninstagram.com&_nc_gid=Qc2NZTXl8-9ZHJw4zaUK3A&_nc_ss=7e3ba&oh=00_AQIi6yiFEUGm2e9DG_KLOL-TS3_JKnzOe2eZopXsfyapaw&oe=6ABDEBE8\nhttps://scontent-nrt6-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=N-Z37ibGQsQQ7kNvwHlVQI4&_nc_oc=AdrI8qE5qAsa-pvZdXswNnOvAzzee0vWIqv9RAc1sSzHIxgF_UBvPG-49tTjbbIfyts&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-nrt6-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQIYHmIfCnVsrb-5zNjzuz5Umcv4vaupivEWnJJWUhODuA&oe=6ABDDD99\nhttps://l.instagram.com/?u=https%3A%2F%2Fcareers.humana.com%2Fus%2Fen%2Fevent%2F6a9896e6539e900c3a9d9ff6%2FHumana-Technology-Internship-Program-Virtual-Information-Session%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAaf0sC0dUIn_oxfxiceE1419U-YldjmzRNGLZpnglgMpqk7wNIfH0DUpgS64Ng_aem_IKSEUe58MLoqnbVGADYvjg&e=AUCmveNuRK45OxzWY3iINbSfGdIWcu5ijV2cG13CWWyTUwwjT4DSPhVKooLwPz4q6m6HN_ICDmK6zAh-jnPjDnOiWGXf6KvJwCSwO65CkQ\nhttps://scontent-nrt6-1.cdninstagram.com/o1/v/t2/f2/m78/AQMgmGyugTMzVVT30VMjcxvD5OnXNFBGcy2_DArpaay2ujh4DYdjuABLjffUUSxtajJo3kjwNm_LHDfo0xDUl7ScvFRGzgSoP6sbuz0.mp4?_nc_cat=106&_nc_sid=5e9851&_nc_ht=scontent-nrt6-1.cdninstagram.com&_nc_ohc=5FybGT-nPX4Q7kNvwGIvzCS&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODg1MTQ3NjU2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=9fdfbd201c511376&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyL0Y3NDMwQ0E0ODE5NjE0MUMzNDc5N0REOTI4OUY4OThDX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkpfuRkdqhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=Qc2NZTXl8-9ZHJw4zaUK3A&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQLA8PLObZnR3if7tPIKgVUtM-r50GSwWonL3EL93FhP-Q&oe=6AB9E5EB",
-          "Status": "New",
-          "Priority": "Medium",
-          "Actioned?": "No",
-          "Notes": ""
-        }
-      ]
-    }
-  ],
+  "pending_batches": [],
   "delivered_batch_ids": [
     "01f02af07d8ef004333d",
     "239bd8234d8d2e35b214",
@@ -80,6 +13,7 @@
     "96ac4d2760e9d189883b",
     "9bec5138259952110331",
     "c3aa2a72d58ab1dce7d9",
+    "c7d0f51a3adce9cd5d4a",
     "d20c46edb25055603ed4",
     "d3df9fc7ca7b324cd916",
     "d58e214ab41e8829eeb5",
