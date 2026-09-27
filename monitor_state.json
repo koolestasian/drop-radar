@@ -1,6 +1,33 @@
 {
   "version": 1,
-  "pending_batches": [],
+  "pending_batches": [
+    {
+      "id": "d15b9afced0abe7cd9b7",
+      "created_at": "2026-09-27T22:17:33.444044+00:00",
+      "rows": [
+        {
+          "ID": "71b3b56c68049a60d722",
+          "First Seen": "2026-09-27T22:17:18.598823+00:00",
+          "Posted At": "2026-09-27T20:45:56+00:00",
+          "Organization": "NVIDIA",
+          "Opportunity": "NVIDIA — Research",
+          "Category": "New Grad / Early Career",
+          "Role / Track": "Research",
+          "Season / Year": "2026",
+          "Location": "",
+          "Deadline": "",
+          "Application / Registration Link": "https://jobs.nvidia.com/careers/job/893393154096",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "=> NVIDIA Join Talent Network Sign In\n€ View All Jobs\n\nResearch Scientist,\n\nFundamental\nGenerative Al - New\nCollege Grad 2026\n\nQ US, CA, Santa Clara\n\na\n\nNVIDIA Research Scientist New Grad\n\nFind out how well you\nmatch with this job\n\n@ JOBS.NVIDIA.COM\n\nJob Description\n\nJob Requisition Job Category\nhttps://scontent-lga3-2.cdninstagram.com/v/t51.71878-15/825269533_1614197210431076_6662402852302306453_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=105&ig_cache_key=Mzk5NTY3ODAxMTIzNjE4ODU3Mw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=BOdJRYDivjgQ7kNvwGLRp3C&_nc_oc=AdqXAEjP7tfsUAVJfY5OAkPg8FmjflK6PSDCLs_CA20zUF6HnC9djtoC_QU3F5Ay1tY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lga3-2.cdninstagram.com&_nc_gid=z2PR52hEL_6u86wzd7K8qQ&_nc_ss=7e3ba&oh=00_AQNQnIpWyrxQbczw2eEid9eoSLXJhsIdqp3fKL3l3mPFyw&oe=6ABF7EDF\nhttps://scontent-lga3-2.cdninstagram.com/v/t51.71878-15/825269533_1614197210431076_6662402852302306453_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=105&ig_cache_key=Mzk5NTY3ODAxMTIzNjE4ODU3Mw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=BOdJRYDivjgQ7kNvwGLRp3C&_nc_oc=AdqXAEjP7tfsUAVJfY5OAkPg8FmjflK6PSDCLs_CA20zUF6HnC9djtoC_QU3F5Ay1tY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lga3-2.cdninstagram.com&_nc_gid=z2PR52hEL_6u86wzd7K8qQ&_nc_ss=7e3ba&oh=00_AQPBN0qYz_tqJjO6GjqxzOPLYrjJcZLweF2cmkAkxat7pA&oe=6ABF7EDF\nhttps://scontent-lga3-2.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=LyUynlmBnroQ7kNvwFhg2wM&_nc_oc=AdqU1B4u9-hmIeeC88HiIPzXfjj9Zu0U0kghiPCbdky0lhXbMkYnw6BW07_3lEPwg14&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-lga3-2.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQMHsg9LM-0iMUXyvLxv4rWT4eaQtPWvZkLazJCOvBsWSw&oe=6ABF6759\nhttps://l.instagram.com/?u=https%3A%2F%2Fjobs.nvidia.com%2Fcareers%2Fjob%2F893393154096%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAacQ4lkD72H9XpuqAow5gYqBFCJyB44jdotYOMw9k1krDUWPkaDeHdSKDnrObw_aem_CIb7FQ7_Jf8Pxn_DQm6ERA&e=AUDOubxiLvwapOQ9t3kJR-TGogwoTfpWsWCIMJYNUVJ3i7FJsnR1PQdzc1F7W6ILAr4dv3dOOrb5QTiy_DMTDkyLAivz_bnnm87qoywq5AmKlg_JzgKfzRwtSs5kqERiE3pvWuSTuflsVg\nhttps://scontent-lga3-3.cdninstagram.com/o1/v/t2/f2/m78/AQNTMDXaVOWRKsmwVfxcme_1YCdIQLAAS5pKzeivLRNQjNh1zkDpvVqxw9gAedqyxxlZW2s4hofKQAoFtAdFbFxSZfC-_UC_mxj39oE.mp4?_nc_cat=104&_nc_sid=5e9851&_nc_ht=scontent-lga3-3.cdninstagram.com&_nc_ohc=r7jU6epfIHoQ7kNvwG2TwJ0&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODg3MDU0MDM2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=fec39e6ff634b085&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzYxRkZDMzJCMDI1NDQ3QTc5MUVGMjE2RkNGOUY5QjJFX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkw8PAneWhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=z2PR52hEL_6u86wzd7K8qQ&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQOymwY46qdbT4j1CbipyYyL6ADs4-OS4rMJRuSHxVQz9Q&oe=6ABB825D",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        }
+      ]
+    }
+  ],
   "delivered_batch_ids": [
     "01f02af07d8ef004333d",
     "239bd8234d8d2e35b214",

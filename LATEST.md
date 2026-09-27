@@ -1,11 +1,12 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-27T19:01:57.537212+00:00
+Last updated: 2026-09-27T22:17:33.443560+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| NVIDIA — Research | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.nvidia.com/careers/job/893393154096) |
 | Microsoft — Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://luma.com/xl0io4zc) |
 | Meta — Product Management | Other Opportunity | New | Normal | [Apply / Register](https://metacareerprogramsaipanelatnyu.splashthat.com) |
 | Roblox — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://careers.roblox.com/jobs/8171283) |
