@@ -1,11 +1,12 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-27T01:33:14.937551+00:00
+Last updated: 2026-09-27T08:18:41.811614+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Meta — Product Management | Other Opportunity | New | Normal | [Apply / Register](https://metacareerprogramsaipanelatnyu.splashthat.com) |
 | Roblox — Software Engineering | New Grad / Early Career | New | Medium | [Apply / Register](https://careers.roblox.com/jobs/8171283) |
 | Doordashusa — Machine Learning / AI | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/doordashusa/jobs/8204111) |
 | Humana — Internship | Internship | New | Medium | [Apply / Register](https://careers.humana.com/us/en/event/6a9896e6539e900c3a9d9ff6/Humana-Technology-Internship-Program-Virtual-Information-Session) |
