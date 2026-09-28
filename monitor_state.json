@@ -1,6 +1,33 @@
 {
   "version": 1,
-  "pending_batches": [],
+  "pending_batches": [
+    {
+      "id": "64fdbc21c88cc8aceacf",
+      "created_at": "2026-09-28T07:02:26.481639+00:00",
+      "rows": [
+        {
+          "ID": "51473f34c12c0656d6a9",
+          "First Seen": "2026-09-28T07:02:18.985042+00:00",
+          "Posted At": "2026-09-28T03:36:16+00:00",
+          "Organization": "Citadel",
+          "Opportunity": "Citadel — Data Science",
+          "Category": "Internship",
+          "Role / Track": "Data Science",
+          "Season / Year": "2027",
+          "Location": "",
+          "Deadline": "",
+          "Application / Registration Link": "https://www.citadel.com/careers/details/sector-data-scientist-2027-intern-us",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "@ citadel.com\nInstagram\n\nN ( eEeNnTiSsST — (yD 7\nJWI LILIOL i a\n\nJob Description\nCitadel 2027 Sector Data Science Intern\n\nand analyzing large, unstructured data\n\nsets to generate new insights. Given the\n\nvast amount of data being produced,\n\nCitadal ic imnlameantina new recearch\nhttps://scontent-iad3-1.cdninstagram.com/v/t51.71878-15/828255498_2521217878376390_6913097123587374034_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=104&ig_cache_key=Mzk5NTg4NDUzNTY3Nzc3NDk5Ng%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=zpgXkesxBVMQ7kNvwEWu1tO&_nc_oc=AdpQ8PCvluco3BFWAA7-wji79zzo--72G96gzyaMeUDU0y2JOKbB66ykQZpzM5LN5PY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_gid=IR7fTDpU5-QBp4aVuowAAA&_nc_ss=7e3ba&oh=00_AQMtp-N7qTfcR6nM0zZZE5AeMwuGvPRBpRgs6YGYSAJW2w&oe=6ABFCC80\nhttps://scontent-iad3-1.cdninstagram.com/v/t51.71878-15/828255498_2521217878376390_6913097123587374034_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=104&ig_cache_key=Mzk5NTg4NDUzNTY3Nzc3NDk5Ng%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=zpgXkesxBVMQ7kNvwEWu1tO&_nc_oc=AdpQ8PCvluco3BFWAA7-wji79zzo--72G96gzyaMeUDU0y2JOKbB66ykQZpzM5LN5PY&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_gid=IR7fTDpU5-QBp4aVuowAAA&_nc_ss=7e3ba&oh=00_AQOsIQ5cglRnBO8OJ2qJoBzwfal5AGkt5S1bcJ6P2dHAng&oe=6ABFCC80\nhttps://scontent-iad6-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=LyUynlmBnroQ7kNvwE5pPvn&_nc_oc=AdrJTJRUGtnd1eL-Dy1bHqDbSZRkMjXqdpcWkgIjc4fEFUixlz1TKtKrnoMdaSiVXn8&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-iad6-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQOmtS9Bk1Wup4K5RarMEnVwXz_rxKe5n2TBHuA90GlKsQ&oe=6ABFD7D9\nhttps://l.instagram.com/?u=https%3A%2F%2Fwww.citadel.com%2Fcareers%2Fdetails%2Fsector-data-scientist-2027-intern-us%2F%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAad3Hil5sL7U62mPvujZZYlh-Lj82gGRCCEKld4N2YbbiEhcc6F-4sVFQkEpTQ_aem_aZsl-ZIGXiH7WeX3DmIrig&e=AUAf29q5N4NvU_pPwXS8xEr-ntkmNvIhJ3abEKBa-Fo5FGVMsNWxGz5L8Id-9T-RVeppJ51qwfkPmbZpCUWhvnvkSnz--rkdO56gq84aAA\nhttps://scontent-iad3-1.cdninstagram.com/o1/v/t2/f2/m78/AQP-7ctSj0muavSvpWOpsElGuMjcq4zxCpcqJyi4j_SqCyo9i7OANI9XIPcTpRsXDCtdxm6k8DBAufBU9dwXDxJJ-vc-kDgjImywaK8.mp4?_nc_cat=104&_nc_sid=5e9851&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_ohc=3zSO2OwjceAQ7kNvwHD4vBF&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODg3NDE2MjI2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=be00d32d1bf54dc4&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyL0Q2NEVCMUJGNENDQjQxMDZDNjEzODk1MzJDNURFMjkzX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkltStq-ehQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=IR7fTDpU5-QBp4aVuowAAA&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQO5ydITBpzuWMahL-NvPy2eiLECq6h5qtDeVPg7YDN8Wg&oe=6ABBEF59",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        }
+      ]
+    }
+  ],
   "delivered_batch_ids": [
     "01f02af07d8ef004333d",
     "239bd8234d8d2e35b214",

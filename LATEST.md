@@ -1,11 +1,12 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-28T00:55:56.225985+00:00
+Last updated: 2026-09-28T07:02:26.480914+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Citadel — Data Science | Internship | New | Medium | [Apply / Register](https://www.citadel.com/careers/details/sector-data-scientist-2027-intern-us) |
 | Queracomputinginc — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/queracomputinginc/jobs/5435902008) |
 | Queracomputinginc — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/queracomputinginc/jobs/5435901008) |
 | NVIDIA — Research | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.nvidia.com/careers/job/893393154096) |
