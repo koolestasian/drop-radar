@@ -1,11 +1,24 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-28T15:36:20.755962+00:00
+Last updated: 2026-09-28T22:08:24.875872+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| NVIDIA — New Grad / Early Career | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.nvidia.com/careers?query=asci&start=0&pid=893392585259&sort_by=relevance&filter_job_category=engineering&filter_job_type=new+college+graduate) |
+| Data Journalism Summer Intern | Internship | New | Medium | [Apply / Register](https://job-boards.eu.greenhouse.io/financialtimes33/jobs/4986356101?gh_src=b3cf5a62teu) |
+| @ BEST BUY Al INTERN! | Internship | New | Medium | [Apply / Register](https://sjobs.brassring.com/TGnewUI/Search/Home/Home?partnerid=25632&siteid=5798) |
+| the world, we are looking for a Data Science Intern | Internship | New | Medium | [Apply / Register](https://fa-eups-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/ULSolutionsCareers/job/10629) |
+| ATT — Data Engineering | Other Opportunity | New | Medium | [Apply / Register](https://att.wd1.myworkdayjobs.com/ATTCollegeSpecialInvite/job/Alpharetta-Georgia/AT-T-Data-Engineering-Scholars-Program_R-122646) |
+| & Shopify Summer 2027 SWE Intern! | Internship | New | Medium | [Apply / Register](https://www.shopify.com/careers/us-software-engineering-internships-summer-2027_2c62d9d7-3f52-42b3-a51d-3a7f3ed03679) |
+| The Internship Program at BCBSM is | Internship | New | Medium | [Apply / Register](https://ejko.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_3/job/14841?src=SNS-102) |
+| Arcteryx.com — Internship | Internship | New | Medium | [Apply / Register](https://jobs.lever.co/arcteryx.com/59e99784-0e0c-4e07-a5df-9b2043074002) |
+| Arcteryx.com — Internship | Internship | Open | Medium | [Apply / Register](https://jobs.lever.co/arcteryx.com/826dc4d8-f91e-4893-b8d6-56706194edfb) |
+| Underarmour — Internship | Internship | New | Medium | [Apply / Register](https://careers.underarmour.com/job/Baltimore-2027-Summer-Internship%2C-AI-Automation-MD-21230/1434354900) |
+| Underarmour — Internship | Internship | New | Medium | [Apply / Register](https://careers.underarmour.com/job/Baltimore-2027-Summer-Internship%2C-Business-Analytics-MD-21230/1434332500?feedId=346600&JobPipeline=zero2sudo) |
+| Meta — Data Science, Data Engineering | Internship | Open | Medium | [Apply / Register](https://www.metacareers.com/profile/job_details/1373603594867455) |
+| NVIDIA — Product Management | Other Opportunity | New | Normal | [Apply / Register](https://tinyurl.com/nvidia-canada-2026) |
 | Philips — Product Management | Internship | New | Medium | [Apply / Register](https://philips.wd3.myworkdayjobs.com/jobs-and-careers/job/Bothell-Washington-United-States/Intern---Digital-Healthtech-Product-Management---Bothell--WA---Summer-2027_585564) |
 | Internship | Internship | New | Medium | [Apply / Register](https://www.foxcareers.com/Search/JobDetail/R50033981?source=zero2sudo) |
 | Internship | Internship | New | Medium | [Apply / Register](https://www.foxcareers.com/Search/JobDetail/R50033968?source=zero2sudo) |
