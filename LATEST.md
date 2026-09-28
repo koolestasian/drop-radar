@@ -1,11 +1,15 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-28T07:02:26.480914+00:00
+Last updated: 2026-09-28T15:36:20.755962+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Philips — Product Management | Internship | New | Medium | [Apply / Register](https://philips.wd3.myworkdayjobs.com/jobs-and-careers/job/Bothell-Washington-United-States/Intern---Digital-Healthtech-Product-Management---Bothell--WA---Summer-2027_585564) |
+| Internship | Internship | New | Medium | [Apply / Register](https://www.foxcareers.com/Search/JobDetail/R50033981?source=zero2sudo) |
+| Internship | Internship | New | Medium | [Apply / Register](https://www.foxcareers.com/Search/JobDetail/R50033968?source=zero2sudo) |
+| Atlassian — Research | Internship | New | Medium | [Apply / Register](https://campus-americas.icims.com/jobs/26270/research-intern,-2027-summer-u.s./job?mobile=true&width=384&height=693&bga=true&needsRedirect=false&jan1offset=-480&jun1offset=-420) |
 | Citadel — Data Science | Internship | New | Medium | [Apply / Register](https://www.citadel.com/careers/details/sector-data-scientist-2027-intern-us) |
 | Queracomputinginc — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/queracomputinginc/jobs/5435902008) |
 | Queracomputinginc — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/queracomputinginc/jobs/5435901008) |
