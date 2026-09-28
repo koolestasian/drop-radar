@@ -1,11 +1,13 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-27T22:17:33.443560+00:00
+Last updated: 2026-09-28T00:55:56.225985+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Queracomputinginc — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/queracomputinginc/jobs/5435902008) |
+| Queracomputinginc — Internship | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/queracomputinginc/jobs/5435901008) |
 | NVIDIA — Research | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.nvidia.com/careers/job/893393154096) |
 | Microsoft — Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://luma.com/xl0io4zc) |
 | Meta — Product Management | Other Opportunity | New | Normal | [Apply / Register](https://metacareerprogramsaipanelatnyu.splashthat.com) |

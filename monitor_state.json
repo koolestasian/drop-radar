@@ -1,6 +1,53 @@
 {
   "version": 1,
-  "pending_batches": [],
+  "pending_batches": [
+    {
+      "id": "99f9fa91f6abd390fa84",
+      "created_at": "2026-09-28T00:55:56.226728+00:00",
+      "rows": [
+        {
+          "ID": "ee60d1876ee92d704ad6",
+          "First Seen": "2026-09-28T00:55:46.532379+00:00",
+          "Posted At": "2026-09-28T00:10:24+00:00",
+          "Organization": "Queracomputinginc",
+          "Opportunity": "Queracomputinginc — Internship",
+          "Category": "Internship",
+          "Role / Track": "",
+          "Season / Year": "",
+          "Location": "Boston",
+          "Deadline": "",
+          "Application / Registration Link": "https://job-boards.greenhouse.io/queracomputinginc/jobs/5435901008",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "QuEra >\n\n< Back to jobs\n\nNew |\nInternship - Quantum\n\nApplications Research\n© Boston, MA, USA\n\n(Z) JOB-BOARDS.GREENHOUSE.I0\n\nAbout QuEra Com Cc.\n\nQuEra Computing is building the world’s\nmost powerful neutral-atom quantum\ncomputers. Our systems are designed to\nscale and enable groundbreaking advances\nin science and technology. We collaborate\nclosely with leading academic and industry\npartners to push the boundaries of quantum\ncomputing, error correction, and fault\ntolerance.\n\nSummary\nhttps://scontent-lax7-1.cdninstagram.com/v/t51.71878-15/829035644_2597979377315253_4233927019356189512_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=105&ig_cache_key=Mzk5NTc4MDkyMjIyNzA0OTE1NA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=VUb1pLDKKMcQ7kNvwFk3VYn&_nc_oc=AdqkyVJl3nO6Eob4R7mAhEDC_12P-dT5FHXUAE4XWQSc70QUAC9KVX8Doj2Jofp-Z8Y&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_gid=-5PWsHKGAQhfOYPyJeL6gg&_nc_ss=7e3ba&oh=00_AQNcx5Qt3fvePF44t_u8OOyIQRWxwBJC-njgb9MuFtvvJg&oe=6ABF764B\nhttps://scontent-lax7-1.cdninstagram.com/v/t51.71878-15/829035644_2597979377315253_4233927019356189512_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=105&ig_cache_key=Mzk5NTc4MDkyMjIyNzA0OTE1NA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=VUb1pLDKKMcQ7kNvwFk3VYn&_nc_oc=AdqkyVJl3nO6Eob4R7mAhEDC_12P-dT5FHXUAE4XWQSc70QUAC9KVX8Doj2Jofp-Z8Y&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_gid=-5PWsHKGAQhfOYPyJeL6gg&_nc_ss=7e3ba&oh=00_AQOJbv2urdtCecmgRC26w6DmbPz37WR1w7kjI3z6lPL_Mg&oe=6ABF764B\nhttps://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=LyUynlmBnroQ7kNvwFqLdwQ&_nc_oc=AdogxUC3bHOJLrBP1VyxuD-5w-g8yJxOUFjA7UbeNFY6k5i-1oQQzE7BidCoEiZ3Gyk&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQNwpeUakHdEZa4OXRCfw6CQM6DIBpK7i7H4CCBrWIFGMg&oe=6ABF9F99\nhttps://l.instagram.com/?u=https%3A%2F%2Fjob-boards.greenhouse.io%2Fqueracomputinginc%2Fjobs%2F5435901008%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAac9o6uspmsyFNg8xysO1Tuo-DD5gs1OQ1vddRzVUk-xRpSTj8FC_e1Nqe7agg_aem_4mXecMy6QtvA3Z8aMI0UDA&e=AUBOJsVXT0JIFm7yt994zmzBzyCX3S3wC-c2ow5iSYJxrAG3zQd3gEplC6Z9QDXGMqxluNEbm_g45nZlHqPVr7JSETdb00frtXjqfvd1yw\nhttps://scontent-lax3-1.cdninstagram.com/o1/v/t2/f2/m78/AQO5CnvfsPGvUNO8UscAHnMqOb8_cIHII0QddUa3MmnzYrec3O7iz-cW8E6TerhimMa6mj8YnASZ_nXRlxXVf59SHqu_MdA09JQEB1Q.mp4?_nc_cat=102&_nc_sid=5e9851&_nc_ht=scontent-lax3-1.cdninstagram.com&_nc_ohc=20XkY1nLaOIQ7kNvwH1fsGn&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODg3MjQ5NjM2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=5aa35d966a6daba8&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzU1NEQ1RDhENDAxMkJBQzE4QzY5OEUyQjM1NzI4NUE0X3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbk67Ker-ahQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=-5PWsHKGAQhfOYPyJeL6gg&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQOIzH0DH78AqaAMD0-pPx-roucn5o-l9gqwQJerjNT5_Q&oe=6ABB97EB",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        },
+        {
+          "ID": "bcec2bf18fc535c97569",
+          "First Seen": "2026-09-28T00:55:48.210931+00:00",
+          "Posted At": "2026-09-28T00:25:09+00:00",
+          "Organization": "Queracomputinginc",
+          "Opportunity": "Queracomputinginc — Internship",
+          "Category": "Internship",
+          "Role / Track": "",
+          "Season / Year": "",
+          "Location": "Boston",
+          "Deadline": "",
+          "Application / Registration Link": "https://job-boards.greenhouse.io/queracomputinginc/jobs/5435902008",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "‘QuEra:\n\n< Back to jobs\n\nNew\nInternship - Scientific\nSoftware and\n\nCompilation\n© Boston, MAUSA\n\n(2) JOB-BOARDS.GREENHOUSE.IO\n\nAbout QuEra Co Cc.\n\nQuEra Computing is the world’s\nmost powerful neutral-atom quantum\ncomputers. Our systems are designed to\nscale and enable groundbreaking advances\nin science and technology. We collaborate\nclosely with leading academic and industry\npartners to push the boundaries of quar *\ncomputing, error correction, and fault\ntolerance.\nhttps://scontent-lax7-1.cdninstagram.com/v/t51.71878-15/829262990_2046219559414341_6595926140082067067_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=101&ig_cache_key=Mzk5NTc4ODM0NTkxNzk5NTExOA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=-CnXWbkrh6IQ7kNvwEWERHE&_nc_oc=AdqJBN1t4CDzts6DU3JUqqstAIlCw93POAcJSILOq5iqJdygQBAJffsfdLu_Jz7wUgQ&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_gid=-5PWsHKGAQhfOYPyJeL6gg&_nc_ss=7e3ba&oh=00_AQOb-yZSukxunXZPxxW9Ug55xjtp9Lkmsmt-8DlwjRnMtQ&oe=6ABF970B\nhttps://scontent-lax7-1.cdninstagram.com/v/t51.71878-15/829262990_2046219559414341_6595926140082067067_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=101&ig_cache_key=Mzk5NTc4ODM0NTkxNzk5NTExOA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=-CnXWbkrh6IQ7kNvwEWERHE&_nc_oc=AdqJBN1t4CDzts6DU3JUqqstAIlCw93POAcJSILOq5iqJdygQBAJffsfdLu_Jz7wUgQ&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-lax7-1.cdninstagram.com&_nc_gid=-5PWsHKGAQhfOYPyJeL6gg&_nc_ss=7e3ba&oh=00_AQOIw1PjvPal-f-tF4NT-T6-LpSPlLzbafO7gJbV76zK0w&oe=6ABF970B\nhttps://scontent-lax3-2.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=LyUynlmBnroQ7kNvwFqLdwQ&_nc_oc=AdogxUC3bHOJLrBP1VyxuD-5w-g8yJxOUFjA7UbeNFY6k5i-1oQQzE7BidCoEiZ3Gyk&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQNwpeUakHdEZa4OXRCfw6CQM6DIBpK7i7H4CCBrWIFGMg&oe=6ABF9F99\nhttps://l.instagram.com/?u=https%3A%2F%2Fjob-boards.greenhouse.io%2Fqueracomputinginc%2Fjobs%2F5435902008%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAacKcYfKQ_vgdtC6ey5IBgHpg5A6I4stYA5EHigT7E-ooRmz7eUXIKOxv64bHw_aem_ogfzJuHBwdD8sO_fXneUTw&e=AUC7-CXzJpqBEkexWy_ebvm3yu9hf5gHnOR5m0Zy-7w-HEDlUap5tZQevvLAbf257KuDiJxcO4W0xq1XNOnjh_LwhhDcUuk2GtnvA-J-yA\nhttps://scontent-lax3-2.cdninstagram.com/o1/v/t2/f2/m78/AQOmlwV0DeNQhkFHJCzc11aN2CaRpZDmsJgLu97928-xQ8xD1gQqHaVmyqOqQXq0_pKrIJk7dpWc94tEABbSqk4-LDWvMIT91RraNR4.mp4?_nc_cat=107&_nc_sid=5e9851&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_ohc=ODpsOkpVnN8Q7kNvwExKAmB&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODg3MjYzNDk2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=15c9422209a17f&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyL0U2NDJDMEE0M0Y4NjdFNzhERTFEQzc3RTlCODc4NUE0X3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkpZjIueahQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=-5PWsHKGAQhfOYPyJeL6gg&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQMdzftI-TGcf-QtvWCZvT0z1fPJDXXjiWMqcwlzoBH4aA&oe=6ABB8CE8",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        }
+      ]
+    }
+  ],
   "delivered_batch_ids": [
     "01f02af07d8ef004333d",
     "239bd8234d8d2e35b214",
