@@ -1,11 +1,12 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-29T08:40:38.831702+00:00
+Last updated: 2026-09-29T15:59:36.933978+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| NVIDIA — Software Engineering | Other Opportunity | New | Medium | [Apply / Register](https://nvidia.eightfold.ai/events/candidate/landing?plannedEventId=vDKBy8oxN) |
 | Gitai — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/gitai/jobs/5437128008) |
 | and have the opportunity to thrive. | Internship | New | Medium | [Apply / Register](https://app.careerpuck.com/job-board/lyft/job/8802222002) |
 | Lyft Industrialization Engineer Intern | Internship | New | Medium | [Apply / Register](https://app.careerpuck.com/job-board/lyft/job/8817930002?gh_jid=8817930002) |
