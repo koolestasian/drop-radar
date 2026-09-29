@@ -1,11 +1,15 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-29T02:04:20.389972+00:00
+Last updated: 2026-09-29T08:40:38.831702+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Gitai — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/gitai/jobs/5437128008) |
+| and have the opportunity to thrive. | Internship | New | Medium | [Apply / Register](https://app.careerpuck.com/job-board/lyft/job/8802222002) |
+| Lyft Industrialization Engineer Intern | Internship | New | Medium | [Apply / Register](https://app.careerpuck.com/job-board/lyft/job/8817930002?gh_jid=8817930002) |
+| Lyft Applied Scientist Intern (Summer | Internship | New | Medium | [Apply / Register](https://app.careerpuck.com/job-board/lyft/job/8843341002?gh_jid=8843341002) |
 | Google — Data Science | New Grad / Early Career | New | Medium | [Apply / Register](https://www.google.com/about/careers/applications/jobs/results/74579965571408582-business-data-scientist-internal-audit) |
 | Cloudflare — Software Engineering | Internship | New | Medium | [Apply / Register](http://job-boards.greenhouse.io/cloudflare/jobs/8199958?gh_jid=8199958&gh_src=58wic34y1us) |
 | Voyagertechnologiesinc — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/voyagertechnologiesinc/jobs/4423330009?source=zero2sudo) |
