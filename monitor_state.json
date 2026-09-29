@@ -1,33 +1,6 @@
 {
   "version": 1,
-  "pending_batches": [
-    {
-      "id": "6e5dd7aded620f764706",
-      "created_at": "2026-09-29T15:59:36.934773+00:00",
-      "rows": [
-        {
-          "ID": "ebf53b8b5b9b3dc5cc0b",
-          "First Seen": "2026-09-29T15:59:26.604759+00:00",
-          "Posted At": "2026-09-29T14:50:43+00:00",
-          "Organization": "NVIDIA",
-          "Opportunity": "NVIDIA — Software Engineering",
-          "Category": "Other Opportunity",
-          "Role / Track": "Software Engineering",
-          "Season / Year": "2026",
-          "Location": "",
-          "Deadline": "",
-          "Application / Registration Link": "https://nvidia.eightfold.ai/events/candidate/landing?plannedEventId=vDKBy8oxN",
-          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
-          "Source Type": "Story",
-          "Raw Text": "@ nvidia.eightfold.ai CG:\n\nInstagram\n\nGA NVIDIA.\n\nEvents >... >\n\nStanford: Life, Culture & Careers at\nNVIDIA - 10/5/2026\n\nDescription\n\nMeet NVIDIA enginee are their career\npaths, what it means to ife's work, and the\nNVIDIA culture. Learn wha riences helped them\n\nsucceed in their current roles and how they continue\nto grow both personally and professionally. Whether\nyou're curious about our teams, emerging\ntechnology, exploring career opportunities, or\nentering to win NVIDIA prizes, this session is for you.\n\nThank you to Stanford's SWE and SOLE in this\npartnership opportunity and platform to engage\nPowered by ¢f’ eightfold.ai #WhatsNextForYou\nhttps://scontent-hou1-1.cdninstagram.com/v/t51.71878-15/829340288_1396927832554591_8150523107126637860_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=103&ig_cache_key=Mzk5Njk0ODc3NTUwNzU3NTc2NQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=msVdS0y2RAEQ7kNvwGlfcgQ&_nc_oc=Adr_Xze90YcrOTRMta0KS0i8mEDWbhgQT5LPhK673eZCMVVz2jcB4Ukitr1G4yyh-oU&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-hou1-1.cdninstagram.com&_nc_gid=JcwnSmXjd7w-XLn9Ah-rxQ&_nc_ss=7e3ba&oh=00_AQNT7mN3jVAM87S-HOQjgxsHDLhJyNkLw48hX5FB79RtDQ&oe=6AC1976B\nhttps://scontent-hou1-1.cdninstagram.com/v/t51.71878-15/829340288_1396927832554591_8150523107126637860_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=103&ig_cache_key=Mzk5Njk0ODc3NTUwNzU3NTc2NQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=msVdS0y2RAEQ7kNvwGlfcgQ&_nc_oc=Adr_Xze90YcrOTRMta0KS0i8mEDWbhgQT5LPhK673eZCMVVz2jcB4Ukitr1G4yyh-oU&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-hou1-1.cdninstagram.com&_nc_gid=JcwnSmXjd7w-XLn9Ah-rxQ&_nc_ss=7e3ba&oh=00_AQO1AzjjbfoY5zV6CM07mz_-tt3yaTLHKNVA5ZKYBctQPg&oe=6AC1976B\nhttps://scontent-hou1-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=LyUynlmBnroQ7kNvwF7ZyjY&_nc_oc=AdroHIbI3YIcCOFwRHOz8Xz5vafN0TX55rc7FV8Gttc4Fb0odl8mqpcPIo0zPuZYtuc&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-hou1-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQNIw5_LTdsPGz3JtlfpB3TyOdCNLCJ3oh94UpeUycmS1w&oe=6AC199D9\nhttps://l.instagram.com/?u=https%3A%2F%2Fnvidia.eightfold.ai%2Fevents%2Fcandidate%2Flanding%3FplannedEventId%3DvDKBy8oxN%26fbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAadomxnuzBb4m-7iQZeJiemh0wSSOGYsIZsjC4n-9jE7zuPvVAqOwU3-kHKs4g_aem_qM_07kfiAniNAUnNf1Txow&e=AUAFbZu8-T2wV9yuSFS1BtrALxhXLmMkLNgRt5ZL3Ll0htTCvmKPijtkPBnuS4Qxg6PpQ_ideaW3l4sc43Db28upbfVAsB_72ajnv4X27w\nhttps://scontent-hou1-1.cdninstagram.com/o1/v/t2/f2/m78/AQN_KEy2nBmTFuxOGQI8gx-YfAoNfC0HX0d-mnTrEOmfx3jmBy_z3miGg_WvtTVIrrtMtMBm45GZn5wzQue3hRqI1s-GonNPl9MSoGA.mp4?_nc_cat=108&_nc_sid=5e9851&_nc_ht=scontent-hou1-1.cdninstagram.com&_nc_ohc=MpsPgoHqmuQQ7kNvwGZq4Y9&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODg5ODAwOTg2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=b7c0f0c2a4491795&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzgzQUMxNUY5MTQ3QjQ2NzQ5RTVFMkI0NTE1RjUwQzZEX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkgoySnPWhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=JcwnSmXjd7w-XLn9Ah-rxQ&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQPohS0ekx-f1Z--27IriHtj4DiqbEH6gmThCiMHudym3w&oe=6ABDBE45",
-          "Status": "New",
-          "Priority": "Medium",
-          "Actioned?": "No",
-          "Notes": ""
-        }
-      ]
-    }
-  ],
+  "pending_batches": [],
   "delivered_batch_ids": [
     "01f02af07d8ef004333d",
     "239bd8234d8d2e35b214",
@@ -40,6 +13,7 @@
     "5d55c5d84c581a1d4248",
     "5f572938bfbe4da55eea",
     "64fdbc21c88cc8aceacf",
+    "6e5dd7aded620f764706",
     "8b843bf961131fe8ffd2",
     "96ac4d2760e9d189883b",
     "99f9fa91f6abd390fa84",
