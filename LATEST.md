@@ -1,14 +1,19 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-28T22:08:24.875872+00:00
+Last updated: 2026-09-29T02:04:20.389972+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Google — Data Science | New Grad / Early Career | New | Medium | [Apply / Register](https://www.google.com/about/careers/applications/jobs/results/74579965571408582-business-data-scientist-internal-audit) |
+| Cloudflare — Software Engineering | Internship | New | Medium | [Apply / Register](http://job-boards.greenhouse.io/cloudflare/jobs/8199958?gh_jid=8199958&gh_src=58wic34y1us) |
+| Voyagertechnologiesinc — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/voyagertechnologiesinc/jobs/4423330009?source=zero2sudo) |
+| Microsoft — Software Engineering | Other Opportunity | New | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393556914839) |
+| Capital One — Recruiting / Career Event | Recruiting / Career Event | Open | Normal | [Apply / Register](http://directconsideration.com) |
 | NVIDIA — New Grad / Early Career | New Grad / Early Career | New | Medium | [Apply / Register](https://jobs.nvidia.com/careers?query=asci&start=0&pid=893392585259&sort_by=relevance&filter_job_category=engineering&filter_job_type=new+college+graduate) |
 | Data Journalism Summer Intern | Internship | New | Medium | [Apply / Register](https://job-boards.eu.greenhouse.io/financialtimes33/jobs/4986356101?gh_src=b3cf5a62teu) |
-| @ BEST BUY Al INTERN! | Internship | New | Medium | [Apply / Register](https://sjobs.brassring.com/TGnewUI/Search/Home/Home?partnerid=25632&siteid=5798) |
+| Internship | Internship | New | Medium | [Apply / Register](https://sjobs.brassring.com/TGnewUI/Search/Home/Home?partnerid=25632&siteid=5798) |
 | the world, we are looking for a Data Science Intern | Internship | New | Medium | [Apply / Register](https://fa-eups-saasfaprod1.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/ULSolutionsCareers/job/10629) |
 | ATT — Data Engineering | Other Opportunity | New | Medium | [Apply / Register](https://att.wd1.myworkdayjobs.com/ATTCollegeSpecialInvite/job/Alpharetta-Georgia/AT-T-Data-Engineering-Scholars-Program_R-122646) |
 | & Shopify Summer 2027 SWE Intern! | Internship | New | Medium | [Apply / Register](https://www.shopify.com/careers/us-software-engineering-internships-summer-2027_2c62d9d7-3f52-42b3-a51d-3a7f3ed03679) |
