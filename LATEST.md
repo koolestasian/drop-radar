@@ -1,11 +1,30 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-29T15:59:36.933978+00:00
+Last updated: 2026-09-29T20:54:26.047462+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Adobe — Software Engineering, Machine Learning / AI | Hackathon / Competition | Open | Medium | [Apply / Register](https://careers.adobe.com/us/en/event/6a90701b41b49ecd36166e14/Adobe-University-Hackathon-2026) |
+| Moog — Software Engineering | Internship | New | Medium | [Apply / Register](https://moog.wd5.myworkdayjobs.com/en-US/MOOG_External_Career_Site/job/Intern--Software-Engineering_R-26-19948) |
+| EA — Internship | Internship | New | Medium | [Apply / Register](https://jobs.ea.com/en_US/careers/JobDetail/Software-Engineer-Intern/216241) |
+| Embed — Fellowship | Fellowship | New | Normal | [Apply / Register](https://job-boards.greenhouse.io/embed/job_app?for=doordashusa&token=7848317&jr_id=6a41623bb526a24fc3131903) |
+| Microsoft — Software Engineering | New Grad / Early Career | Open | Medium | [Apply / Register](https://apply.careers.microsoft.com/careers/job/1970393557008566?domain=microsoft.com&hl=en) |
+| Ashbyhq — Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://jobs.ashbyhq.com/plot/5f8cfeaa-c368-480f-aaa5-de52452a63d0/application?embed=true) |
+| Ashbyhq — Software Engineering, Product Management | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/Perchwell/194eec78-26db-4d8e-850f-a99ea2733e9f/application?embed=true) |
+| Ashbyhq — Internship | Internship | New | Medium | [Apply / Register](https://jobs.ashbyhq.com/Perchwell/9d34fc9d-e235-44fc-bdf9-42e75223839a/application?embed=true) |
+| Scientific Join Talent Network English v | Internship | Open | Medium | [Apply / Register](https://bostonscientific.eightfold.ai/careers/job/563602813547669) |
+| EA — Internship | Internship | New | Medium | [Apply / Register](https://jobs.ea.com/en_US/careers/JobDetail/AI-Engineer-Intern/216223) |
+| Summer Internship Program, open to students | Internship | Open | Medium | [Apply / Register](https://careers-hrblock.icims.com/jobs/76992/job?mobile=true&needsRedirect=false) |
+| Garmin — Software Engineering | Internship | New | Medium | [Apply / Register](https://careers.garmin.com/jobs/20255?icims=1) |
+| Thrivent — Internship | Internship | New | Medium | [Apply / Register](https://thrivent.wd5.myworkdayjobs.com/external/job/Mpls-Investments-Office/IT-Application-Engineer-Intern--Investments---Summer-2027_REQ-48511-2) |
+| NVIDIA — Product Management | Internship | New | Medium | [Apply / Register](https://nvidia.eightfold.ai/events/candidate/landing?plannedEventId=5eQmdl8bk) |
+| Workable — Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://apply.workable.com/bestex-research/j/AE65B49EA3) |
+| Hybrid NewYork(US)  40hours — Internship | Internship | New | Medium | [Apply / Register](https://rabobank.jobs/en/job/gem-summer-commodities-intern/JR_00146162) |
+| Thecignagroup — Internship | Internship | New | Medium | [Apply / Register](https://jobs.thecignagroup.com/us/en/job/CIGNUS26010877EXTERNALENUS/AI-ML-Engineer-Intern) |
+| 2027 Internship | Internship | New | Medium | [Apply / Register](https://mycareer.verizon.com/jobs/r-1101387/verizon-network-and-technology-business-intelligence-summer-2027-internship?source=zero2sudo) |
+| 2027 Internship | Internship | New | Medium | [Apply / Register](https://mycareer.verizon.com/jobs/r-1101384/verizon-network-and-technology-data-science-summer-2027-internship?source=zero2sudo) |
 | NVIDIA — Software Engineering | Other Opportunity | New | Medium | [Apply / Register](https://nvidia.eightfold.ai/events/candidate/landing?plannedEventId=vDKBy8oxN) |
 | Gitai — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/gitai/jobs/5437128008) |
 | and have the opportunity to thrive. | Internship | New | Medium | [Apply / Register](https://app.careerpuck.com/job-board/lyft/job/8802222002) |
