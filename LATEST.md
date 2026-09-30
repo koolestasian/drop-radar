@@ -1,11 +1,14 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-30T19:27:53.688030+00:00
+Last updated: 2026-09-30T23:56:13.443741+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Amca — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/amca/jobs/4425120009) |
+| Amazon — Internship | Internship | New | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10564599/2027-applied-science-internship-united-states-undergrad-student-science-recruiting-frontier-ai-robotics?jr_id=6abc6f9f2668e0eab35c23d1) |
+| al 2 NEW GRAD PM! | New Grad / Early Career | New | Medium | [Apply / Register](https://www.demystifyd.com/jobs/product-manager-%E2%80%94-new-graduate) |
 | Meta — Design | Internship | Open | Medium | [Apply / Register](https://www.metacareers.com/profile/job_details/1613359540444032) |
 | Intern - Winter '27 | Internship | Open | Medium | [Apply / Register](https://vercel.com/careers/software-engineering-intern-winter-27-6181755004) |
 | Apple — Internship | Internship | New | Medium | [Apply / Register](https://jobs.apple.com/en-us/details/200673612-0836/applied-data-solutions-program-internships-summer-2027?team=CORSV) |
