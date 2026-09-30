@@ -1,11 +1,15 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-30T00:33:55.361595+00:00
+Last updated: 2026-09-30T06:50:27.682673+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Data Science | Internship | New | Medium | [Apply / Register](https://mycareer.verizon.com/jobs/r-1101384/verizon-network-and-technology-data-science-summer-2027-internship) |
+| Amca — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/amca/jobs/4425120009) |
+| Amazon — Internship | Internship | New | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10564599/2027-applied-science-internship-united-states-undergrad-student-science-recruiting-frontier-ai-robotics?jr_id=6abc6f9f2668e0eab35c23d1) |
+| al 2 NEW GRAD PM! | New Grad / Early Career | New | Medium | [Apply / Register](https://www.demystifyd.com/jobs/product-manager-—-new-graduate) |
 | Job Type Intern/Apprentice | Internship | New | Medium | [Apply / Register](https://www.tesla.com/careers/search/job/285089) |
 | Enova — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/enova/jobs/8239619) |
 | Robinhood — Data Science | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/robinhood/jobs/8241738?t=gh_src%3D&gh_jid=8241738) |
