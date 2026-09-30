@@ -102,23 +102,84 @@ deduplicate new records, verify saved IDs, update the browser/Google views, and
 commit before sending alerts. Unexpected scraper response formats fail the run.
 A durable notification queue makes alert retries safe.
 
-## One setup step left: add APIFY_TOKEN
+## Setup: choose how to scrape Instagram
 
-The monitor uses Apify to retrieve public Instagram Stories and posts.
+The monitor has two scrapers. Use either or both; with both, the native one
+runs first and Apify takes over automatically if it fails.
+
+| | Native scraper (`IG_SESSIONID`) | Apify (`APIFY_TOKEN`) |
+|---|---|---|
+| Cost | Free | Pay per actor run |
+| Speed | 2 HTTP requests | Queued actor run, often minutes |
+| Story link stickers and CTA links | Read directly | Depends on the actor |
+| Needs | An Instagram login cookie | An Apify account |
+| Weak spot | Instagram can expire the session or block cloud IPs | Actor changes and cost |
+
+**Recommended:** set both. Every check then tries the free native scraper
+first and never misses a Story when Instagram pushes back. The run summary,
+`monitor_status.json` (`scrapers`, `scrape_warnings`), and a workflow warning
+say whenever Apify had to step in; that usually means the session expired.
+
+### Native scraper: add IG_SESSIONID
+
+Stories are only served to logged-in viewers, so the native scraper uses the
+session cookie of an Instagram account.
+
+1. Use a **secondary Instagram account**, not your personal one. Automated
+   access is against Instagram's terms, and Instagram may challenge or limit
+   an account it thinks is automated.
+2. Log in to instagram.com in a desktop browser with that account.
+3. Open developer tools → **Application** (Chrome) or **Storage** (Firefox) →
+   **Cookies** → `https://www.instagram.com`, and copy the value of `sessionid`.
+4. Add it as a repository secret named `IG_SESSIONID`.
+
+The cookie is equivalent to that account's password; keep it in secrets only.
+It lasts for months unless you log out, change the password, or Instagram
+asks for a security check. If the run summary shows a fallback warning, log
+in on the web again, clear any checkpoint, and replace the secret.
+
+To force one scraper, set the repository variable `SCRAPER` to `native` or
+`apify` (default `auto`).
+
+### Apify: add APIFY_TOKEN
 
 1. Create/sign into an Apify account.
 2. In Apify Console, open **Settings → API & Integrations** and copy your API token.
-3. In this GitHub repository open:
+3. In this GitHub repository open **Settings → Secrets and variables → Actions → New repository secret**.
+4. Name it `APIFY_TOKEN`, paste the token and save it.
 
-   **Settings → Secrets and variables → Actions → New repository secret**
+**Never commit either credential to this repository.**
 
-4. Name it exactly:
+### Optional: better extraction with Claude
 
-   `APIFY_TOKEN`
+Set the secret `ANTHROPIC_API_KEY` (from console.anthropic.com) and every new
+post is read by Claude, together with the job page when it can be fetched. It
+returns the employer, the exact role title, category, season, location and
+deadline, and flags posts that are not really opportunities (memes, advice,
+offer celebrations). Those posts are skipped instead of alerting, and older
+rows it flags move to a collapsed "Probably not an opportunity" section.
 
-5. Paste the token and save it.
+- Model: `claude-opus-5-5` at low effort; set the variable `ANTHROPIC_MODEL`
+  to use another model.
+- Cost: roughly $0.02 per post. Existing rows are backfilled 25 per run
+  (`LLM_BACKFILL_PER_RUN`), about $5 once for the current tracker, then
+  roughly $5 a month at ten posts a day.
+- Results are cached in `enrichment_cache.json` by post text, so a post is
+  never sent twice and re-deriving the tracker makes no API calls.
+- If the API is unavailable, the run continues with the built-in parsers.
 
-**Never commit the token to this repository.**
+### Automatic: job page checks
+
+No setup needed. For every application link the monitor reads the real
+posting: Greenhouse, Lever, Ashby and SmartRecruiters through their public
+APIs, other sites through the schema.org JobPosting data most career pages
+embed. That supplies the exact job title, location and (when the page states
+one) the deadline, and each open link is re-checked once a day (up to 80 per
+run). When a posting is taken down, its row is marked **Closed** and moves to
+the collapsed section of LATEST.md, so you stop spending time on dead links.
+Only a definitive answer (HTTP 404/410, "inactive", missing from the job
+board) closes a row; timeouts and blocked requests never do. Set the variable
+`JOB_PAGES=off` to disable it.
 
 ## Start it
 
@@ -144,20 +205,23 @@ pip install -r requirements.txt
 # 1. Offline demo: no token, no network, no cost, writes nothing.
 python opportunity_monitor.py --fixture tests/fixtures/sample_items.json
 
-# 2. Real check that only prints what it would add (uses Apify credits).
-export APIFY_TOKEN=...
+# 2. Real check that only prints what it would add.
+export IG_SESSIONID=...        # and/or APIFY_TOKEN=...; optional ANTHROPIC_API_KEY=...
 python opportunity_monitor.py --dry-run
 
 # 3. Real check that updates the workbook and LATEST.md in this folder.
 python opportunity_monitor.py
 ```
 
+Running from home also sidesteps the main weakness of the native scraper:
+Instagram trusts a residential IP far more than a cloud runner's.
+
 A local run skips GitHub Issues unless `GH_TOKEN` and `GITHUB_REPOSITORY` are
 set, but still sends ntfy pushes when `NTFY_TOPIC` is set. To run it hourly
 without GitHub, add a cron entry (`crontab -e`):
 
 ```
-17 * * * * cd /path/to/zero2sudo-opportunity-monitor && APIFY_TOKEN=... NTFY_TOPIC=... python3 opportunity_monitor.py >> monitor.log 2>&1
+17 * * * * cd /path/to/zero2sudo-opportunity-monitor && IG_SESSIONID=... NTFY_TOPIC=... python3 opportunity_monitor.py >> monitor.log 2>&1
 ```
 
 Run the tests with `python -m unittest discover -s tests`.
@@ -177,7 +241,9 @@ The workbook tracks:
 - Instagram Source
 - Source Type
 - Raw Text
-- Status (New, Open, Reopened, Closed, or Expired once the deadline passes)
+- Status (New, Open, Reopened, Closed when the posting is taken down, Expired
+  once the deadline passes, or Not actionable when Claude is confident the post
+  is not an opportunity)
 - Priority
 - Actioned?
 - Notes
@@ -191,6 +257,10 @@ normalized to `Yes`.
 ## Files
 
 - `opportunity_monitor.py` — scraping, OCR, extraction, deduplication, Excel updates, GitHub alerts
+- `instagram_scraper.py` — native Instagram Stories/posts scraper
+- `job_pages.py` — reads job postings (ATS APIs, JSON-LD) and detects takedowns
+- `llm_extraction.py` — optional Claude extraction
+- `enrichment_cache.json` — cached job-page facts and Claude extractions
 - `google_sheets_sync.py` — optional Google Sheets mirror
 - `requirements.txt` — Python dependencies
 - `tests/` — unit tests; `tests/fixtures/sample_items.json` is a sample Apify payload for offline runs
@@ -199,7 +269,7 @@ normalized to `Yes`.
 
 ## Notes
 
-- Only public Instagram content is queried.
+- Only public Instagram content is read; the native scraper views it through the account whose session you provide.
 - Stories are ephemeral, so hourly monitoring substantially reduces the chance of missing a short-lived opportunity.
 - The Story scraper is a third-party Apify actor. Instagram changes can occasionally require changing the actor or parsing logic.
 - Apify charges can depend on actor/result usage, so check your Apify usage dashboard after the first few days.

@@ -319,7 +319,7 @@ class WorkbookTests(unittest.TestCase):
         self.assertIn("Old Role", next(s for s in sections if s.startswith("📋")))
         self.assertIn("(expired)", text)
         self.assertIn("<summary><b>✅ Actioned (1)</b></summary>", text)
-        self.assertIn("<summary><b>⌛ Past deadline or closed (1)</b></summary>", text)
+        self.assertIn("<summary><b>⌛ Past deadline or posting closed (1)</b></summary>", text)
         self.assertIn("[Apply ↗](<https://example.com/jobs/1>)", text)
 
 

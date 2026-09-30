@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import argparse
+import base64
 import hashlib
 import json
 import os
 import re
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import parse_qsl, unquote, urlencode, urlparse, urlunparse
@@ -15,6 +17,9 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from PIL import Image
 import pytesseract
+
+import instagram_scraper
+import job_pages
 
 try:  # Some Story media is HEIC, which Pillow cannot open on its own.
     from pillow_heif import register_heif_opener
@@ -29,6 +34,22 @@ TRACKER_PATH = Path(os.getenv("TRACKER_PATH", "Zero2Sudo_Opportunity_Tracker.xls
 STATUS_PATH = Path(os.getenv("STATUS_PATH", "monitor_status.json"))
 STATE_PATH = Path(os.getenv("STATE_PATH", "monitor_state.json"))
 LIVE_VIEW_PATH = Path(os.getenv("LIVE_VIEW_PATH", "LATEST.md"))
+
+ENRICHMENT_PATH = Path(os.getenv("ENRICHMENT_PATH", "enrichment_cache.json"))
+
+# "auto": native scraper first, Apify as fallback; "native" or "apify" force one.
+SCRAPER = os.getenv("SCRAPER", "auto").strip().lower() or "auto"
+IG_SESSIONID = os.getenv("IG_SESSIONID", "").strip()
+POST_LOOKBACK_DAYS = int(os.getenv("POST_LOOKBACK_DAYS", "3"))
+
+JOB_PAGES_ENABLED = os.getenv("JOB_PAGES", "on").strip().lower() not in {"0", "off", "false", "no"}
+PAGE_CHECKS_PER_RUN = int(os.getenv("PAGE_CHECKS_PER_RUN", "80"))
+PAGE_RECHECK_HOURS = int(os.getenv("PAGE_RECHECK_HOURS", "24"))
+LLM_ENABLED = bool(
+    os.getenv("ANTHROPIC_API_KEY", "").strip() or os.getenv("ANTHROPIC_AUTH_TOKEN", "").strip()
+) and os.getenv("LLM_EXTRACTION", "on").strip().lower() not in {"0", "off", "false", "no"}
+LLM_BACKFILL_PER_RUN = int(os.getenv("LLM_BACKFILL_PER_RUN", "25"))
+LLM_DROP_CONFIDENCE = float(os.getenv("LLM_DROP_CONFIDENCE", "0.8"))
 
 STORY_ACTOR = os.getenv("STORY_ACTOR", "data-slayer/instagram-stories-scraper")
 POST_ACTOR = os.getenv("POST_ACTOR", "apify/instagram-scraper")
@@ -319,24 +340,70 @@ def run_actor(actor_id, payload):
         raise RuntimeError(f"Actor {actor_id} returned a non-object dataset item.")
     return data
 
-def fetch_stories():
-    try:
-        return run_actor(STORY_ACTOR, {"usernames": [USERNAME]})
-    except Exception as exc:
-        raise RuntimeError(f"Story scrape failed; this check is incomplete. {exc}") from exc
+SCRAPE_REPORT = {"scrapers": {}, "warnings": []}
+ENRICHMENT_REPORT = {"pages_checked": 0, "postings_closed": 0, "filtered_by_llm": 0}
+_native_client = None
 
-def fetch_posts():
+def native_client():
+    global _native_client
+    if _native_client is None:
+        _native_client = instagram_scraper.InstagramClient(IG_SESSIONID)
+    return _native_client
+
+def apify_stories():
+    return run_actor(STORY_ACTOR, {"usernames": [USERNAME]})
+
+def apify_posts():
     payload = {
         "directUrls": [f"https://www.instagram.com/{USERNAME}/"],
         "resultsType": "posts",
         "resultsLimit": 10,
-        "onlyPostsNewerThan": "2 days",
+        "onlyPostsNewerThan": f"{POST_LOOKBACK_DAYS} days",
         "skipPinnedPosts": True,
     }
-    try:
-        return run_actor(POST_ACTOR, payload)
-    except Exception as exc:
-        raise RuntimeError(f"Post/reel scrape failed; this check is incomplete. {exc}") from exc
+    return run_actor(POST_ACTOR, payload)
+
+def scrape(kind, native, apify):
+    """Run the native scraper, falling back to Apify, per SCRAPER.
+
+    A fallback is logged as a warning (it usually means IG_SESSIONID expired)
+    rather than failing the check, because a missed Story is gone for good.
+    """
+    errors = []
+    native_possible = kind != "Stories" or bool(IG_SESSIONID)
+    if SCRAPER in {"auto", "native"} and (native_possible or SCRAPER == "native"):
+        try:
+            items = native()
+            SCRAPE_REPORT["scrapers"][kind] = "native"
+            return items
+        except instagram_scraper.InstagramError as exc:
+            errors.append(f"native: {exc}")
+    if SCRAPER in {"auto", "apify"} and APIFY_TOKEN:
+        try:
+            items = apify()
+            SCRAPE_REPORT["scrapers"][kind] = "apify (fallback)" if errors else "apify"
+            for error in errors:
+                warning = f"{kind}: {error}; used Apify instead."
+                SCRAPE_REPORT["warnings"].append(warning)
+                print(f"::warning::{warning}")
+            return items
+        except Exception as exc:
+            errors.append(f"apify: {exc}")
+    if not errors:
+        errors.append(
+            "no scraper is configured (set IG_SESSIONID for the native scraper and/or APIFY_TOKEN)"
+        )
+    raise RuntimeError(f"{kind} scrape failed; this check is incomplete. " + " | ".join(errors))
+
+def fetch_stories():
+    return scrape("Stories", lambda: native_client().stories(USERNAME), apify_stories)
+
+def fetch_posts():
+    return scrape(
+        "Posts",
+        lambda: native_client().recent_posts(USERNAME, POST_LOOKBACK_DAYS),
+        apify_posts,
+    )
 
 def pick(item, *keys):
     for key in keys:
@@ -974,15 +1041,61 @@ def normalize_identity_text(value):
     value = re.sub(r"[^a-z0-9]+", " ", value.lower())
     return " ".join(value.split())
 
+SHORTCODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+def shortcode_to_media_id(shortcode):
+    """Instagram post shortcodes are the media ID in URL-safe base64 digits."""
+    if not shortcode or len(shortcode) > 12:
+        return ""
+    value = 0
+    for char in shortcode:
+        index = SHORTCODE_ALPHABET.find(char)
+        if index < 0:
+            return ""
+        value = value * 64 + index
+    return str(value)
+
+def media_id_from_url(url, allow_shortcode=False):
+    """Instagram media ID carried by a CDN URL or permalink, if any.
+
+    CDN URLs from the Apify actors carry ig_cache_key, the media ID in
+    base64; native Story items carry /stories/<user>/<media id>/ permalinks;
+    posts carry /p/<shortcode>/. Keying on the media ID makes both scrapers
+    agree on which Story is which.
+    """
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return ""
+    cache_key = dict(parse_qsl(parsed.query, keep_blank_values=True)).get("ig_cache_key", "")
+    if cache_key:
+        head = cache_key.split(".", 1)[0]
+        try:
+            decoded = base64.b64decode(head + "=" * (-len(head) % 4)).decode("ascii")
+        except (ValueError, UnicodeDecodeError):
+            decoded = ""
+        return decoded if decoded.isdigit() else cache_key
+    if is_instagram_url(url):
+        parts = [part for part in parsed.path.split("/") if part]
+        if len(parts) >= 3 and parts[0] == "stories" and parts[2].isdigit():
+            return parts[2]
+        if allow_shortcode and len(parts) >= 2 and parts[0] in {"p", "reel", "reels", "tv"}:
+            return shortcode_to_media_id(parts[1])
+    return ""
+
 def instagram_media_key(links):
     for url in links:
+        media_id = media_id_from_url(url)
+        if media_id:
+            return media_id
+    for url in links:
+        media_id = media_id_from_url(url, allow_shortcode=True)
+        if media_id:
+            return media_id
+    for url in links:
         try:
-            parsed = urlparse(url)
-            params = dict(parse_qsl(parsed.query, keep_blank_values=True))
-            if params.get("ig_cache_key"):
-                return params["ig_cache_key"]
             if is_media_url(url):
-                filename = Path(parsed.path).name
+                filename = Path(urlparse(url).path).name
                 if filename:
                     return filename
         except Exception:
@@ -992,31 +1105,136 @@ def instagram_media_key(links):
 def priority_label(row):
     return priority_for(row).title()
 
+ENRICHMENT = {"version": 1, "pages": {}, "llm": {}}
+
+def load_enrichment():
+    """Cached job-page facts (by URL) and Claude extractions (by text hash)."""
+    global ENRICHMENT
+    try:
+        data = json.loads(ENRICHMENT_PATH.read_text())
+    except (FileNotFoundError, ValueError):
+        data = {}
+    ENRICHMENT = {"version": 1, "pages": data.get("pages") or {}, "llm": data.get("llm") or {}}
+    return ENRICHMENT
+
+def save_enrichment():
+    ENRICHMENT_PATH.write_text(json.dumps(ENRICHMENT, indent=1, sort_keys=True, ensure_ascii=False) + "\n")
+
+def text_key(text):
+    return hashlib.sha256(str(text or "")[:12000].encode("utf-8", errors="ignore")).hexdigest()[:24]
+
+def page_facts(url):
+    return ENRICHMENT["pages"].get(url) or {} if url else {}
+
+def llm_facts(text):
+    return ENRICHMENT["llm"].get(text_key(text)) or {}
+
+def display_org(name):
+    """Canonical casing for a known company name; other names pass through."""
+    name = " ".join(str(name or "").split())
+    if not name or org_key(name) in {"zero2sudo", "greenhouse", "lever", "ashby", "workday", "linktree"}:
+        return ""
+    for variant in _slug_variants(org_key(name)):
+        if variant in ORG_ALIASES:
+            return ORG_ALIASES[variant]
+        if variant in ORG_BY_KEY:
+            return ORG_BY_KEY[variant]
+    return name
+
+def clean_page_title(title, organization="", require_role_word=True):
+    """Job title from a page/API title, without site or company decoration.
+
+    Page titles must name a role, because a page can be a search or landing
+    page ("Careers at NVIDIA"); Claude's titles are already specific.
+    """
+    title = " ".join(str(title or "").split())
+    if not title:
+        return ""
+    segments = [segment.strip() for segment in re.split(r"\s+\|\s+", title) if segment.strip()]
+    title = next(
+        (segment for segment in segments if not require_role_word or TITLE_ROLE_WORDS_RE.search(segment)),
+        "",
+    )
+    if organization and title:
+        org = re.escape(organization)
+        title = re.sub(rf"^(?:{org})\s*[-–—:|]\s*", "", title, flags=re.I)
+        title = re.sub(rf"\s*(?:[-–—|@]|\bat)\s*{org}\b.*$", "", title, flags=re.I)
+    if (
+        not title
+        or len(title) > 120
+        or re.match(r"(?:careers?|jobs?|join us|search)\b", title, re.I)
+        or (require_role_word and not TITLE_ROLE_WORDS_RE.search(title))
+    ):
+        return ""
+    return title
+
+def plausible_page_deadline(value, reference):
+    """Page deadlines (JSON-LD validThrough) a year out are ATS defaults."""
+    parsed = parse_deadline(value)
+    if not parsed:
+        return ""
+    base = reference or datetime.now(timezone.utc).date()
+    return parsed.isoformat() if (parsed - base).days <= 150 else ""
+
 def derive_fields(text, links, reference=None, today=None):
     """Every column that is computed from a post's text and links.
 
     New items and stored rows (re-processed from their Raw Text on each run)
     go through this one function, so extraction improvements apply to the
     whole tracker and an alert always matches what the tracker shows.
+
+    Precedence per field: the live job page (when it could be read), then
+    Claude's extraction (when ANTHROPIC_API_KEY is set), then the regex
+    parsers. Both caches are deterministic between runs, so re-deriving is
+    stable and makes no network calls.
     """
     external = external_links(links)
     destination = external[0] if external else ""
-    org = extract_organization(text, links)
-    category = extract_category(text)
-    role = extract_roles(text)
+    page = page_facts(destination)
+    llm = llm_facts(text)
+
+    org = (
+        display_org(llm.get("organization"))
+        or extract_organization(text, links)
+        or display_org(page.get("organization"))
+    )
+    category = llm.get("category") or extract_category(text)
+    role = ", ".join(llm.get("roles") or []) or extract_roles(text)
     # A year inside "apply by Oct 15, 2026" is the deadline's, not the season's.
-    season = extract_season(DEADLINE_RE.sub(" ", text))
-    deadline = extract_deadline(text, reference)
+    season = llm.get("season") or extract_season(DEADLINE_RE.sub(" ", text))
+    deadline = (
+        plausible_page_deadline(page.get("deadline"), reference)
+        or llm.get("deadline")
+        or extract_deadline(text, reference)
+    )
+    specific = (
+        clean_page_title(page.get("title"), org)
+        or clean_page_title(llm.get("title"), org, require_role_word=False)
+    )
+    if specific:
+        opportunity = f"{org} — {specific}" if org else specific
+    else:
+        opportunity = opportunity_title(org, category, role, text, destination, season)
+
+    status = extract_status(text, deadline, today)
+    if page.get("status") == "closed":
+        status = "Closed"
+    elif status != "Expired" and llm and not llm.get("is_opportunity", True) \
+            and llm.get("confidence", 0) >= LLM_DROP_CONFIDENCE:
+        status = "Not actionable"
+    elif page.get("status") == "open" and status == "New":
+        status = "Open"
+
     fields = {
         "Organization": org,
-        "Opportunity": opportunity_title(org, category, role, text, destination, season),
+        "Opportunity": opportunity,
         "Category": category,
         "Role / Track": role,
         "Season / Year": season,
-        "Location": extract_location(text),
+        "Location": page.get("location") or llm.get("location") or extract_location(text),
         "Deadline": deadline,
         "Application / Registration Link": destination,
-        "Status": extract_status(text, deadline, today),
+        "Status": status,
     }
     fields["Priority"] = priority_label(fields)
     return fields
@@ -1087,6 +1305,7 @@ def dashboard_metrics(records):
         ("High priority", count(lambda r: r.get("Priority") == "High")),
         ("With a deadline", count(lambda r: bool(r.get("Deadline")))),
         ("Expired / closed", count(lambda r: r.get("Status") in {"Expired", "Closed"})),
+        ("Not actionable (Claude)", count(lambda r: r.get("Status") == "Not actionable")),
         ("Internships", count(lambda r: r.get("Category") == "Internship")),
         ("Fellowships", count(lambda r: r.get("Category") == "Fellowship")),
         ("Scholarships / grants", count(lambda r: r.get("Category") == "Scholarship / Grant")),
@@ -1417,7 +1636,10 @@ def write_live_view(records, now=None):
     actioned = [row for row in rows if is_yes(row.get("Actioned?"))]
     open_rows = [row for row in rows if not is_yes(row.get("Actioned?"))]
     past = [row for row in open_rows if row.get("Status") in {"Expired", "Closed"}]
-    active = [row for row in open_rows if row.get("Status") not in {"Expired", "Closed"}]
+    filtered = [row for row in open_rows if row.get("Status") == "Not actionable"]
+    active = [
+        row for row in open_rows if row.get("Status") not in {"Expired", "Closed", "Not actionable"}
+    ]
 
     def deadline_in_window(row):
         parsed = parse_deadline(row.get("Deadline"))
@@ -1464,7 +1686,11 @@ def write_live_view(records, now=None):
         lines += [f"## {heading} ({len(section_rows)})", ""]
         lines += _live_table(section_rows, today)
         lines.append("")
-    for heading, section_rows in (("✅ Actioned", actioned), ("⌛ Past deadline or closed", past)):
+    for heading, section_rows in (
+        ("✅ Actioned", actioned),
+        ("⌛ Past deadline or posting closed", past),
+        ("🙈 Probably not an opportunity (Claude)", filtered),
+    ):
         if not section_rows:
             continue
         lines += [
@@ -1517,9 +1743,14 @@ PRIORITY_RANK = {"HIGH": 0, "MEDIUM": 1, "NORMAL": 2}
 
 def priority_for(row):
     """HIGH for a HIGH_PRIORITY_ORGS company, MEDIUM for SWE / AI / data roles."""
-    organization = org_key(row.get("Organization", ""))
-    if organization and organization in {org_key(name) for name in HIGH_PRIORITY_ORGS}:
-        return "HIGH"
+    org_words = [org_key(word) for word in str(row.get("Organization") or "").split()]
+    org_words = [word for word in org_words if word]
+    for name in HIGH_PRIORITY_ORGS:
+        high_words = [org_key(word) for word in name.split() if org_key(word)]
+        if high_words and org_words[:len(high_words)] == high_words:
+            return "HIGH"
+        if high_words and "".join(org_words) == "".join(high_words):
+            return "HIGH"  # "ScaleAI" vs "Scale AI"
     text = " ".join(str(row.get(key) or "") for key in ("Opportunity", "Role / Track"))
     if PREFERRED_ROLE_RE.search(text):
         return "MEDIUM"
@@ -1727,6 +1958,132 @@ def sync_google_sheet():
     print(f"Verified {len(merged)} rows in Google Sheets.")
     return True
 
+def store_page_facts(url, facts):
+    """Merge a fresh check into the cache without losing good data to an error."""
+    old = ENRICHMENT["pages"].get(url) or {}
+    facts = {key: value for key, value in facts.items() if key != "description"}
+    if facts["status"] == "unknown" and old:
+        merged = dict(old)
+        merged["checked_at"] = facts["checked_at"]
+        if facts.get("error"):
+            merged["last_error"] = facts["error"]
+        if facts.get("title") and not merged.get("title"):
+            merged["title"] = facts["title"]
+    elif facts["status"] == "closed":
+        merged = dict(old)
+        merged.update(facts)
+        merged["closed_at"] = old.get("closed_at") or facts["checked_at"]
+    else:
+        merged = facts
+    ENRICHMENT["pages"][url] = merged
+    return merged
+
+def refresh_job_pages(records, force_urls=(), budget=None):
+    """Read job pages for new links and re-check stale ones for takedowns.
+
+    Returns {url: description} for pages read this run, which are only held in
+    memory to give Claude context; the cache keeps the short facts.
+    """
+    if not JOB_PAGES_ENABLED:
+        return {}
+    budget = PAGE_CHECKS_PER_RUN if budget is None else budget
+    now = datetime.now(timezone.utc)
+    stale = []
+    for record in records:
+        url = record.get("Application / Registration Link") or ""
+        if not url or is_yes(record.get("Actioned?")) or record.get("Status") == "Expired":
+            continue
+        entry = ENRICHMENT["pages"].get(url)
+        if entry and entry.get("status") == "closed":
+            continue
+        try:
+            checked = datetime.fromisoformat(entry["checked_at"]) if entry else None
+        except (KeyError, ValueError):
+            checked = None
+        if checked and now - checked < timedelta(hours=PAGE_RECHECK_HOURS):
+            continue
+        stale.append((checked.isoformat() if checked else "", url))
+    urls = list(dict.fromkeys(list(force_urls) + [url for _, url in sorted(stale)][:budget]))
+    if not urls:
+        return {}
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(job_pages.fetch_job_facts, urls))
+    descriptions = {}
+    for url, facts in zip(urls, results):
+        descriptions[url] = facts.get("description", "")
+        before = (ENRICHMENT["pages"].get(url) or {}).get("status")
+        after = store_page_facts(url, facts)["status"]
+        ENRICHMENT_REPORT["pages_checked"] += 1
+        if after == "closed" and before != "closed":
+            ENRICHMENT_REPORT["postings_closed"] += 1
+    return descriptions
+
+_extractor = None
+
+def extractor():
+    global _extractor
+    if _extractor is None:
+        from llm_extraction import Extractor
+
+        categories = [label for label, _ in CATEGORIES] + ["Other Opportunity"]
+        _extractor = Extractor(categories, [label for label, _ in ROLE_PATTERNS])
+    return _extractor
+
+def run_llm_extraction(records, budget, descriptions=None):
+    """Claude extraction for rows whose text has not been extracted yet."""
+    if not LLM_ENABLED or budget <= 0:
+        return 0
+    descriptions = descriptions or {}
+    targets, seen = [], set()
+    for record in records:
+        text = str(record.get("Raw Text") or "")
+        key = text_key(text)
+        if text.strip() and key not in ENRICHMENT["llm"] and key not in seen:
+            seen.add(key)
+            targets.append(record)
+    targets = targets[:budget]
+    if not targets:
+        return 0
+
+    def work(record):
+        text = str(record.get("Raw Text") or "")
+        link = record.get("Application / Registration Link") or ""
+        page = dict(page_facts(link))
+        if descriptions.get(link):
+            page["description"] = descriptions[link]
+        posted = str(record.get("Posted At") or record.get("First Seen") or "")[:10]
+        return text_key(text), extractor().extract(text, link, posted, page)
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        for key, facts in pool.map(work, targets):
+            if facts:
+                ENRICHMENT["llm"][key] = facts
+    return len(targets)
+
+def enrich_rows(rows):
+    """Read job pages and run Claude for new rows, then re-derive their fields.
+
+    Rows Claude is confident are not opportunities (a meme, advice, an offer
+    celebration) are dropped here so they never alert.
+    """
+    if not rows:
+        return rows
+    links = [row.get("Application / Registration Link") for row in rows]
+    descriptions = refresh_job_pages([], force_urls=[link for link in links if link])
+    run_llm_extraction(rows, len(rows), descriptions)
+    kept = []
+    for row in rows:
+        refresh_derived_fields(row)
+        if row.get("Status") == "Not actionable":
+            ENRICHMENT_REPORT["filtered_by_llm"] += 1
+            print(f"Skipped (Claude: not an opportunity): {row.get('Opportunity')}")
+            continue
+        kept.append(row)
+    return kept
+
+def newest_first(records):
+    return sorted(records, key=lambda row: str(row.get("First Seen") or ""), reverse=True)
+
 def collect_candidates(fixture=None):
     """Normalized, actionable items from Apify, or from a local JSON fixture.
 
@@ -1761,32 +2118,49 @@ def print_rows(rows):
             print(f"      {details}")
 
 def dry_run(fixture=None):
-    """Show what a check would add, without writing files or sending alerts."""
+    """Show what a check would add, without writing files or sending alerts.
+
+    A real dry run reads job pages and calls Claude for the new rows (in
+    memory only); a fixture run stays fully offline.
+    """
+    load_enrichment()
     records = []
     if TRACKER_PATH.exists():
         records, _ = cleanup_records(workbook_records())
     new_rows = find_new_rows(records, collect_candidates(fixture))
+    if not fixture:
+        new_rows = enrich_rows(new_rows)
     print(f"Dry run: {len(new_rows)} new opportunity row(s) would be added "
           f"to the {len(records)} already tracked.")
     print_rows(new_rows)
     return new_rows
 
 def main(defer_notifications=False):
-    if not APIFY_TOKEN:
+    if not APIFY_TOKEN and not IG_SESSIONID and SCRAPER != "native":
         raise SystemExit(
-            "APIFY_TOKEN is missing. Add it in GitHub: Settings → Secrets and variables → Actions → "
-            "New repository secret. Locally: export APIFY_TOKEN=... (or try --dry-run --fixture)."
+            "No scraper is configured. Set IG_SESSIONID (native Instagram scraper) and/or "
+            "APIFY_TOKEN as GitHub Actions secrets, or export them locally. "
+            "Try --fixture tests/fixtures/sample_items.json for an offline demo."
         )
 
     ensure_workbook()
+    load_enrichment()
     # Read Google Sheets edits before cleanup can merge rows, so a user's
     # Actioned?/Notes values are carried into whatever row survives.
     manual_fields = pull_google_manual_fields()
+    # Re-check stale job links for takedowns and backfill Claude extraction a
+    # few rows at a time; migrate_workbook then re-derives with the results.
+    existing = workbook_records()
+    descriptions = refresh_job_pages(existing)
+    run_llm_extraction(newest_first(existing), LLM_BACKFILL_PER_RUN, descriptions)
+    save_enrichment()
     cleanup = migrate_workbook(manual_fields)
     records = workbook_records()
     known_ids = {str(record.get("ID")) for record in records if record.get("ID")}
 
     new_rows = find_new_rows(records, collect_candidates())
+    new_rows = enrich_rows(new_rows)
+    save_enrichment()
 
     append_rows(new_rows)
     persisted = existing_ids()
@@ -1806,6 +2180,12 @@ def main(defer_notifications=False):
         "notification_batch_id": batch_id,
         "google_sheets_configured": bool(GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SHEET_ID),
         "live_tracker_url": tracker_url(),
+        "scrapers": SCRAPE_REPORT["scrapers"],
+        "scrape_warnings": SCRAPE_REPORT["warnings"],
+        "enrichment": dict(
+            ENRICHMENT_REPORT,
+            llm=_extractor.usage if _extractor else ({"calls": 0} if LLM_ENABLED else "disabled"),
+        ),
     }
     STATUS_PATH.write_text(json.dumps(report, indent=2) + "\n")
     if not defer_notifications:
@@ -1831,8 +2211,8 @@ if __name__ == "__main__":
     elif args.sync_google:
         sync_google_sheet()
     elif args.dry_run or args.fixture:
-        if not args.fixture and not APIFY_TOKEN:
-            raise SystemExit("--dry-run needs APIFY_TOKEN, or use --fixture FILE to run offline.")
+        if not args.fixture and not (APIFY_TOKEN or IG_SESSIONID):
+            raise SystemExit("--dry-run needs IG_SESSIONID or APIFY_TOKEN, or use --fixture FILE to run offline.")
         dry_run(args.fixture)
     else:
         main(defer_notifications=args.defer_notifications)

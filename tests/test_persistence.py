@@ -29,6 +29,9 @@ class PersistenceTests(unittest.TestCase):
             ("record_semantic_key", lambda row: row["ID"]),
             ("pull_google_manual_fields", lambda: {}),
             ("github_issue", lambda rows, batch_id="": True),
+            ("JOB_PAGES_ENABLED", False),
+            ("LLM_ENABLED", False),
+            ("ENRICHMENT_PATH", Path("enrichment_cache.json")),
             ("ntfy_alert", lambda rows, batch_id="": True),
         ):
             patcher = patch.object(monitor, name, value)

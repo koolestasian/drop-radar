@@ -9,6 +9,9 @@ on:
     paths:
       - "opportunity_monitor.py"
       - "google_sheets_sync.py"
+      - "instagram_scraper.py"
+      - "job_pages.py"
+      - "llm_extraction.py"
       - "requirements.txt"
       - "tests/**"
       - ".github/workflows/hourly.yml"
@@ -33,13 +36,17 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Verify Apify secret
+      - name: Verify scraper credentials
         env:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          IG_SESSIONID: ${{ secrets.IG_SESSIONID }}
         run: |
-          if [ -z "$APIFY_TOKEN" ]; then
-            echo "::error::APIFY_TOKEN is missing. Add it under Settings > Secrets and variables > Actions."
+          if [ -z "$APIFY_TOKEN" ] && [ -z "$IG_SESSIONID" ]; then
+            echo "::error::Add IG_SESSIONID (native scraper) and/or APIFY_TOKEN under Settings > Secrets and variables > Actions."
             exit 1
+          fi
+          if [ -z "$IG_SESSIONID" ]; then
+            echo "::notice::IG_SESSIONID is not set; Stories come from Apify only."
           fi
 
       - name: Set up Python
@@ -76,6 +83,10 @@ jobs:
           GOOGLE_SYNC_REQUIRED: ${{ vars.GOOGLE_SYNC_REQUIRED || 'false' }}
           HIGH_PRIORITY_ORGS: ${{ vars.HIGH_PRIORITY_ORGS }}
           IG_USERNAME: zero2sudo
+          IG_SESSIONID: ${{ secrets.IG_SESSIONID }}
+          SCRAPER: ${{ vars.SCRAPER || 'auto' }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
         run: python opportunity_monitor.py --defer-notifications
 
       - name: Save downloadable tracker snapshot
@@ -87,13 +98,14 @@ jobs:
             monitor_status.json
             monitor_state.json
             LATEST.md
+            enrichment_cache.json
           if-no-files-found: error
 
       - name: Commit and verify tracker
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Zero2Sudo_Opportunity_Tracker.xlsx monitor_status.json monitor_state.json LATEST.md
+          git add Zero2Sudo_Opportunity_Tracker.xlsx monitor_status.json monitor_state.json LATEST.md enrichment_cache.json
           if ! git diff --cached --quiet; then
             git commit -m "Update Zero2Sudo opportunity tracker and check status"
           fi
@@ -120,6 +132,18 @@ jobs:
               summary.write("# Tracker saved and verified on main\n\n")
               for key in ("checked_at", "previous_rows", "new_rows", "total_rows"):
                   summary.write(f"- {key}: {status[key]}\n")
+              for kind, scraper in (status.get("scrapers") or {}).items():
+                  summary.write(f"- {kind} scraped with: {scraper}\n")
+              for warning in status.get("scrape_warnings") or []:
+                  summary.write(f"- ⚠️ {warning}\n")
+              enrichment = status.get("enrichment") or {}
+              if enrichment:
+                  summary.write(
+                      f"- job pages checked: {enrichment.get('pages_checked', 0)}, "
+                      f"newly closed: {enrichment.get('postings_closed', 0)}, "
+                      f"filtered by Claude: {enrichment.get('filtered_by_llm', 0)}\n"
+                  )
+                  summary.write(f"- Claude extraction: {enrichment.get('llm')}\n")
               summary.write(f"\nLive tracker: {status['live_tracker_url']}\n")
               summary.write("\nThe Excel workbook remains available as a backup.\n")
           PY

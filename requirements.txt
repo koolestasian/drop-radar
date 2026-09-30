@@ -4,3 +4,4 @@ pytesseract>=0.3.13
 openpyxl>=3.1.5
 gspread>=6.1.4
 pillow-heif>=0.18.0
+anthropic>=1.10.0
