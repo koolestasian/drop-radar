@@ -48,5 +48,5 @@ Exceptions:
 ## Current state (update when it changes)
 - Live pipeline: `opportunity_monitor.py` (+ `job_pages.py`, `llm_extraction.py`,
   `instagram_scraper.py`, `google_sheets_sync.py`), workflow `.github/workflows/hourly.yml`.
-- 88 tests passing. Tracker data lives in `Zero2Sudo_Opportunity_Tracker.xlsx`,
+- 98 tests passing (87 legacy + 11 radar foundations; legacy modules live in `radar/legacy/` with root shims). Tracker data lives in `Zero2Sudo_Opportunity_Tracker.xlsx`,
   `monitor_state.json`, `enrichment_cache.json` (committed by the workflow).

@@ -12,6 +12,8 @@ on:
       - "instagram_scraper.py"
       - "job_pages.py"
       - "llm_extraction.py"
+      - "radar/**"
+      - "config/**"
       - "requirements.txt"
       - "tests/**"
       - ".github/workflows/hourly.yml"

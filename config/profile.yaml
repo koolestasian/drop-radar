@@ -1,0 +1,7 @@
+# Who the radar is looking for. Validated by radar.config.load_profile.
+roles: [software engineer intern, new grad software engineer]
+grad_year: 2027
+locations: [Remote, United States]
+company_tiers: {Stripe: S}
+keywords: [intern, new grad, university, early career]
+exclude: [senior, staff, principal, director]
