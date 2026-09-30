@@ -1,6 +1,73 @@
 {
   "version": 1,
-  "pending_batches": [],
+  "pending_batches": [
+    {
+      "id": "1a5adb7e16e197f931de",
+      "created_at": "2026-09-30T23:56:13.444509+00:00",
+      "rows": [
+        {
+          "ID": "c90966ef561a66c5f8a3",
+          "First Seen": "2026-09-30T23:55:54.227558+00:00",
+          "Posted At": "2026-09-30T03:18:35+00:00",
+          "Organization": "",
+          "Opportunity": "al 2 NEW GRAD PM!",
+          "Category": "New Grad / Early Career",
+          "Role / Track": "Product Management",
+          "Season / Year": "",
+          "Location": "New York",
+          "Deadline": "",
+          "Application / Registration Link": "https://www.demystifyd.com/jobs/product-manager-%E2%80%94-new-graduate",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "@ demystifyd.com C:\n\nD) DEMYSTIFYD\n\nHOME\n\nProduct Manager —\nNew Graduate\n\nNew York, London, Toronto, San\nFrancisco\n\nJob Type Full-time\n\nal 2 NEW GRAD PM!\n\nOwn feature plangé ject definition,\nand issue prioritiz a deeply\ntechnical, engineering-led product\n\norganization.\nhttps://scontent-iad3-1.cdninstagram.com/v/t51.71878-15/825324752_1962619567745729_2040668614727993693_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=104&cb=30a688f7-1209d890&ig_cache_key=Mzk5NzMyNTE4ODE0NDQyNjM3NQ%3D%3D.3-ccb7-5-cb30a688f7-1209d890&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=BeCTxLSV0zYQ7kNvwEmh_CB&_nc_oc=AdqvkU8t8dLsjHn5JYfD09Wv2XyONbr8r0pdKDUdJ8dCubsMBduB9LhQLlTrtJC2xi8&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_gid=g_UJGnFxy8ZnD91xqrrgxQ&_nc_ss=7e3ba&oh=00_AQOL4urA3tuIORrsH4_gtK8RwPCl6ShU6kq45ZU29aVbsw&oe=6AC35D5A\nhttps://scontent-iad3-1.cdninstagram.com/v/t51.71878-15/825324752_1962619567745729_2040668614727993693_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=104&cb=30a688f7-1209d890&ig_cache_key=Mzk5NzMyNTE4ODE0NDQyNjM3NQ%3D%3D.3-ccb7-5-cb30a688f7-1209d890&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=BeCTxLSV0zYQ7kNvwEmh_CB&_nc_oc=AdqvkU8t8dLsjHn5JYfD09Wv2XyONbr8r0pdKDUdJ8dCubsMBduB9LhQLlTrtJC2xi8&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_gid=g_UJGnFxy8ZnD91xqrrgxQ&_nc_ss=7e3ba&oh=00_AQOqPGl3lFVND2EbTh-d0z32INb57we1zM72V9Vd2ei15w&oe=6AC35D5A\nhttps://scontent-iad6-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=-f_j7BYj1KsQ7kNvwHETVJv&_nc_oc=AdpkaPKrxGHeo1aowFWU77sb79zEmTuObkUuUSGgwcTrmRGSOMiu9_Lzy7EzW6Pv8Bo&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-iad6-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQPJjkaMPQbr6KGpqaQXROHIa9QqHPoN0y3sHFy1NSJ1dA&oe=6AC35BD9\nhttps://l.instagram.com/?u=https%3A%2F%2Fwww.demystifyd.com%2Fjobs%2Fproduct-manager-%25E2%2580%2594-new-graduate%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAaerCxPdWgUo5YyBnPVfFbU9QujDrYq0t61_XoU_GY-l8oGjIbblYc5e0uCP7Q_aem_uSU7V7xsz-o4lHo7TDgbbg&e=AUBOBiKLeHjVP68MD0s_asu4VCead0Z-NHg81FbHUyEidXw2f1er2VResmrvd3gVqiy9As3thOpkDEpb1upt0bdYb-W3-w4Bw62ifuLGcuIQmLa-2AARrOakD0vni8snUzeo3iSoqGHUDA\nhttps://scontent-iad6-1.cdninstagram.com/o1/v/t2/f2/m78/AQOO4F8N1l26T3fHvl8g6S-crfl6HqLfc7Xg2JTCSW7HINY6ajcxnnLGNjh6MwIUgojYpH7S-K82byfHLjwRGoB1lEyM3NQc-Nne7yg.mp4?_nc_cat=107&_nc_sid=5e9851&_nc_ht=scontent-iad6-1.cdninstagram.com&_nc_ohc=jdxGthaP9DgQ7kNvwFX51Yk&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODkwNjA2NTE2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=974e4ceb3994e715&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzQ5RkYyMDc0Qjk0NDQ2RTU4QzdFQzlBQjZFOUZCMDY4X3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbk87Wn9PmhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=g_UJGnFxy8ZnD91xqrrgxQ&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQMzJDHURu4vc3PsPfF8_EG5qqgw3W3Yuqo6VkSZ5pdhYg&oe=6ABF6DE4",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        },
+        {
+          "ID": "4796a062511603898286",
+          "First Seen": "2026-09-30T23:55:57.700670+00:00",
+          "Posted At": "2026-09-30T03:19:41+00:00",
+          "Organization": "Amazon",
+          "Opportunity": "Amazon — Internship",
+          "Category": "Internship",
+          "Role / Track": "",
+          "Season / Year": "2027",
+          "Location": "",
+          "Deadline": "",
+          "Application / Registration Link": "https://www.amazon.jobs/en/jobs/10564599/2027-applied-science-internship-united-states-undergrad-student-science-recruiting-frontier-ai-robotics?jr_id=6abc6f9f2668e0eab35c23d1",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "amazon\n—?\n\nImpact the\nfuture, tocay.\n\n2027 Applied Science Internship\n- United States, Undergrad\nStudent Science Recruiting,\nFrontier Al & Robotics\n\nAre you a brilliant mind seeking\n\nto push the boundaries of what's\npossible with intelligent robotics?\nJoin our elite team of researchers\nand engineers - led by Pieter Abeel,\nRocky Duan, and Peter Chen - at\nthe forefront of applied science,\nwhere we're harnessing the latest\nadvancements in large lang...\n\nhttps://www.amazon.jobs/en\n\n_id=6abc6f9f2E ‘ab35c23d1\n\nAmazon undergrad research\n\nrobotics and Ilm\nhttps://scontent-iad3-2.cdninstagram.com/v/t51.71878-15/829647802_1033045443074739_5467457875457086463_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=105&cb=30a688f7-1209d890&ig_cache_key=Mzk5NzMyNTc0Njg3NTY5NjY1Mw%3D%3D.3-ccb7-5-cb30a688f7-1209d890&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=BU9ptfOgsboQ7kNvwFot9ZX&_nc_oc=AdpiJVM9F8p_2qesp4CJntrzdlEHk_sAf3_IrPoeYuQodBuvM1aNlYv0W5w2-J5urFw&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_gid=g_UJGnFxy8ZnD91xqrrgxQ&_nc_ss=7e3ba&oh=00_AQMkq69CUjB8UrtNZzQLr-cFScrH8pLc1l4RioRBlLWuZQ&oe=6AC389D8\nhttps://scontent-iad3-2.cdninstagram.com/v/t51.71878-15/829647802_1033045443074739_5467457875457086463_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=105&cb=30a688f7-1209d890&ig_cache_key=Mzk5NzMyNTc0Njg3NTY5NjY1Mw%3D%3D.3-ccb7-5-cb30a688f7-1209d890&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=BU9ptfOgsboQ7kNvwFot9ZX&_nc_oc=AdpiJVM9F8p_2qesp4CJntrzdlEHk_sAf3_IrPoeYuQodBuvM1aNlYv0W5w2-J5urFw&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_gid=g_UJGnFxy8ZnD91xqrrgxQ&_nc_ss=7e3ba&oh=00_AQOVP3Ewx3a-AALLWSx_O7qdsU61ZroAoEFnY0umH2FAHQ&oe=6AC389D8\nhttps://scontent-iad6-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=-f_j7BYj1KsQ7kNvwHETVJv&_nc_oc=AdpkaPKrxGHeo1aowFWU77sb79zEmTuObkUuUSGgwcTrmRGSOMiu9_Lzy7EzW6Pv8Bo&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-iad6-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQPJjkaMPQbr6KGpqaQXROHIa9QqHPoN0y3sHFy1NSJ1dA&oe=6AC35BD9\nhttps://l.instagram.com/?u=https%3A%2F%2Fwww.amazon.jobs%2Fen%2Fjobs%2F10564599%2F2027-applied-science-internship-united-states-undergrad-student-science-recruiting-frontier-ai-robotics%3Fjr_id%3D6abc6f9f2668e0eab35c23d1%26fbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAad0jYv416b_9mTL80q1NU1-kGn59K8xEZDwKGeEsOEaQUwUA_N4EG3M7FSjjw_aem_G4-G1xD6tfNlUjrom1eCtA&e=AUBCtgO0xYDX7WVXUSWKEOdh9BAuwCBk0zAESbvJXiFeCoYeazuyqRRVGRmZruKeqPsRKvLRXTuUpP3UeYNVLPhy9LViBPwAcQ1M8mHaptnGVxA9PbdNFk49E-cbVrtgozadi12sEX7cwQ\nhttps://scontent-iad3-2.cdninstagram.com/o1/v/t2/f2/m78/AQMrY0pGtezH11XRWzCh4usC0YsvKneguWdaKtaYzRTa1pwcJ6AvNLNj0_GHofbTJJFQ4KO9F9Xpd1Hj1enjdvDIIvDntPXfQB1XK2E.mp4?_nc_cat=111&_nc_sid=5e9851&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_ohc=KjwRIEMJ2mYQ7kNvwGid1Q0&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODkwNjA4ODg2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=2bdb72f17c9e04e5&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyLzRGN0MwMzkyMzY3QjRBQ0M4MkQ1NTE3QTg0QkFFQUY4X3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbkyLiJ9vmhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=g_UJGnFxy8ZnD91xqrrgxQ&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQMvHZFSTA2Ej8Uu7N-rvFM-4iDvYpMe5CZV4U3DQG2qiw&oe=6ABF91EC",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        },
+        {
+          "ID": "ec6bca3e3a07b296df19",
+          "First Seen": "2026-09-30T23:55:58.553723+00:00",
+          "Posted At": "2026-09-30T03:20:25+00:00",
+          "Organization": "Amca",
+          "Opportunity": "Amca — Software Engineering",
+          "Category": "Internship",
+          "Role / Track": "Software Engineering",
+          "Season / Year": "Summer 2027",
+          "Location": "",
+          "Deadline": "",
+          "Application / Registration Link": "https://job-boards.greenhouse.io/amca/jobs/4425120009",
+          "Instagram Source": "https://www.instagram.com/stories/zero2sudo/",
+          "Source Type": "Story",
+          "Raw Text": "Software Engineering Internship\n(Summer 2027)\nEl Segundo, CA\nhttps://scontent-iad3-2.cdninstagram.com/v/t51.71878-15/825324818_1901617081211995_1513383481815543570_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=103&cb=30a688f7-1209d890&ig_cache_key=Mzk5NzMyNjExNDIxMzQzMjYwMw%3D%3D.3-ccb7-5-cb30a688f7-1209d890&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=K-CyiKmA63EQ7kNvwHLwDKv&_nc_oc=AdoQic-_pZ5uwzLfqNqxVoiW-Pi9yfc9zY3TVrkqr8wGbDMwQ9OlpunWHJEwcOegeew&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_gid=g_UJGnFxy8ZnD91xqrrgxQ&_nc_ss=7e3ba&oh=00_AQPlztC3bKoydjIHCoyRw3s5HjceWkgsFJfFSzefqiO1kw&oe=6AC36605\nhttps://scontent-iad3-2.cdninstagram.com/v/t51.71878-15/825324818_1901617081211995_1513383481815543570_n.jpg?stp=dst-jpg_e15_p360x360_tt6&_nc_cat=103&cb=30a688f7-1209d890&ig_cache_key=Mzk5NzMyNjExNDIxMzQzMjYwMw%3D%3D.3-ccb7-5-cb30a688f7-1209d890&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IlNUT1JZLnhwaWRzLjY0MC5zZHIudmlkZW9fZmlyc3RfZnJhbWVfdGh1bWJuYWlsLkMzIn0%3D&_nc_ohc=K-CyiKmA63EQ7kNvwHLwDKv&_nc_oc=AdoQic-_pZ5uwzLfqNqxVoiW-Pi9yfc9zY3TVrkqr8wGbDMwQ9OlpunWHJEwcOegeew&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_gid=g_UJGnFxy8ZnD91xqrrgxQ&_nc_ss=7e3ba&oh=00_AQORAOiluFN5DtI5bd28krYgyTbneU2Y3KrVkKayviuCYw&oe=6AC36605\nhttps://scontent-iad6-1.cdninstagram.com/v/t51.2885-19/361942212_2508526442658147_3130876906989167533_n.jpg?stp=dst-jpg_e0_s150x150_tt6&_nc_cat=100&ig_cache_key=GMTMkhVjOYbTfekIAK0jkHT1G3MrbkULAAAB1501500j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=-f_j7BYj1KsQ7kNvwHETVJv&_nc_oc=AdpkaPKrxGHeo1aowFWU77sb79zEmTuObkUuUSGgwcTrmRGSOMiu9_Lzy7EzW6Pv8Bo&_nc_ad=z-m&_nc_cid=0&_nc_zt=24&_nc_ht=scontent-iad6-1.cdninstagram.com&_nc_ss=7e3ba&oh=00_AQPJjkaMPQbr6KGpqaQXROHIa9QqHPoN0y3sHFy1NSJ1dA&oe=6AC35BD9\nhttps://l.instagram.com/?u=https%3A%2F%2Fjob-boards.greenhouse.io%2Famca%2Fjobs%2F4425120009%3Ffbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA81NjcwNjczNDMzNTI0MjcAAadKLttoRuaDomkJwZjBOLUxDOqtFfg0jVaPHmfYYQfONPi3gw2RLAlV3UzyUw_aem_cb0bGZiidozMPZNpRK4-Zg&e=AUD9nwd__8ikVJ2w-vLPMVbM1wLgFMZVYZTuQeGf5YXAlfZ8JSZ8T_48qhlVSCq6yFd9qn5N-uOx6DBVwm_8IXQ2AANvRDOZGv2-K8t9WptA_-lNUWF3OMRMnG7LMWCV-9CSVYXJpBHJFg\nhttps://scontent-iad3-2.cdninstagram.com/o1/v/t2/f2/m78/AQO5r4-MT6JnJPVtN6dR1FSxaVY9giRCtxBUvmyFmMCuy15FnhIsek7EVio9zltq5WAKRDDewFkP-DIh_JQkUtBOpkF0GSdOn4Kc2Xc.mp4?_nc_cat=103&_nc_sid=5e9851&_nc_ht=scontent-iad3-2.cdninstagram.com&_nc_ohc=mqVeQP58xBMQ7kNvwFX0V4p&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uU1RPUlkuQzMuNzIwLmRhc2hfYmFzZWxpbmVfMV92MSIsInhwdl9hc3NldF9pZCI6MTgwODkwNjExNjQ2Nzg5NjIsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDEwMCwiZHVyYXRpb25fcyI6MywidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=f3ea2ec1aee948d&_nc_vs=HBkcFQIYUWlnX3hwdl9wbGFjZW1lbnRfcGVybWFuZW50X3YyL0IyNTQzQTY5RDEzNzQyQTE5QkNGMkRDRkY2RUYwNTBBX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbk_NOQ-PmhQBUCKAJDMywXQAhDlYEGJN0YEmRhc2hfYmFzZWxpbmVfMV92MREAdegHZeidAQA&_nc_gid=g_UJGnFxy8ZnD91xqrrgxQ&_nc_ss=7e3ba&_nc_zt=28&oh=00_AQPRsELhbq0W4aifdZ03lxpwvH7-mIHE8GaMBZydPLuo6w&oe=6ABF797C",
+          "Status": "New",
+          "Priority": "Medium",
+          "Actioned?": "No",
+          "Notes": ""
+        }
+      ]
+    }
+  ],
   "delivered_batch_ids": [
     "01f02af07d8ef004333d",
     "06780ac6d6be4698e907",
