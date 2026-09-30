@@ -74,6 +74,7 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SYNC_REQUIRED: ${{ vars.GOOGLE_SYNC_REQUIRED || 'false' }}
+          HIGH_PRIORITY_ORGS: ${{ vars.HIGH_PRIORITY_ORGS }}
           IG_USERNAME: zero2sudo
         run: python opportunity_monitor.py --defer-notifications
 
@@ -144,7 +145,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_SERVER: ${{ vars.NTFY_SERVER }}
+          NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          HIGH_PRIORITY_ORGS: ${{ vars.HIGH_PRIORITY_ORGS }}
         run: python opportunity_monitor.py --notify
 
       - name: Persist notification delivery state

@@ -25,7 +25,7 @@ class PersistenceTests(unittest.TestCase):
             ("fetch_stories", lambda: []),
             ("fetch_posts", lambda: []),
             ("normalize_item", lambda item, source: item),
-            ("migrate_workbook", lambda: {"before": 0, "after": 0, "changed": False}),
+            ("migrate_workbook", lambda manual_fields=None: {"before": 0, "after": 0, "changed": False}),
             ("record_semantic_key", lambda row: row["ID"]),
             ("pull_google_manual_fields", lambda: {}),
             ("github_issue", lambda rows, batch_id="": True),

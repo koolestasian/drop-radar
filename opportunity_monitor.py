@@ -5,9 +5,9 @@ import json
 import os
 import re
 import tempfile
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qsl, unquote, urlencode, urlparse, urlunparse
 
 import requests
 from openpyxl import Workbook, load_workbook
@@ -15,6 +15,13 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from PIL import Image
 import pytesseract
+
+try:  # Some Story media is HEIC, which Pillow cannot open on its own.
+    from pillow_heif import register_heif_opener
+
+    register_heif_opener()
+except ImportError:
+    pass
 
 USERNAME = os.getenv("IG_USERNAME", "zero2sudo").lstrip("@")
 APIFY_TOKEN = os.environ.get("APIFY_TOKEN", "").strip()
@@ -29,6 +36,8 @@ POST_ACTOR = os.getenv("POST_ACTOR", "apify/instagram-scraper")
 GITHUB_TOKEN = os.getenv("GH_TOKEN", "").strip()
 GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY", "").strip()
 NTFY_TOPIC = os.getenv("NTFY_TOPIC", "").strip()
+NTFY_SERVER = os.getenv("NTFY_SERVER", "https://ntfy.sh").strip() or "https://ntfy.sh"
+NTFY_TOKEN = os.getenv("NTFY_TOKEN", "").strip()
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "").strip()
 GOOGLE_SYNC_REQUIRED = os.getenv("GOOGLE_SYNC_REQUIRED", "false").strip().lower() in {
@@ -107,7 +116,128 @@ KNOWN_ORGS = [
     "Coinbase", "Roblox", "Airbnb", "DoorDash", "Capital One", "Citadel",
     "Citadel Securities", "Optiver", "IMC Trading", "Jane Street", "D. E. Shaw",
     "Hudson River Trading", "Two Sigma", "LinkedIn", "MongoDB", "Cloudflare",
-    "Atlassian", "Asana", "Dropbox", "Pinterest", "Reddit", "Snap", "TikTok", "ByteDance"
+    "Atlassian", "Asana", "Dropbox", "Pinterest", "Reddit", "Snap", "TikTok", "ByteDance",
+    "OpenAI", "Anthropic", "Scale AI", "Shield AI", "Vannevar Labs", "Primer",
+    "Tesla", "SpaceX", "Waymo", "Lyft", "Shopify", "Spotify", "Netflix", "Rippling",
+    "Ramp", "Vercel", "Cerebras", "Perplexity", "Quora", "Robinhood", "Plaid", "Intuit",
+    "Visa", "Cisco", "AMD", "Intel", "IBM", "Qualcomm", "Oracle", "Verizon", "AT&T",
+    "T-Mobile", "Walmart", "Target", "Disney", "Bloomberg", "Point72",
+    "Tower Research Capital", "Geneva Trading", "CME Group", "Jump Trading", "SIG",
+    "Goldman Sachs", "Morgan Stanley", "JPMorgan Chase", "BlackRock", "Barclays",
+    "Fidelity", "Liberty Mutual", "State Farm", "Wells Fargo", "Bank of America",
+    "Macquarie", "PwC", "Deloitte", "Accenture", "Boeing", "Lockheed Martin",
+    "Northrop Grumman", "Garmin", "Rivian", "Zipline", "SeatGeek", "Rubrik", "Epic Games",
+    "EA", "Riot Games", "Duolingo", "Datadog", "Twilio", "Workday", "ServiceNow",
+    "PayPal", "Together AI", "ZipRecruiter", "Under Armour", "GE HealthCare", "Cigna",
+    "Boston Scientific", "H&R Block", "First Citizens", "NASA", "Box",
+    "Klaviyo", "Astranis", "Mercury", "Figure", "Samsara", "Nuro", "Aurora",
+]
+
+# Slugs that do not normalize onto a KNOWN_ORGS name by themselves.
+ORG_ALIASES = {
+    "withwaymo": "Waymo",
+    "doordashusa": "DoorDash",
+    "optiverprivate": "Optiver",
+    "scaleai": "Scale AI",
+    "togetherai": "Together AI",
+    "cmegroup": "CME Group",
+    "genevatrading": "Geneva Trading",
+    "headlandstechnologies": "Headlands Technologies",
+    "queracomputing": "QuEra Computing",
+    "thecignagroup": "Cigna",
+    "gehealthcare": "GE HealthCare",
+    "underarmour": "Under Armour",
+    "statefarm": "State Farm",
+    "capitalone": "Capital One",
+    "bostonscientific": "Boston Scientific",
+    "libertymutual": "Liberty Mutual",
+    "firstcitizens": "First Citizens",
+    "hrblock": "H&R Block",
+    "lifeatspotify": "Spotify",
+    "metacareers": "Meta",
+    "epicgames": "Epic Games",
+    "towerresearch": "Tower Research Capital",
+    "arcteryx": "Arc'teryx",
+    "arcteryxcom": "Arc'teryx",
+    "att": "AT&T",
+    "fmr": "Fidelity",
+    "jpmc": "JPMorgan Chase",
+    "jpmorgan": "JPMorgan Chase",
+    "q2ebanking": "Q2",
+    "erac": "Enterprise Mobility",
+    "enterprisemobility": "Enterprise Mobility",
+    "ea": "EA",
+    "sig": "SIG",
+    "nfa": "NFA",
+    "icf": "ICF",
+    "amd": "AMD",
+    "vannevar": "Vannevar Labs",
+    "shieldai": "Shield AI",
+    "hrt": "Hudson River Trading",
+    "deshaw": "D. E. Shaw",
+    "janestreet": "Jane Street",
+    "twosigma": "Two Sigma",
+    "wurljobs": "Wurl",
+    "voyagertechnologies": "Voyager Technologies",
+    "metoxinternational": "Metox International",
+    "assuredguaranty": "Assured Guaranty",
+    "headlands": "Headlands Technologies",
+    "tylertech": "Tyler Technologies",
+    "linkedin3": "LinkedIn",
+    "financialtimes": "Financial Times",
+    "bcbsm": "Blue Cross Blue Shield of Michigan",
+    "ulsolutions": "UL Solutions",
+    "gunvor": "Gunvor",
+    "wabashvalleypoweralliance": "Wabash Valley Power Alliance",
+    "prizepicks": "PrizePicks",
+    "rizepicks": "PrizePicks",
+    "redventures": "Red Ventures",
+    "smartscholarship": "SMART Scholarship",
+}
+
+# Company-name suffixes that job-board slugs append to the real name.
+ORG_SLUG_SUFFIXES = (
+    "inc", "llc", "corp", "careers", "career", "campus", "jobs", "private",
+    "group", "usa", "us", "global", "external",
+)
+ORG_SLUG_PREFIXES = ("the", "with", "lifeat", "join", "careers", "campus", "uscareers", "us", "jobs")
+
+# Hosts whose name says nothing about the employer: shorteners, form and event
+# tools, aggregators, and ATS domains that encode no company in the URL.
+GENERIC_LINK_HOSTS = (
+    "tinyurl.com", "bit.ly", "linktr.ee", "lu.ma", "luma.com", "forms.gle",
+    "docs.google.com", "share.google", "forms.cloud.microsoft", "forms.office.com",
+    "typeform.com", "eventbrite.com", "splashthat.com", "gem.com", "notion.site",
+    "t.co", "rebrand.ly", "calendly.com", "youtube.com", "youtu.be",
+    "directconsideration.com", "irectconsideration.com", "demystifyd.com",
+    "oraclecloud.com", "ultipro.com", "brassring.com", "tal.net",
+    "app.eightfold.ai", "app3.greenhouse.io", "app.greenhouse.io", "joinhandshake.com",
+    "handshake.com", "wellfound.com", "indeed.com", "glassdoor.com", "simplify.jobs",
+)
+
+# ATS hosts where the company is the first path segment.
+ATS_PATH_HOSTS = {
+    "jobs.lever.co", "boards.greenhouse.io", "job-boards.greenhouse.io",
+    "boards.eu.greenhouse.io", "job-boards.eu.greenhouse.io", "jobs.ashbyhq.com",
+    "jobs.smartrecruiters.com", "jobs.jobvite.com", "apply.workable.com",
+    "ats.rippling.com", "jobs.gem.com",
+}
+
+# ATS domains where the company is the leftmost subdomain.
+ATS_SUBDOMAIN_SUFFIXES = (
+    "myworkdayjobs.com", "eightfold.ai", "icims.com", "avature.net",
+    "jibeapply.com", "wd1.myworkdaysite.com", "recruitee.com", "bamboohr.com",
+    "breezy.hr", "teamtailor.com", "pinpointhq.com",
+)
+
+DEFAULT_HIGH_PRIORITY_ORGS = [
+    "Palantir", "Anduril", "Scale AI", "Primer", "Vannevar Labs", "Shield AI",
+    "OpenAI", "Anthropic", "Databricks",
+]
+HIGH_PRIORITY_ORGS = [
+    name.strip()
+    for name in (os.getenv("HIGH_PRIORITY_ORGS") or ",".join(DEFAULT_HIGH_PRIORITY_ORGS)).split(",")
+    if name.strip()
 ]
 
 DOMAIN_ORGS = {
@@ -160,13 +290,23 @@ def actor_url(actor_id):
     return f"https://api.apify.com/v2/acts/{actor_id.replace('/', '~')}/run-sync-get-dataset-items"
 
 def run_actor(actor_id, payload):
+    # The token goes in a header, not the query string, so it never appears in
+    # an exception message or log line that includes the request URL.
     response = requests.post(
         actor_url(actor_id),
-        params={"token": APIFY_TOKEN, "timeout": REQUEST_TIMEOUT},
+        params={"timeout": REQUEST_TIMEOUT},
+        headers={"Authorization": f"Bearer {APIFY_TOKEN}"},
         json=payload,
         timeout=REQUEST_TIMEOUT + 30,
     )
-    response.raise_for_status()
+    if response.status_code >= 400:
+        hint = {
+            401: "APIFY_TOKEN is invalid or revoked",
+            402: "the Apify account is out of credit",
+            403: "the Apify token lacks permission for this actor",
+            404: "the actor was not found; check STORY_ACTOR / POST_ACTOR",
+        }.get(response.status_code, "Apify returned an error")
+        raise RuntimeError(f"Actor {actor_id} failed with HTTP {response.status_code}: {hint}.")
     data = response.json()
     if not isinstance(data, list):
         shape = type(data).__name__
@@ -183,7 +323,7 @@ def fetch_stories():
     try:
         return run_actor(STORY_ACTOR, {"usernames": [USERNAME]})
     except Exception as exc:
-        raise RuntimeError("Story scrape failed; this check is incomplete.") from None
+        raise RuntimeError(f"Story scrape failed; this check is incomplete. {exc}") from exc
 
 def fetch_posts():
     payload = {
@@ -196,7 +336,7 @@ def fetch_posts():
     try:
         return run_actor(POST_ACTOR, payload)
     except Exception as exc:
-        raise RuntimeError("Post/reel scrape failed; this check is incomplete.") from None
+        raise RuntimeError(f"Post/reel scrape failed; this check is incomplete. {exc}") from exc
 
 def pick(item, *keys):
     for key in keys:
@@ -275,7 +415,11 @@ def external_links(links):
         url = unwrap_instagram_redirect(raw)
         try:
             parsed = urlparse(url)
-            valid = parsed.scheme.lower() in {"http", "https"} and bool(parsed.netloc)
+            host = parsed.hostname or ""
+            valid = (
+                parsed.scheme.lower() in {"http", "https"}
+                and re.fullmatch(r"(?:[a-z0-9-]+\.)+[a-z]{2,}", host.lower()) is not None
+            )
         except Exception:
             valid = False
         if valid and not is_instagram_url(url) and not is_media_url(url):
@@ -319,7 +463,8 @@ def ocr_image(url):
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as temp:
             temp.write(response.content)
             temp.flush()
-            image = Image.open(temp.name).convert("RGB")
+            # Grayscale gives Tesseract cleaner glyph edges on colorful Story art.
+            image = Image.open(temp.name).convert("L")
             if image.width < 1400:
                 scale = 1400 / max(image.width, 1)
                 image = image.resize((int(image.width * scale), int(image.height * scale)))
@@ -354,69 +499,176 @@ def looks_actionable(text, links):
         return opportunity or bool(ACTION_RE.search(text))
     return opportunity and strong_action
 
+def org_key(value):
+    return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
+
+ORG_BY_KEY = {org_key(name): name for name in KNOWN_ORGS}
+
 def _pretty_org(value):
     value = re.sub(r"[-_]+", " ", value or "").strip()
     return " ".join(part.upper() if len(part) <= 3 else part.capitalize() for part in value.split())
 
+def _slug_variants(key):
+    """Yield a slug and the versions of it without common prefixes/suffixes."""
+    seen = []
+    pending = [key]
+    while pending:
+        current = pending.pop(0)
+        if not current or current in seen:
+            continue
+        seen.append(current)
+        if current[-1:].isdigit():
+            pending.append(current.rstrip("0123456789"))  # LinkedIn3, financialtimes33
+        for prefix in ORG_SLUG_PREFIXES:
+            if current.startswith(prefix) and len(current) - len(prefix) >= 2:
+                pending.append(current[len(prefix):])
+        for suffix in ORG_SLUG_SUFFIXES:
+            if current.endswith(suffix) and len(current) - len(suffix) >= 2:
+                pending.append(current[:-len(suffix)])
+    return seen
+
+def canonical_org(raw):
+    """Map a host label or path slug such as 'doordashusa' to 'DoorDash'."""
+    raw = unquote(str(raw or "")).strip()
+    key = org_key(raw)
+    if not key:
+        return ""
+    variants = _slug_variants(key)
+    for variant in variants:
+        if variant in ORG_ALIASES:
+            return ORG_ALIASES[variant]
+        if variant in ORG_BY_KEY:
+            return ORG_BY_KEY[variant]
+    # Unknown company: drop job-board words and unambiguous corporate
+    # suffixes (careers-barrios, gunvorgroup, LinkedIn3), then prettify.
+    words = [word for word in re.split(r"[-_.\s]+", raw) if word]
+    board_words = {"careers", "career", "campus", "uscareers", "us", "jobs", "join", "the", "external"}
+    while len(words) > 1 and words[0].lower() in board_words:
+        words = words[1:]
+    while len(words) > 1 and words[-1].lower() in board_words | {"inc", "llc", "corp"}:
+        words = words[:-1]
+    readable = " ".join(words)
+    if " " not in readable:
+        readable = readable.rstrip("0123456789") or readable
+        compact = readable.lower()
+        for suffix in ("inc", "llc", "corp", "careers", "campus", "jobs", "private", "group"):
+            if compact.endswith(suffix) and len(compact) - len(suffix) >= 3:
+                readable = readable[:-len(suffix)]
+                break
+    if org_key(readable) in {"americas", "global", "emea", "apac", "na", "us", "usa", "intl"}:
+        return ""
+    return _pretty_org(readable)
+
+def _host_matches(host, domain):
+    return host == domain or host.endswith("." + domain)
+
+def _registrable_label(labels):
+    """Company label of a hostname: 'mycareer.verizon.com' -> 'verizon'."""
+    if len(labels) < 2:
+        return ""
+    if len(labels) >= 3 and labels[-2] in {"co", "com", "ac", "org"} and len(labels[-1]) == 2:
+        label = labels[-3]
+    else:
+        label = labels[-2]
+    if label in {"jobs", "careers", "career", "apply", "join"} and len(labels[-1]) > 3:
+        label = labels[-1]  # e.g. search.jobs.barclays
+    return label
+
+def organization_from_url(url):
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return ""
+    host = parsed.netloc.lower().removeprefix("www.")
+    path_parts = [part for part in parsed.path.split("/") if part]
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    labels = host.split(".")
+
+    for domain, organization in DOMAIN_ORGS.items():
+        if _host_matches(host, domain):
+            if domain == "linkedin.com" and path_parts[:1] and path_parts[0] in {
+                "jobs", "posts", "feed", "in", "company", "events", "comm",
+            }:
+                return ""  # LinkedIn hosts other companies' postings.
+            if domain == "google.com" and host != "google.com" and not host.endswith("careers.google.com"):
+                if host.startswith("docs.") or host.startswith("forms."):
+                    return ""
+            return organization
+
+    if host.endswith("oraclecloud.com") and "sites" in path_parts:
+        index = path_parts.index("sites")
+        site = path_parts[index + 1] if len(path_parts) > index + 1 else ""
+        site = re.sub(r"(?:Student|Early|University|Campus)?Careers?$", "", site)
+        if site and not re.fullmatch(r"CX(?:_\d+)?", site, re.I):
+            return canonical_org(re.sub(r"(?<=[a-z])(?=[A-Z])", "-", site))
+        return ""
+    if any(_host_matches(host, generic) for generic in GENERIC_LINK_HOSTS):
+        return ""
+
+    if host in ATS_PATH_HOSTS:
+        if path_parts[:1] == ["embed"] and query.get("for"):
+            return canonical_org(query["for"])  # Greenhouse embedded board
+        return canonical_org(path_parts[0]) if path_parts else ""
+    if host == "app.careerpuck.com":
+        return canonical_org(path_parts[1]) if len(path_parts) > 1 else ""
+    if host.endswith("myworkdaysite.com") and "recruiting" in path_parts:
+        index = path_parts.index("recruiting")
+        return canonical_org(path_parts[index + 1]) if len(path_parts) > index + 1 else ""
+    for suffix in ATS_SUBDOMAIN_SUFFIXES:
+        if _host_matches(host, suffix):
+            candidate = labels[0]
+            if re.fullmatch(r"wd\d+|app|www|careers|jobs", candidate):
+                return ""
+            return canonical_org(candidate)
+
+    return canonical_org(_registrable_label(labels))
+
 def organization_from_links(links):
     for url in external_links(links):
-        try:
-            parsed = urlparse(url)
-            host = parsed.netloc.lower().removeprefix("www.")
-
-            for domain, organization in DOMAIN_ORGS.items():
-                if host == domain or host.endswith("." + domain):
-                    return organization
-
-            # Common ATS patterns encode the company in a subdomain/path.
-            labels = host.split(".")
-            if host.endswith("myworkdayjobs.com") and labels:
-                candidate = labels[0]
-                if candidate not in {"wd1", "wd2", "wd3", "wd5"}:
-                    return _pretty_org(candidate)
-
-            if host in {"jobs.lever.co", "boards.greenhouse.io", "job-boards.greenhouse.io"}:
-                path_parts = [p for p in parsed.path.split("/") if p]
-                if path_parts:
-                    return _pretty_org(path_parts[0])
-
-            # apply.company.com / careers.company.com / jobs.company.com
-            if len(labels) >= 2 and labels[0] in {"apply", "careers", "career", "jobs", "job"}:
-                return _pretty_org(labels[1])
-        except Exception:
-            pass
+        organization = organization_from_url(url)
+        if organization:
+            return organization
     return ""
+
+def organization_from_text(text):
+    """Earliest well-known company named in the text.
+
+    Matching is case-sensitive (exact, Title or UPPER case) so ordinary words
+    such as 'visa sponsorship' or 'target audience' are not read as companies.
+    """
+    best = None
+    for org in KNOWN_ORGS:
+        forms = {re.escape(org), re.escape(org.upper()), re.escape(org.title())}
+        match = re.search(rf"(?<![\w&])(?:{'|'.join(forms)})(?![\w&])", text)
+        if match and (best is None or match.start() < best[0]):
+            best = (match.start(), org)
+    return best[1] if best else ""
 
 def extract_organization(text, links):
-    from_link = organization_from_links(links)
-    if from_link:
-        return from_link
-    for org in KNOWN_ORGS:
-        if re.search(rf"\b{re.escape(org)}\b", text, re.I):
-            return org
-    return ""
+    return organization_from_links(links) or organization_from_text(text)
+
+CATEGORIES = [
+    ("Internship", r"intern(?:ship)?s?|co-?op"),
+    ("New Grad / Early Career", r"new grad(?:uate)?|new college grad(?:uate)?|early career|entry[- ]level|university graduate"),
+    ("Job / Hiring", r"hiring|job opening|open role|student job"),
+    ("Fellowship", r"fellowship"),
+    ("Scholarship / Grant", r"scholarship|grant|stipend"),
+    ("Hackathon / Competition", r"hackathon|pitch competition|competition|case challenge|coding challenge"),
+    ("Conference / Summit", r"conference|summit"),
+    ("Recruiting / Career Event", r"career fair|recruiting event|direct consideration"),
+    ("Networking", r"networking event|meetup|coffee chat"),
+    ("Workshop / Info Session", r"workshop|webinar|info session|information session|office hours|resume review"),
+    ("Mentorship / Cohort", r"mentorship|mentor program|cohort"),
+    ("Student / Campus Program", r"ambassador program|campus program|student program|university program"),
+    ("Research", r"research opportunity|research program|research intern"),
+    ("Apprenticeship / Externship", r"apprenticeship|externship"),
+    ("Accelerator / Incubator", r"accelerator|incubator"),
+    ("Referral / Talent Network", r"referral|early talent|talent network|talent community"),
+]
 
 def extract_category(text):
-    categories = [
-        ("Internship", r"\bintern(ship)?\b"),
-        ("New Grad / Early Career", r"\bnew grad|early career|entry[- ]level\b"),
-        ("Job / Hiring", r"\bhiring|job opening|open role|student job\b"),
-        ("Fellowship", r"\bfellowship\b"),
-        ("Scholarship / Grant", r"\bscholarship|grant|stipend\b"),
-        ("Hackathon / Competition", r"\bhackathon|competition|challenge|pitch competition\b"),
-        ("Conference / Summit", r"\bconference|summit\b"),
-        ("Recruiting / Career Event", r"\bcareer fair|recruiting event|direct consideration\b"),
-        ("Networking", r"\bnetworking event|meetup|coffee chat\b"),
-        ("Workshop / Info Session", r"\bworkshop|webinar|info session|information session|office hours|resume review\b"),
-        ("Mentorship / Cohort", r"\bmentorship|mentor program|cohort\b"),
-        ("Student / Campus Program", r"\bambassador program|campus program|student program|university program\b"),
-        ("Research", r"\bresearch opportunity|research program|research intern\b"),
-        ("Apprenticeship / Externship", r"\bapprenticeship|externship\b"),
-        ("Accelerator / Incubator", r"\baccelerator|incubator\b"),
-        ("Referral / Talent Network", r"\breferral|early talent|talent network|talent community\b"),
-    ]
-    for label, pattern in categories:
-        if re.search(pattern, text, re.I):
+    for label, pattern in CATEGORIES:
+        if re.search(rf"\b(?:{pattern})\b", text, re.I):
             return label
     return "Other Opportunity"
 
@@ -426,39 +678,120 @@ def extract_roles(text):
     )
 
 def extract_season(text):
-    matches = re.findall(r"\b(Summer|Fall|Autumn|Winter|Spring)\s+(20\d{2})\b", text, re.I)
-    if matches:
-        return ", ".join(dict.fromkeys(f"{season.title()} {year}" for season, year in matches))
+    matches = re.findall(r"\b(Summer|Fall|Autumn|Winter|Spring)\s+'?((?:20)?\d{2})\b", text, re.I)
+    seasons = []
+    for season, year in matches:
+        year = f"20{year}" if len(year) == 2 else year
+        if re.fullmatch(r"20(?:2[4-9]|3\d)", year):
+            seasons.append(f"{season.title()} {year}")
+    if seasons:
+        return ", ".join(dict.fromkeys(seasons))
     years = re.findall(r"\b20(?:2[6-9]|3\d)\b", text)
     return ", ".join(dict.fromkeys(years))
 
+LOCATION_PLACES = [
+    "Seattle", "Kirkland", "Bellevue", "Redmond", "San Francisco", "Bay Area",
+    "New York", "NYC", "Austin", "Boston", "Chicago", "Los Angeles", "Sunnyvale",
+    "Mountain View", "Menlo Park", "Palo Alto", "San Jose", "San Diego", "Denver",
+    "Atlanta", "Dallas", "Houston", "Miami", "Pittsburgh", "Philadelphia",
+    "Washington, DC", "Washington DC", "Toronto", "Waterloo", "Vancouver", "Montreal",
+    "London", "Dublin", "Remote", "Hybrid",
+]
+US_STATES = (
+    "AL|AK|AZ|AR|CA|CO|CT|DE|DC|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|"
+    "MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY"
+)
+CITY_STATE_RE = re.compile(rf"\b([A-Z][a-z]+(?: [A-Z][a-z]+)?),\s?({US_STATES})\b")
+NOT_A_CITY = {"Summer", "Fall", "Winter", "Spring", "Apply", "Intern", "Internship", "Program", "Now"}
+
 def extract_location(text):
-    places = [
-        "Seattle", "Kirkland", "Bellevue", "Redmond", "San Francisco", "Bay Area",
-        "New York", "NYC", "Austin", "Boston", "Chicago", "Los Angeles", "Sunnyvale",
-        "Mountain View", "Menlo Park", "Washington, DC", "Washington DC", "Remote"
-    ]
-    found = [place for place in places if re.search(rf"\b{re.escape(place)}\b", text, re.I)]
+    found = [place for place in LOCATION_PLACES if re.search(rf"\b{re.escape(place)}\b", text, re.I)]
+    for city, state in CITY_STATE_RE.findall(text):
+        if city.split()[0] not in NOT_A_CITY and not any(city in place for place in found):
+            found.append(f"{city}, {state}")
     return ", ".join(dict.fromkeys(found))
 
-def extract_deadline(text):
-    patterns = [
-        r"(?:deadline|due|apply by|register by)\s*[:\-]?\s*([A-Z][a-z]{2,8}\.?\s+\d{1,2}(?:,\s*20\d{2})?)",
-        r"(?:deadline|due|apply by|register by)\s*[:\-]?\s*(\d{1,2}/\d{1,2}(?:/20\d{2})?)",
-        r"(?:deadline|due|apply by|register by)\s*[:\-]?\s*(20\d{2}-\d{2}-\d{2})",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, text, re.I)
-        if match:
-            return match.group(1).strip()
+MONTH_RE = r"(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?"
+DATE_RE = (
+    rf"(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*,?\s+)?"
+    rf"(?:{MONTH_RE}\s+\d{{1,2}}(?:st|nd|rd|th)?(?:,?\s+20\d{{2}})?"
+    rf"|\d{{1,2}}(?:st|nd|rd|th)?\s+{MONTH_RE}(?:,?\s+20\d{{2}})?"
+    rf"|\d{{1,2}}/\d{{1,2}}(?:/(?:20)?\d{{2}})?"
+    rf"|20\d{{2}}-\d{{2}}-\d{{2}})"
+)
+DEADLINE_TRIGGER_RE = (
+    r"(?:deadline(?:\s+to\s+(?:apply|register))?|due|apply\s+(?:by|before)|"
+    r"register\s+(?:by|before)|submit\s+(?:by|before)|rsvp\s+by|"
+    r"applications?\s+(?:close|closes|closing|due|end|ends)|"
+    r"registration\s+(?:closes|ends|deadline)|closes|closing\s+date|ends|before|until)"
+)
+DEADLINE_RE = re.compile(
+    rf"\b{DEADLINE_TRIGGER_RE}\b(?:\s+is)?(?:\s+on)?\s*[:\-–]?\s*"
+    rf"(?:[^\n]{{0,30}}?\bon\s+)?({DATE_RE})(?![\d/])",
+    re.I,
+)
+
+def parse_deadline(value, reference=None):
+    """Best-effort date for a deadline string; None when it cannot be read."""
+    if not value:
+        return None
+    reference = reference or datetime.now(timezone.utc).date()
+    text = str(value).strip().lower()
+    if re.fullmatch(r"20\d{2}-\d{2}-\d{2}", text):
+        try:
+            return date.fromisoformat(text)
+        except ValueError:
+            return None
+    text = re.sub(r"^(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*,?\s+", "", text)
+    text = re.sub(r"(\d)(?:st|nd|rd|th)\b", r"\1", text)
+    text = text.replace(".", "").replace(",", " ")
+    text = re.sub(r"\bsept\b", "sep", text)
+    text = " ".join(text.split())
+    formats_with_year = ("%B %d %Y", "%b %d %Y", "%d %B %Y", "%d %b %Y", "%m/%d/%Y", "%m/%d/%y")
+    formats_without_year = ("%B %d", "%b %d", "%d %B", "%d %b", "%m/%d")
+    for fmt in formats_with_year:
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    for fmt in formats_without_year:
+        try:
+            parsed = datetime.strptime(f"{text} {reference.year}", f"{fmt} %Y").date()
+        except ValueError:
+            continue
+        # A yearless date well before the post refers to next year.
+        if parsed < reference - timedelta(days=60):
+            parsed = parsed.replace(year=parsed.year + 1)
+        return parsed
+    return None
+
+def extract_deadline(text, reference=None):
+    """Deadline as ISO date when it can be parsed, otherwise the raw phrase."""
+    for match in DEADLINE_RE.finditer(text or ""):
+        raw = " ".join(match.group(1).split()).strip(" ,.")
+        parsed = parse_deadline(raw, reference)
+        if not parsed:
+            continue
+        if reference and parsed < reference - timedelta(days=60):
+            try:
+                parsed = parsed.replace(year=reference.year)
+                if parsed < reference - timedelta(days=60):
+                    parsed = parsed.replace(year=reference.year + 1)
+            except ValueError:
+                continue
+        return parsed.isoformat()
     return ""
 
-def extract_status(text):
-    if re.search(r"\bclosed|deadline passed|no longer accepting|filled\b", text, re.I):
+def extract_status(text, deadline="", today=None):
+    today = today or datetime.now(timezone.utc).date()
+    deadline_date = parse_deadline(deadline)
+    if deadline_date and deadline_date < today:
+        return "Expired"
+    if re.search(r"\b(?:closed|deadline passed|no longer accepting|position (?:has been )?filled)\b", text, re.I):
         return "Closed"
-    if re.search(r"\breopen|re-open\b", text, re.I):
+    if re.search(r"\b(?:reopen(?:ed)?|re-open(?:ed)?)\b", text, re.I):
         return "Reopened"
-    if re.search(r"\bopen(?:ed)?|apply now|applications? (?:are )?live|registration (?:is )?open\b", text, re.I):
+    if re.search(r"\b(?:open(?:ed)?|apply now|applications? (?:are )?live|registration (?:is )?open)\b", text, re.I):
         return "Open"
     return "New"
 
@@ -485,8 +818,86 @@ def source_url(item, source_type):
         return f"https://www.instagram.com/stories/{USERNAME}/"
     return f"https://www.instagram.com/{USERNAME}/"
 
+TITLE_ROLE_WORDS_RE = re.compile(
+    r"\b(?:intern(?:ship)?s?|engineer(?:ing)?|developer|scientist|analyst|manager|associate|"
+    r"fellow(?:ship)?s?|graduate|grad|apprentice(?:ship)?|co-?op|researcher|designer|residency|"
+    r"scholar(?:ship)?s?|hackathon|summit|conference|workshop|trainee|specialist|architect|"
+    r"programs?|swe|sde|apm|pm)\b",
+    re.I,
+)
+TITLE_ACRONYMS = {
+    "ai", "ml", "swe", "sde", "pm", "apm", "tpm", "ux", "ui", "us", "usa", "uk", "it", "bs",
+    "ms", "phd", "aws", "gcp", "nyc", "sf", "hr", "qa", "ios", "api", "gpu", "llm", "nlp",
+    "ar", "vr", "ev", "dc", "ii", "iii", "sre", "cs", "ece", "eecs", "ca", "ny", "tx", "wa",
+    "va", "ga", "ma", "il", "nj", "nc", "pa", "mn", "mba", "gtm",
+}
+TITLE_SMALL_WORDS = {"and", "or", "of", "the", "for", "in", "on", "at", "to", "a", "an", "with"}
+TITLE_QUERY_KEYS = {"jobname", "title", "job_title", "jobtitle", "position"}
+DANGLING_END_RE = re.compile(
+    r"\b(?:and|but|or|we|you|i|when|etc|the|a|an|to|for|of|with|is|are|our|your|this|that|at|in)\W*$",
+    re.I,
+)
+
+def _title_word(word, first):
+    lower = word.lower()
+    if lower in TITLE_ACRONYMS:
+        return lower.upper()
+    if not first and lower in TITLE_SMALL_WORDS:
+        return lower
+    if any(ch.isupper() for ch in word[1:]):
+        return word  # keep deliberate casing such as iOS or PhD
+    return word[:1].upper() + word[1:].lower()
+
+def title_from_url(url, organization=""):
+    """Readable job title from an application URL slug.
+
+    Many ATS links carry the real posting title, for example
+    amazon.jobs/.../software-development-engineer-intern-aws-2027. Returns ""
+    when the URL holds only IDs.
+    """
+    if not url:
+        return ""
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return ""
+    candidates = [
+        value for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        if key.lower() in TITLE_QUERY_KEYS and value
+    ]
+    candidates += [unquote(part) for part in reversed(parsed.path.split("/")) if part]
+    for segment in candidates:
+        segment = re.sub(r"\.(?:html?|aspx?|php)$", "", segment, flags=re.I)
+        # Trailing requisition IDs such as _R-26-19948 or _JR123456.
+        segment = re.sub(r"[_-]+(?:R|JR|REQ)?[-_]?\d[\d-]{3,}$", "", segment, flags=re.I)
+        segment = re.sub(r"\bco-op\b", "Co-op", segment, flags=re.I)
+        segment = re.sub(r"\b(?:xmlname|job[-_ ]posting[-_ ]title)\b", " ", segment, flags=re.I)
+        words = [
+            word for word in re.split(r"[\s_+,/|]+|(?<!co)-", segment, flags=re.I)
+            if word and (
+                re.fullmatch(r"20\d{2}", word)
+                or not re.fullmatch(r"[0-9a-f]{8,}|\d{1,2}|[a-z]{0,4}\d{3,}[a-z]{0,2}", word, re.I)
+            )
+        ]
+        words = [word.strip("()[]'\"") for word in words if word.strip("()[]'\"")]
+        alpha = [word for word in words if re.search(r"[A-Za-z]{2,}", word)]
+        phrase = " ".join(words)
+        if len(alpha) < 2 or not TITLE_ROLE_WORDS_RE.search(phrase):
+            continue
+        org_words = org_key(organization)
+        while words and org_words and org_key(words[0]) and org_words.startswith(org_key(words[0])):
+            org_words = org_words[len(org_key(words[0])):]
+            words = words[1:]
+        words = words[:14]
+        title = " ".join(_title_word(word, index == 0) for index, word in enumerate(words))
+        if len(title) > 90:
+            title = title[:90].rsplit(" ", 1)[0]
+        if TITLE_ROLE_WORDS_RE.search(title):
+            return title
+    return ""
+
 def _line_quality(line):
-    line = re.sub(r"https?://\\S+", "", line).strip(" •|-—_")
+    line = re.sub(r"https?://\S+", "", line).strip(" •|-—_")
     if len(line) < 8 or len(line) > 180:
         return -1
     letters = sum(ch.isalpha() for ch in line)
@@ -503,30 +914,60 @@ def _line_quality(line):
         score += 30
     return score
 
-def opportunity_title(org, category, role, text):
-    lines = []
-    for raw in text.splitlines():
-        line = raw.strip()
-        if not line or line.startswith("http"):
-            continue
-        score = _line_quality(line)
-        if score >= 0:
-            lines.append((score, line))
+def usable_text_title(line):
+    """True when an OCR/caption line is a readable opportunity name."""
+    return bool(
+        line
+        and len(line) <= 100
+        and OPPORTUNITY_RE.search(line)
+        and TITLE_ROLE_WORDS_RE.search(line)
+        and not NEGATIVE_CONTEXT_RE.search(line)
+        and not line.startswith(("-", "(", "|", "@", "&"))
+        and not line.endswith(("?", "&", ",", "|", "-", "—", "(", ">"))
+        and not DANGLING_END_RE.search(line)
+        and not line[:1].islower()
+        and not re.search(
+            r"\b(?:apply now|register now|join us|join our|link in bio|offers?|we are|we're|"
+            r"you will|you'll|looking for|help build|thank you)\b",
+            line,
+            re.I,
+        )
+    )
 
-    best_line = max(lines, default=(0, ""))[1][:100]
-    if org and role:
-        return f"{org} — {role}"
-    if org:
-        return f"{org} — {category}"
-    if (
-        best_line
-        and OPPORTUNITY_RE.search(best_line)
-        and not NEGATIVE_CONTEXT_RE.search(best_line)
-        and not best_line.startswith(("-", "(", "|"))
-        and not best_line.endswith(("?", "&", ",", "|"))
-    ):
-        return best_line
-    return role or category
+CATEGORY_TITLE_NOUNS = {
+    "Internship": "Internship",
+    "New Grad / Early Career": "New Grad",
+    "Job / Hiring": "Role",
+}
+
+def composed_title(category, role, season):
+    primary_role = role.split(", ")[0] if role else ""
+    noun = CATEGORY_TITLE_NOUNS.get(category, category)
+    if primary_role and category in CATEGORY_TITLE_NOUNS:
+        base = f"{primary_role} {noun}"
+    else:
+        base = primary_role or category
+    first_season = season.split(", ")[0] if season else ""
+    if first_season and first_season not in base:
+        base = f"{base} · {first_season}"
+    return base
+
+def opportunity_title(org, category, role, text, link="", season=""):
+    specific = title_from_url(link, org)
+    if not specific and not org:
+        lines = []
+        for raw in text.splitlines():
+            line = raw.strip()
+            if not line or line.startswith("http"):
+                continue
+            score = _line_quality(line)
+            if score >= 0:
+                lines.append((score, line))
+        best_line = max(lines, default=(0, ""))[1][:100].strip()
+        if usable_text_title(best_line):
+            specific = best_line
+    specific = specific or composed_title(category, role, season)
+    return f"{org} — {specific}" if org else specific
 
 def normalize_identity_text(value):
     value = URL_RE.sub(" ", value or "")
@@ -548,32 +989,40 @@ def instagram_media_key(links):
             continue
     return ""
 
-def stable_item_key(item):
-    for key in (
-        "id", "pk", "story_pk", "story_id", "storyId", "media_id", "mediaId",
-        "shortCode", "shortcode",
-    ):
-        value = item.get(key)
-        if value not in (None, ""):
-            return f"{key.lower()}:{value}"
-    return ""
+def priority_label(row):
+    return priority_for(row).title()
 
-def row_id(item, source_type, category, role, links, text):
-    stable = stable_item_key(item)
-    media = instagram_media_key(links)
-    ex = external_links(links)
-    if stable:
-        basis = f"{source_type}:{stable}"
-    elif media:
-        basis = f"{source_type}:media:{media}"
-    elif ex:
-        basis = f"link:{clean_url(ex[0])}|{normalize_identity_text(opportunity_title('', category, role, text))}"
-    else:
-        basis = (
-            f"{source_type}:{posted_at(item)}:"
-            f"{normalize_identity_text(text)[:1000]}"
-        )
-    return hashlib.sha256(basis.encode("utf-8", errors="ignore")).hexdigest()[:20]
+def derive_fields(text, links, reference=None, today=None):
+    """Every column that is computed from a post's text and links.
+
+    New items and stored rows (re-processed from their Raw Text on each run)
+    go through this one function, so extraction improvements apply to the
+    whole tracker and an alert always matches what the tracker shows.
+    """
+    external = external_links(links)
+    destination = external[0] if external else ""
+    org = extract_organization(text, links)
+    category = extract_category(text)
+    role = extract_roles(text)
+    # A year inside "apply by Oct 15, 2026" is the deadline's, not the season's.
+    season = extract_season(DEADLINE_RE.sub(" ", text))
+    deadline = extract_deadline(text, reference)
+    fields = {
+        "Organization": org,
+        "Opportunity": opportunity_title(org, category, role, text, destination, season),
+        "Category": category,
+        "Role / Track": role,
+        "Season / Year": season,
+        "Location": extract_location(text),
+        "Deadline": deadline,
+        "Application / Registration Link": destination,
+        "Status": extract_status(text, deadline, today),
+    }
+    fields["Priority"] = priority_label(fields)
+    return fields
+
+def record_id_for(record):
+    return hashlib.sha256(record_semantic_key(record).encode("utf-8")).hexdigest()[:20]
 
 def normalize_item(item, source_type):
     text = item_text(item)
@@ -581,32 +1030,30 @@ def normalize_item(item, source_type):
     if not looks_actionable(text, links):
         return None
 
-    org = extract_organization(text, links)
-    category = extract_category(text)
-    role = extract_roles(text)
-    ex = external_links(links)
-    destination = ex[0] if ex else ""
-
-    return {
-        "ID": row_id(item, source_type, category, role, links, text),
+    posted = posted_at(item)
+    reference = parse_iso_date(posted)
+    record = {
+        "ID": "",
         "First Seen": datetime.now(timezone.utc).isoformat(),
-        "Posted At": posted_at(item),
-        "Organization": org,
-        "Opportunity": opportunity_title(org, category, role, text),
-        "Category": category,
-        "Role / Track": role,
-        "Season / Year": extract_season(text),
-        "Location": extract_location(text),
-        "Deadline": extract_deadline(text),
-        "Application / Registration Link": destination,
+        "Posted At": posted,
         "Instagram Source": source_url(item, source_type),
         "Source Type": source_type,
         "Raw Text": text[:12000],
-        "Status": extract_status(text),
-        "Priority": "",
         "Actioned?": "No",
         "Notes": "",
     }
+    record.update(derive_fields(text, links, reference))
+    record["ID"] = record_id_for(record)
+    return {header: record.get(header, "") for header in HEADERS}
+
+def parse_iso_date(value):
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).date()
+    except (TypeError, ValueError):
+        return None
+
+HEADER_FILL = PatternFill("solid", fgColor="17365D")
+COLUMN_WIDTHS = [20, 22, 22, 20, 44, 24, 24, 18, 18, 14, 40, 40, 16, 60, 12, 12, 12, 28]
 
 def create_workbook(path):
     wb = Workbook()
@@ -614,43 +1061,58 @@ def create_workbook(path):
     ws.title = "Opportunities"
     ws.append(HEADERS)
 
-    header_fill = PatternFill("solid", fgColor="17365D")
     header_font = Font(color="FFFFFF", bold=True)
     for cell in ws[1]:
-        cell.fill = header_fill
+        cell.fill = HEADER_FILL
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
-    widths = [20, 22, 22, 20, 34, 24, 24, 18, 18, 18, 40, 40, 16, 60, 14, 14, 14, 28]
-    for index, width in enumerate(widths, start=1):
+    for index, width in enumerate(COLUMN_WIDTHS, start=1):
         ws.column_dimensions[get_column_letter(index)].width = width
 
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = "A1:R1"
+    write_dashboard(wb, [])
+    wb.save(path)
 
+def dashboard_metrics(records):
+    def count(predicate):
+        return sum(1 for record in records if predicate(record))
+
+    return [
+        ("Total opportunities", len(records)),
+        ("Open / reopened", count(lambda r: r.get("Status") in {"Open", "Reopened"})),
+        ("Not actioned", count(lambda r: not is_yes(r.get("Actioned?")))),
+        ("Actioned", count(lambda r: is_yes(r.get("Actioned?")))),
+        ("High priority", count(lambda r: r.get("Priority") == "High")),
+        ("With a deadline", count(lambda r: bool(r.get("Deadline")))),
+        ("Expired / closed", count(lambda r: r.get("Status") in {"Expired", "Closed"})),
+        ("Internships", count(lambda r: r.get("Category") == "Internship")),
+        ("Fellowships", count(lambda r: r.get("Category") == "Fellowship")),
+        ("Scholarships / grants", count(lambda r: r.get("Category") == "Scholarship / Grant")),
+    ]
+
+def write_dashboard(wb, records):
+    """Dashboard with literal values.
+
+    openpyxl cannot compute formulas, so formula cells showed blank in GitHub's
+    preview, Google Drive and other non-Excel viewers.
+    """
+    if "Dashboard" in wb.sheetnames:
+        del wb["Dashboard"]
     dashboard = wb.create_sheet("Dashboard")
     dashboard["A1"] = "Zero2Sudo Opportunity Monitor"
     dashboard["A1"].font = Font(size=18, bold=True, color="FFFFFF")
-    dashboard["A1"].fill = header_fill
+    dashboard["A1"].fill = HEADER_FILL
     dashboard.merge_cells("A1:D1")
-
-    metrics = [
-        ("Total opportunities", '=COUNTA(Opportunities!A2:A5000)'),
-        ("Open / reopened", '=COUNTIF(Opportunities!O2:O5000,"Open")+COUNTIF(Opportunities!O2:O5000,"Reopened")'),
-        ("Not actioned", '=COUNTIF(Opportunities!Q2:Q5000,"No")'),
-        ("Actioned", '=COUNTIF(Opportunities!Q2:Q5000,"Yes")'),
-        ("Internships", '=COUNTIF(Opportunities!F2:F5000,"Internship")'),
-        ("Fellowships", '=COUNTIF(Opportunities!F2:F5000,"Fellowship")'),
-        ("Scholarships / grants", '=COUNTIF(Opportunities!F2:F5000,"Scholarship / Grant")'),
-    ]
     dashboard.append([])
     dashboard.append(["Metric", "Value"])
-    for name, formula in metrics:
-        dashboard.append([name, formula])
+    for cell in dashboard[3]:
+        cell.font = Font(bold=True)
+    for name, value in dashboard_metrics(records):
+        dashboard.append([name, value])
     dashboard.column_dimensions["A"].width = 28
     dashboard.column_dimensions["B"].width = 18
-
-    wb.save(path)
 
 def ensure_workbook():
     if not TRACKER_PATH.exists():
@@ -667,6 +1129,12 @@ def workbook_records():
     ]
     wb.close()
     return records
+
+def is_yes(value):
+    return str(value or "").strip().lower() in {"yes", "y", "true", "x", "✓", "✔", "done", "applied"}
+
+def normalize_actioned(value):
+    return "Yes" if is_yes(value) else "No"
 
 def record_links(record):
     values = [
@@ -691,6 +1159,33 @@ def record_semantic_key(record):
     raw = normalize_identity_text(record.get("Raw Text", ""))[:1000]
     return f"text:{posted}|{org}|{title}|{raw}"
 
+JOB_ID_QUERY_KEYS = {"gh_jid", "jobid", "job_id", "jid", "token", "jobname", "postingid", "req", "reqid"}
+
+def is_specific_link(url):
+    """True when a URL identifies one posting rather than a generic careers page.
+
+    Two Stories pointing at the same specific posting are the same opportunity
+    reposted; two pointing at a generic careers page may not be.
+    """
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False
+    if any(key.lower() in JOB_ID_QUERY_KEYS and value for key, value in parse_qsl(parsed.query)):
+        return True
+    for segment in (part for part in parsed.path.split("/") if part):
+        if re.search(r"\d{5,}", segment):
+            return True
+        if re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", segment, re.I):
+            return True
+        if len([word for word in re.split(r"[-_]+", segment) if re.search(r"[a-z]{2,}", word, re.I)]) >= 4:
+            return True
+    return False
+
+def record_link_key(record):
+    link = str(record.get("Application / Registration Link") or "")
+    return f"link:{link}" if link and is_specific_link(link) else ""
+
 def merge_record(target, source):
     merged = dict(target)
     for header in HEADERS:
@@ -698,7 +1193,7 @@ def merge_record(target, source):
             continue
         if merged.get(header) in (None, "") and source.get(header) not in (None, ""):
             merged[header] = source[header]
-    if str(source.get("Actioned?", "")).strip().lower() == "yes":
+    if is_yes(source.get("Actioned?")):
         merged["Actioned?"] = "Yes"
     notes = []
     for value in (target.get("Notes"), source.get("Notes")):
@@ -708,35 +1203,35 @@ def merge_record(target, source):
     merged["Notes"] = " | ".join(notes)
     return merged
 
-def conservative_record_title(record):
-    organization = str(record.get("Organization") or "").strip()
-    role = str(record.get("Role / Track") or "").strip()
-    category = str(record.get("Category") or "Opportunity").strip()
-    current = str(record.get("Opportunity") or "").strip()
-    if organization:
-        return f"{organization} — {role or category}"
-    low_quality = (
-        not current
-        or len(current) > 100
-        or current.startswith(("-", "(", "@", "|"))
-        or current.endswith(("?", "&", ",", "|"))
-        or bool(NEGATIVE_CONTEXT_RE.search(current))
-        or bool(re.search(
-            r"\b(if you|as an|all intern roles|posted today|please fill out|"
-            r"been the driving|has anyone|this is why)\b",
-            current,
-            re.I,
-        ))
-    )
-    return (role or category) if low_quality else current
+def refresh_derived_fields(record, today=None):
+    """Recompute extracted columns from the stored Raw Text.
 
-def cleanup_records(records):
+    Raw Text holds the caption, OCR output and every link that was seen, so
+    re-running extraction over it applies parser fixes retroactively without
+    re-scraping or re-OCRing anything.
+    """
+    text = str(record.get("Raw Text") or "")
+    if not text.strip():
+        return record
+    stored_link = record.get("Application / Registration Link") or ""
+    links = ([stored_link] if stored_link else []) + URL_RE.findall(text)
+    reference = parse_iso_date(record.get("Posted At")) or parse_iso_date(record.get("First Seen"))
+    fields = derive_fields(text, links, reference, today)
+    if stored_link:
+        fields.pop("Application / Registration Link")
+    record.update(fields)
+    return record
+
+def cleanup_records(records, today=None):
     cleaned = []
     index_by_key = {}
     invalid_links_cleared = 0
     duplicates_removed = 0
     for original in records:
         record = {header: original.get(header, "") for header in HEADERS}
+        for header, value in record.items():
+            if value is None:
+                record[header] = ""
         application = record.get("Application / Registration Link", "") or ""
         if application:
             valid_external = external_links([application])
@@ -745,16 +1240,28 @@ def cleanup_records(records):
                 invalid_links_cleared += 1
             else:
                 record["Application / Registration Link"] = valid_external[0]
-        record["Opportunity"] = conservative_record_title(record)
-        key = record_semantic_key(record)
-        record["ID"] = hashlib.sha256(key.encode("utf-8")).hexdigest()[:20]
-        if key in index_by_key:
-            position = index_by_key[key]
-            cleaned[position] = merge_record(cleaned[position], record)
+        refresh_derived_fields(record, today)
+        record["Actioned?"] = normalize_actioned(record.get("Actioned?"))
+        # IDs are permanent once assigned: Google Sheets edits and alert
+        # batches are keyed by them.
+        if not record.get("ID"):
+            record["ID"] = record_id_for(record)
+        keys = [key for key in (record_semantic_key(record), record_link_key(record)) if key]
+        position = next((index_by_key[key] for key in keys if key in index_by_key), None)
+        if position is not None:
+            merged = merge_record(cleaned[position], record)
+            # Keep the repost's text too, so fields re-derived from Raw Text on
+            # later runs still see what the merged-away row contributed.
+            texts = [str(cleaned[position].get("Raw Text") or ""), str(record.get("Raw Text") or "")]
+            if texts[1].strip() and texts[1] not in texts[0]:
+                merged["Raw Text"] = "\n\n".join(texts)[:24000]
+            cleaned[position] = refresh_derived_fields(merged, today)
             duplicates_removed += 1
         else:
-            index_by_key[key] = len(cleaned)
+            position = len(cleaned)
             cleaned.append(record)
+        for key in keys:
+            index_by_key.setdefault(key, position)
     return cleaned, {
         "duplicates_removed": duplicates_removed,
         "invalid_links_cleared": invalid_links_cleared,
@@ -777,14 +1284,27 @@ def save_records(records):
                 cell.hyperlink = cell.value
                 cell.style = "Hyperlink"
     ws.auto_filter.ref = f"A1:R{max(ws.max_row, 1)}"
-    wb.calculation.fullCalcOnLoad = True
-    wb.calculation.forceFullCalc = True
+    for index, width in enumerate(COLUMN_WIDTHS, start=1):
+        ws.column_dimensions[get_column_letter(index)].width = width
+    write_dashboard(wb, records)
     wb.save(TRACKER_PATH)
 
-def migrate_workbook():
+def migrate_workbook(manual_fields=None):
+    """Clean, de-duplicate and re-derive every stored row.
+
+    Google Sheets edits are applied before anything is merged so that a user's
+    Actioned?/Notes values follow a row into whatever it is merged with.
+    """
     records = workbook_records()
-    cleaned, stats = cleanup_records(records)
-    changed = cleaned != records
+    stored = [
+        {header: "" if record.get(header) is None else record.get(header) for header in HEADERS}
+        for record in records
+    ]
+    working = [dict(record) for record in stored]
+    if manual_fields:
+        working = apply_manual_fields(working, manual_fields)
+    cleaned, stats = cleanup_records(working)
+    changed = cleaned != stored
     if changed:
         save_records(cleaned)
     stats.update({"before": len(records), "after": len(cleaned), "changed": changed})
@@ -794,7 +1314,7 @@ def apply_manual_fields(records, manual_fields):
     for record in records:
         values = manual_fields.get(str(record.get("ID", "")), {})
         if values.get("Actioned?") not in (None, ""):
-            record["Actioned?"] = values["Actioned?"]
+            record["Actioned?"] = normalize_actioned(values["Actioned?"])
         if values.get("Notes") not in (None, ""):
             record["Notes"] = values["Notes"]
     return records
@@ -809,21 +1329,24 @@ def existing_ids():
 def append_rows(rows):
     if not rows:
         return
-    wb = load_workbook(TRACKER_PATH)
-    ws = wb["Opportunities"]
-    for record in rows:
-        ws.append([record.get(header, "") for header in HEADERS])
-        current = ws.max_row
-        ws.row_dimensions[current].height = 45
-        for col in range(1, len(HEADERS) + 1):
-            ws.cell(current, col).alignment = Alignment(vertical="top", wrap_text=True)
-        for col in (11, 12):
-            cell = ws.cell(current, col)
-            if cell.value:
-                cell.hyperlink = cell.value
-                cell.style = "Hyperlink"
-    ws.auto_filter.ref = f"A1:R{ws.max_row}"
-    wb.save(TRACKER_PATH)
+    save_records(workbook_records() + list(rows))
+
+def find_new_rows(records, candidates):
+    """Candidates that are neither already tracked nor reposts of a tracked posting."""
+    known = set()
+    for record in records:
+        known.add(record_semantic_key(record))
+        link_key = record_link_key(record)
+        if link_key:
+            known.add(link_key)
+    new_rows = []
+    for record in candidates:
+        keys = {record_semantic_key(record), record_link_key(record)} - {""}
+        if keys & known:
+            continue
+        known.update(keys)
+        new_rows.append(record)
+    return new_rows
 
 def tracker_url():
     if GOOGLE_SHEET_ID:
@@ -832,37 +1355,127 @@ def tracker_url():
         return f"https://github.com/{GITHUB_REPOSITORY}/blob/main/{LIVE_VIEW_PATH.name}"
     return str(LIVE_VIEW_PATH)
 
-def write_live_view(records):
-    rows = sorted(
-        records,
-        key=lambda row: str(row.get("First Seen", "") or ""),
-        reverse=True,
+PRIORITY_ICONS = {"High": "🔥", "Medium": "⭐"}
+CLOSING_SOON_DAYS = 14
+RECENT_DAYS = 7
+
+def _md(value):
+    return " ".join(str(value or "").split()).replace("|", "\\|")
+
+def _month_day(value):
+    return f"{value:%b} {value.day}"  # portable; "%-d" fails on Windows
+
+def _short_date(value):
+    parsed = parse_iso_date(value)
+    return _month_day(parsed) if parsed else ""
+
+def _deadline_display(value, today):
+    parsed = parse_deadline(value)
+    if not parsed:
+        return _md(value) or "—"
+    days = (parsed - today).days
+    label = _month_day(parsed)
+    if parsed.year != today.year:
+        label += f", {parsed.year}"
+    if 0 <= days <= CLOSING_SOON_DAYS:
+        label += " (today)" if days == 0 else f" ({days}d)"
+    return label
+
+def _link_cell(row, today):
+    application = row.get("Application / Registration Link") or ""
+    if application:
+        return f"[Apply ↗](<{application}>)"
+    source = row.get("Instagram Source") or ""
+    if not source:
+        return "—"
+    if row.get("Source Type") == "Story":
+        seen = parse_iso_date(row.get("First Seen"))
+        if seen and (today - seen).days >= 1:
+            return f"[Story](<{source}>) (expired)"
+        return f"[Story](<{source}>)"
+    return f"[Post](<{source}>)"
+
+def _live_table(rows, today):
+    lines = [
+        "| | Opportunity | Type | Deadline | Seen | Link |",
+        "|---|---|---|---|---|---|",
+    ]
+    for row in rows:
+        icon = PRIORITY_ICONS.get(str(row.get("Priority") or ""), "")
+        title = _md(row.get("Opportunity") or row.get("Category") or "Opportunity")
+        lines.append(
+            f"| {icon} | {title} | {_md(row.get('Category'))} | "
+            f"{_deadline_display(row.get('Deadline'), today)} | "
+            f"{_short_date(row.get('First Seen'))} | {_link_cell(row, today)} |"
+        )
+    return lines
+
+def write_live_view(records, now=None):
+    now = now or datetime.now(timezone.utc)
+    today = now.date()
+    rows = sorted(records, key=lambda row: str(row.get("First Seen", "") or ""), reverse=True)
+    actioned = [row for row in rows if is_yes(row.get("Actioned?"))]
+    open_rows = [row for row in rows if not is_yes(row.get("Actioned?"))]
+    past = [row for row in open_rows if row.get("Status") in {"Expired", "Closed"}]
+    active = [row for row in open_rows if row.get("Status") not in {"Expired", "Closed"}]
+
+    def deadline_in_window(row):
+        parsed = parse_deadline(row.get("Deadline"))
+        return bool(parsed) and 0 <= (parsed - today).days <= CLOSING_SOON_DAYS
+
+    def is_recent(row):
+        seen = parse_iso_date(row.get("First Seen"))
+        return bool(seen) and (today - seen).days < RECENT_DAYS
+
+    closing = sorted(
+        (row for row in active if deadline_in_window(row)),
+        key=lambda row: parse_deadline(row.get("Deadline")),
     )
+    recent = [row for row in active if is_recent(row) and row not in closing]
+    earlier = [row for row in active if not is_recent(row) and row not in closing]
+
     lines = [
         "# Zero2Sudo Opportunity Tracker",
         "",
-        f"Last updated: {datetime.now(timezone.utc).isoformat()}",
+        f"_Updated {_month_day(now)}, {now:%Y %H:%M} UTC · {len(rows)} tracked · "
+        f"{len(recent) + sum(1 for row in closing if is_recent(row))} new this week · "
+        f"{len(actioned)} actioned_",
         "",
-        "This page updates automatically. The Excel workbook remains available as a backup.",
-        "",
-        "| Opportunity | Category | Status | Priority | Link |",
-        "|---|---|---|---|---|",
     ]
-    for row in rows:
-        title = str(row.get("Opportunity") or row.get("Category") or "Opportunity").replace("|", "\\|")
-        category = str(row.get("Category") or "").replace("|", "\\|")
-        status = str(row.get("Status") or "").replace("|", "\\|")
-        priority = str(row.get("Priority") or "").replace("|", "\\|")
-        application = row.get("Application / Registration Link") or ""
-        source = row.get("Instagram Source") or ""
-        if application:
-            link = f"[Apply / Register]({application})"
-        elif source:
-            link = f"[View Instagram source]({source})"
-        else:
-            link = "—"
-        lines.append(f"| {title} | {category} | {status} | {priority} | {link} |")
-    LIVE_VIEW_PATH.write_text("\n".join(lines) + "\n")
+    if GOOGLE_SHEET_ID:
+        lines += [
+            f"Mark rows **Actioned?** or add **Notes** in the "
+            f"[Google Sheet]({tracker_url()}); edits sync back here hourly.",
+            "",
+        ]
+    lines += [
+        "🔥 high priority · ⭐ matches SWE / AI / data interests · "
+        "Deadlines are read from the post and may be missing.",
+        "",
+    ]
+    sections = [
+        (f"⏰ Closing within {CLOSING_SOON_DAYS} days", closing),
+        (f"🆕 New in the last {RECENT_DAYS} days", recent),
+        ("📋 Earlier", earlier),
+    ]
+    for heading, section_rows in sections:
+        if not section_rows:
+            continue
+        lines += [f"## {heading} ({len(section_rows)})", ""]
+        lines += _live_table(section_rows, today)
+        lines.append("")
+    for heading, section_rows in (("✅ Actioned", actioned), ("⌛ Past deadline or closed", past)):
+        if not section_rows:
+            continue
+        lines += [
+            f"<details><summary><b>{heading} ({len(section_rows)})</b></summary>",
+            "",
+        ]
+        lines += _live_table(section_rows, today)
+        lines += ["", "</details>", ""]
+    if not rows:
+        lines += ["_Nothing tracked yet. New opportunities appear here after the next check._", ""]
+    LIVE_VIEW_PATH.write_text("\n".join(lines).rstrip() + "\n")
 
 def load_state():
     if not STATE_PATH.exists():
@@ -895,31 +1508,25 @@ def queue_batch(rows):
         save_state(state)
     return batch_id
 
+PREFERRED_ROLE_RE = re.compile(
+    r"\b(software engineering|machine learning|artificial intelligence|"
+    r"ai|data engineering|data science)\b",
+    re.I,
+)
+PRIORITY_RANK = {"HIGH": 0, "MEDIUM": 1, "NORMAL": 2}
+
 def priority_for(row):
-    organization = row.get("Organization", "")
-    text = " ".join([
-        organization,
-        row.get("Opportunity", ""),
-        row.get("Category", ""),
-        row.get("Role / Track", ""),
-    ])
-
-    high_org_re = re.compile(
-        r"\b(palantir|anduril|scale ai|primer|vannevar|shield ai|"
-        r"openai|anthropic|databricks)\b",
-        re.I,
-    )
-    preferred_re = re.compile(
-        r"\b(software engineering|machine learning|artificial intelligence|"
-        r"ai|data engineering|data science|new grad|internship)\b",
-        re.I,
-    )
-
-    if high_org_re.search(organization):
+    """HIGH for a HIGH_PRIORITY_ORGS company, MEDIUM for SWE / AI / data roles."""
+    organization = org_key(row.get("Organization", ""))
+    if organization and organization in {org_key(name) for name in HIGH_PRIORITY_ORGS}:
         return "HIGH"
-    if preferred_re.search(text):
+    text = " ".join(str(row.get(key) or "") for key in ("Opportunity", "Role / Track"))
+    if PREFERRED_ROLE_RE.search(text):
         return "MEDIUM"
     return "NORMAL"
+
+def rank_rows(rows):
+    return sorted(rows, key=lambda row: PRIORITY_RANK[priority_for(row)])
 
 def clean_alert_title(row):
     org = row.get("Organization") or ""
@@ -928,55 +1535,54 @@ def clean_alert_title(row):
         return f"{org} — {opp}"
     return opp
 
+def _deadline_note(row):
+    parsed = parse_deadline(row.get("Deadline"))
+    if parsed:
+        return f"due {_month_day(parsed)}"
+    return row.get("Deadline") or ""
+
 def ntfy_alert(rows, batch_id=""):
     if not rows or not NTFY_TOPIC:
         return True
 
-    ranked = sorted(rows, key=lambda r: {"HIGH": 0, "MEDIUM": 1, "NORMAL": 2}[priority_for(r)])
+    ranked = rank_rows(rows)
     top = ranked[0]
     priority = priority_for(top)
-    title = clean_alert_title(top)
-
     prefix = "🚨" if priority == "HIGH" else "📣"
-    ntfy_title = f"{prefix} {priority}: {title}"
+    title = f"{prefix} {priority}: {clean_alert_title(top)}"
+    if len(rows) > 1:
+        title += f" (+{len(rows) - 1} more)"
 
     body_lines = []
     for row in ranked[:5]:
-        p = priority_for(row)
-        label = clean_alert_title(row)
-        deadline = row.get("Deadline") or ""
+        meta = " · ".join(x for x in [row.get("Category", ""), _deadline_note(row)] if x)
+        body_lines.append(f"[{priority_for(row)}] {clean_alert_title(row)}" + (f" — {meta}" if meta else ""))
         link = row.get("Application / Registration Link") or row.get("Instagram Source") or ""
-        meta = " · ".join(x for x in [row.get("Category", ""), deadline] if x)
-        body_lines.append(f"[{p}] {label}" + (f" — {meta}" if meta else ""))
         if link:
             body_lines.append(link)
         body_lines.append("")
-
     if len(ranked) > 5:
-        body_lines.append(f"+ {len(ranked) - 5} more in the tracker")
+        body_lines.append(f"+ {len(ranked) - 5} more in the tracker: {tracker_url()}")
 
-    headers = {
-        "Title": ntfy_title[:150],
-        "Tags": "rotating_light,briefcase" if priority == "HIGH" else "briefcase",
-        "Priority": "5" if priority == "HIGH" else ("4" if priority == "MEDIUM" else "3"),
+    # JSON publishing: HTTP header values are latin-1 only, so emoji and
+    # em-dashes in a Title header raise UnicodeEncodeError before sending.
+    payload = {
+        "topic": NTFY_TOPIC,
+        "title": title[:250],
+        "message": "\n".join(body_lines).strip(),
+        "tags": ["rotating_light", "briefcase"] if priority == "HIGH" else ["briefcase"],
+        "priority": 5 if priority == "HIGH" else (4 if priority == "MEDIUM" else 3),
     }
-    if batch_id:
-        headers["X-Message-ID"] = f"zero2sudo-{batch_id}"
-
     top_link = top.get("Application / Registration Link") or top.get("Instagram Source") or ""
     if top_link:
-        headers["Click"] = top_link
-        headers["Actions"] = f"view, Apply / Open, {top_link}, clear=true"
+        payload["click"] = top_link
+        payload["actions"] = [{"action": "view", "label": "Apply / Open", "url": top_link, "clear": True}]
+    headers = {"Authorization": f"Bearer {NTFY_TOKEN}"} if NTFY_TOKEN else {}
 
-    response = requests.post(
-        f"https://ntfy.sh/{NTFY_TOPIC}",
-        data="\n".join(body_lines).strip().encode("utf-8"),
-        headers=headers,
-        timeout=30,
-    )
+    response = requests.post(NTFY_SERVER.rstrip("/"), json=payload, headers=headers, timeout=30)
     if response.status_code >= 300:
         raise RuntimeError(f"ntfy push failed with status {response.status_code}.")
-    print("Sent ntfy push notification.")
+    print(f"Sent ntfy push notification for batch {batch_id or '(unbatched)'}.")
     return True
 
 def github_issue(rows, batch_id=""):
@@ -1003,24 +1609,30 @@ def github_issue(rows, batch_id=""):
             print(f"GitHub alert already exists for batch {batch_id}.")
             return True
 
+    ranked = rank_rows(rows)
+    noun = "opportunity" if len(rows) == 1 else "opportunities"
     lines = [
         marker,
         f"@{owner}",
         "",
-        f"Zero2Sudo shared **{len(rows)} new actionable opportunit{'y' if len(rows) == 1 else 'ies'}**.",
+        f"Zero2Sudo shared **{len(rows)} new actionable {noun}**.",
         "",
-        "| Opportunity | Category | Deadline | Link |",
-        "|---|---|---|---|",
+        "| | Opportunity | Type | Deadline | Link |",
+        "|---|---|---|---|---|",
     ]
-    for row in rows[:20]:
-        title = row["Opportunity"].replace("|", "\\|")
-        category = row["Category"].replace("|", "\\|")
-        deadline = (row["Deadline"] or "—").replace("|", "\\|")
-        link = row["Application / Registration Link"] or row["Instagram Source"]
-        lines.append(f"| {title} | {category} | {deadline} | [Open]({link}) |")
+    for row in ranked[:20]:
+        icon = {"HIGH": "🔥", "MEDIUM": "⭐"}.get(priority_for(row), "")
+        link = row.get("Application / Registration Link") or row.get("Instagram Source") or ""
+        link_cell = f"[Apply ↗](<{link}>)" if row.get("Application / Registration Link") else (
+            f"[Story](<{link}>)" if link else "—"
+        )
+        lines.append(
+            f"| {icon} | {_md(clean_alert_title(row))} | {_md(row.get('Category'))} | "
+            f"{_md(_deadline_note(row)) or '—'} | {link_cell} |"
+        )
 
     if len(rows) > 20:
-        lines.extend(["", f"_Plus {len(rows) - 20} more in the Excel tracker._"])
+        lines.extend(["", f"_Plus {len(rows) - 20} more in the tracker._"])
 
     lines.extend([
         "",
@@ -1031,8 +1643,6 @@ def github_issue(rows, batch_id=""):
         "_Created automatically by the hourly Zero2Sudo monitor._",
     ])
 
-    noun = "opportunity" if len(rows) == 1 else "opportunities"
-    ranked = sorted(rows, key=lambda r: {"HIGH": 0, "MEDIUM": 1, "NORMAL": 2}[priority_for(r)])
     top = ranked[0]
     top_priority = priority_for(top)
     top_title = clean_alert_title(top)
@@ -1041,7 +1651,7 @@ def github_issue(rows, batch_id=""):
         title = f"{prefix} [{top_priority}] {top_title} — APPLY / OPEN"
     else:
         title = f"{prefix} [{top_priority}] {top_title} + {len(rows) - 1} more"
-    payload = {"title": title, "body": "\n".join(lines), "assignees": [owner]}
+    payload = {"title": title[:250], "body": "\n".join(lines), "assignees": [owner]}
     response = requests.post(issue_url, headers=headers, json=payload, timeout=30)
 
     # Some repository permission combinations reject assignment. The @mention in
@@ -1107,51 +1717,76 @@ def sync_google_sheet():
         GOOGLE_SHEET_ID,
         HEADERS,
         records,
+        dashboard_metrics,
     )
+    for record in merged:
+        record["Actioned?"] = normalize_actioned(record.get("Actioned?"))
     if merged != records:
         save_records(merged)
         write_live_view(merged)
     print(f"Verified {len(merged)} rows in Google Sheets.")
     return True
 
+def collect_candidates(fixture=None):
+    """Normalized, actionable items from Apify, or from a local JSON fixture.
+
+    A fixture is either a list of items (treated as Stories) or an object with
+    "stories" and/or "posts" lists in the Apify actor output format.
+    """
+    if fixture:
+        data = json.loads(Path(fixture).read_text())
+        if isinstance(data, list):
+            data = {"stories": data}
+        sources = [(data.get("stories", []), "Story"), (data.get("posts", []), "Post / Reel")]
+    else:
+        sources = [(fetch_stories(), "Story"), (fetch_posts(), "Post / Reel")]
+    candidates = []
+    for items, source_type in sources:
+        for item in items:
+            record = normalize_item(item, source_type)
+            if record:
+                candidates.append(record)
+    return candidates
+
+def print_rows(rows):
+    for row in rank_rows(rows):
+        print(f"  [{priority_for(row)}] {clean_alert_title(row)}")
+        details = " · ".join(
+            value for value in (
+                row.get("Category"), row.get("Deadline") and f"deadline {row['Deadline']}",
+                row.get("Location"), row.get("Application / Registration Link"),
+            ) if value
+        )
+        if details:
+            print(f"      {details}")
+
+def dry_run(fixture=None):
+    """Show what a check would add, without writing files or sending alerts."""
+    records = []
+    if TRACKER_PATH.exists():
+        records, _ = cleanup_records(workbook_records())
+    new_rows = find_new_rows(records, collect_candidates(fixture))
+    print(f"Dry run: {len(new_rows)} new opportunity row(s) would be added "
+          f"to the {len(records)} already tracked.")
+    print_rows(new_rows)
+    return new_rows
+
 def main(defer_notifications=False):
     if not APIFY_TOKEN:
         raise SystemExit(
-            "APIFY_TOKEN is missing. Add it in GitHub: Settings → Secrets and variables → Actions → New repository secret."
+            "APIFY_TOKEN is missing. Add it in GitHub: Settings → Secrets and variables → Actions → "
+            "New repository secret. Locally: export APIFY_TOKEN=... (or try --dry-run --fixture)."
         )
 
     ensure_workbook()
-    cleanup = migrate_workbook()
-    records = workbook_records()
+    # Read Google Sheets edits before cleanup can merge rows, so a user's
+    # Actioned?/Notes values are carried into whatever row survives.
     manual_fields = pull_google_manual_fields()
-    if manual_fields:
-        before_manual = [dict(record) for record in records]
-        updated = apply_manual_fields(records, manual_fields)
-        if updated != before_manual:
-            save_records(updated)
-        records = updated
+    cleanup = migrate_workbook(manual_fields)
+    records = workbook_records()
     known_ids = {str(record.get("ID")) for record in records if record.get("ID")}
-    known_keys = {record_semantic_key(record) for record in records}
 
-    candidates = []
-    for item in fetch_stories():
-        record = normalize_item(item, "Story")
-        if record:
-            candidates.append(record)
-    for item in fetch_posts():
-        record = normalize_item(item, "Post / Reel")
-        if record:
-            candidates.append(record)
-
-    # Deduplicate by stable source/content identity, not temporary CDN URLs.
-    unique = {}
-    for record in candidates:
-        unique.setdefault(record_semantic_key(record), record)
-    new_rows = [record for key, record in unique.items() if key not in known_keys]
-
-    # Fill the spreadsheet Priority column automatically for new rows.
-    for row in new_rows:
-        row["Priority"] = priority_for(row).title()
+    new_rows = find_new_rows(records, collect_candidates())
 
     append_rows(new_rows)
     persisted = existing_ids()
@@ -1177,17 +1812,27 @@ def main(defer_notifications=False):
         sync_google_sheet()
         deliver_pending_batches()
     print(f"Added {len(new_rows)} new opportunity row(s).")
+    print_rows(new_rows)
     print(f"Verified {len(persisted)} total rows in {TRACKER_PATH}.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--defer-notifications", action="store_true")
-    parser.add_argument("--notify", action="store_true")
-    parser.add_argument("--sync-google", action="store_true")
+    parser = argparse.ArgumentParser(description="Track actionable opportunities posted by an Instagram account.")
+    parser.add_argument("--defer-notifications", action="store_true",
+                        help="save and queue alerts, but send them later with --notify")
+    parser.add_argument("--notify", action="store_true", help="send queued alerts")
+    parser.add_argument("--sync-google", action="store_true", help="sync the tracker to Google Sheets")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="print what would be added; write nothing and send nothing")
+    parser.add_argument("--fixture", metavar="JSON",
+                        help="read items from a local JSON file instead of Apify (implies --dry-run)")
     args = parser.parse_args()
     if args.notify:
         deliver_pending_batches()
     elif args.sync_google:
         sync_google_sheet()
+    elif args.dry_run or args.fixture:
+        if not args.fixture and not APIFY_TOKEN:
+            raise SystemExit("--dry-run needs APIFY_TOKEN, or use --fixture FILE to run offline.")
+        dry_run(args.fixture)
     else:
         main(defer_notifications=args.defer_notifications)

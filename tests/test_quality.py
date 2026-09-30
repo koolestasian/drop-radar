@@ -47,12 +47,10 @@ class QualityTests(unittest.TestCase):
             "image": "https://scontent-dfw.cdninstagram.com/a.heic?ig_cache_key=stable123&sig=changed",
             "text": "Applications are open for an internship",
         }
-        first_links = monitor.normalize_links(first)
-        second_links = monitor.normalize_links(second)
-        self.assertEqual(
-            monitor.row_id(first, "Story", "Internship", "", first_links, first["text"]),
-            monitor.row_id(second, "Story", "Internship", "", second_links, second["text"]),
-        )
+        with patch.object(monitor, "ocr_image", return_value=""):
+            first_record = monitor.normalize_item(first, "Story")
+            second_record = monitor.normalize_item(second, "Story")
+        self.assertEqual(first_record["ID"], second_record["ID"])
 
     def test_tracking_parameters_do_not_change_external_link(self):
         a = monitor.clean_url("https://example.com/job/1?utm_source=ig&x=1&fbclid=abc")
@@ -77,6 +75,15 @@ class QualityTests(unittest.TestCase):
         with patch.object(monitor.requests, "post", return_value=Response({"error": "schema"})):
             with self.assertRaisesRegex(RuntimeError, "unexpected dict"):
                 monitor.run_actor("actor/name", {})
+
+    def test_actor_http_error_explains_cause_without_leaking_token(self):
+        with patch.object(monitor, "APIFY_TOKEN", "secret-token"), \
+                patch.object(monitor.requests, "post", return_value=Response([], status=402)) as post:
+            with self.assertRaisesRegex(RuntimeError, "out of credit") as raised:
+                monitor.run_actor("actor/name", {})
+        self.assertNotIn("secret-token", str(raised.exception))
+        self.assertNotIn("token", post.call_args.kwargs["params"])
+        self.assertEqual(post.call_args.kwargs["headers"]["Authorization"], "Bearer secret-token")
 
     def test_non_object_actor_item_fails(self):
         with patch.object(monitor.requests, "post", return_value=Response(["bad"])):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+from datetime import datetime, timezone
 
 
 def _column_name(number):
@@ -62,7 +63,7 @@ def fetch_manual_fields(credentials_json, spreadsheet_id):
     return result
 
 
-def sync_records(credentials_json, spreadsheet_id, headers, records):
+def sync_records(credentials_json, spreadsheet_id, headers, records, metrics=None):
     spreadsheet = open_spreadsheet(credentials_json, spreadsheet_id)
     worksheet = _worksheet(spreadsheet, "Opportunities", rows=max(len(records) + 100, 1000))
     existing = worksheet.get_all_values()
@@ -91,10 +92,12 @@ def sync_records(credentials_json, spreadsheet_id, headers, records):
     values = [headers] + [[record.get(header, "") for header in headers] for record in merged]
     end_row = max(len(values), 1)
     end_column = _column_name(len(headers))
+    # RAW, not USER_ENTERED: OCR text starting with "=" or "+" would otherwise be
+    # evaluated as a formula, and an all-digit ID could be coerced to a number.
     worksheet.update(
         range_name=f"A1:{end_column}{end_row}",
         values=values,
-        value_input_option="USER_ENTERED",
+        value_input_option="RAW",
     )
     if len(existing) > end_row:
         worksheet.batch_clear([f"A{end_row + 1}:{end_column}{len(existing)}"])
@@ -102,19 +105,13 @@ def sync_records(credentials_json, spreadsheet_id, headers, records):
     worksheet.set_basic_filter(f"A1:{end_column}{end_row}")
 
     dashboard = _worksheet(spreadsheet, "Dashboard", rows=20, cols=4)
+    summary = [["Zero2Sudo Opportunity Monitor", ""], ["Metric", "Value"]]
+    summary += [[name, value] for name, value in (metrics(merged) if metrics else [])]
+    summary.append(["Last verified sync", datetime.now(timezone.utc).isoformat()])
     dashboard.update(
-        range_name="A1:B8",
-        values=[
-            ["Zero2Sudo Opportunity Monitor", ""],
-            ["Metric", "Value"],
-            ["Total opportunities", len(merged)],
-            ["Open / reopened", sum(r.get("Status") in {"Open", "Reopened"} for r in merged)],
-            ["Not actioned", sum(r.get("Actioned?") == "No" for r in merged)],
-            ["Actioned", sum(r.get("Actioned?") == "Yes" for r in merged)],
-            ["Internships", sum(r.get("Category") == "Internship" for r in merged)],
-            ["Last verified sync", __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()],
-        ],
-        value_input_option="USER_ENTERED",
+        range_name=f"A1:B{len(summary)}",
+        values=summary,
+        value_input_option="RAW",
     )
     dashboard.freeze(rows=2)
 

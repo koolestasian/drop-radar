@@ -42,18 +42,36 @@ When the monitor finds something genuinely new:
 
 1. It creates or updates **Zero2Sudo_Opportunity_Tracker.xlsx** in this repository.
 2. It updates **LATEST.md**, a permanent browser view that requires no download.
-3. It deduplicates previously seen opportunities using stable Instagram/media identity.
+3. It deduplicates previously seen opportunities using stable Instagram/media
+   identity, and treats a Story that re-shares an already-tracked job posting
+   as a repost rather than a new alert.
 4. If configured, it synchronizes the same rows to a permanent Google Sheet.
 5. It creates a **GitHub Issue assigned to the repository owner** only after persistence succeeds.
 6. GitHub sends the normal issue/assignment notification through your GitHub notification settings.
 
 If nothing new is found, it stays quiet.
 
+Every run also re-derives the extracted columns (organization, title, category,
+deadline, status, priority) for **all** stored rows from their saved Raw Text.
+Parser improvements therefore apply to the whole tracker without re-scraping,
+and an alert always shows the same title the tracker does. Row IDs, First Seen,
+Actioned? and Notes are never rewritten.
+
 ### Where to see updates
 
 Open **[LATEST.md](LATEST.md)** for the current tracker in your browser. It
 updates at the same URL after each successful run, so there is nothing to
 download. The Excel workbook remains a formatted backup.
+
+LATEST.md is organized for triage:
+
+- **⏰ Closing within 14 days**, sorted by deadline, with days remaining
+- **🆕 New in the last 7 days**
+- **📋 Earlier**
+- collapsed **✅ Actioned** and **⌛ Past deadline or closed** sections
+
+🔥 marks a high-priority company and ⭐ a SWE / AI / data role. Story-only rows
+say when the Story has expired, so a dead link is not a surprise.
 
 ### Optional: use Google Sheets as the live tracker
 
@@ -115,6 +133,35 @@ The first successful run creates `Zero2Sudo_Opportunity_Tracker.xlsx` automatica
 
 After that, GitHub runs the workflow every hour at minute 17. GitHub schedules can occasionally start a few minutes late.
 
+## Run it locally
+
+Everything also works from your own machine, without GitHub Actions.
+
+```bash
+pip install -r requirements.txt
+# OCR engine: macOS `brew install tesseract`, Ubuntu `sudo apt-get install tesseract-ocr`
+
+# 1. Offline demo: no token, no network, no cost, writes nothing.
+python opportunity_monitor.py --fixture tests/fixtures/sample_items.json
+
+# 2. Real check that only prints what it would add (uses Apify credits).
+export APIFY_TOKEN=...
+python opportunity_monitor.py --dry-run
+
+# 3. Real check that updates the workbook and LATEST.md in this folder.
+python opportunity_monitor.py
+```
+
+A local run skips GitHub Issues unless `GH_TOKEN` and `GITHUB_REPOSITORY` are
+set, but still sends ntfy pushes when `NTFY_TOPIC` is set. To run it hourly
+without GitHub, add a cron entry (`crontab -e`):
+
+```
+17 * * * * cd /path/to/zero2sudo-opportunity-monitor && APIFY_TOKEN=... NTFY_TOPIC=... python3 opportunity_monitor.py >> monitor.log 2>&1
+```
+
+Run the tests with `python -m unittest discover -s tests`.
+
 ## Spreadsheet columns
 
 The workbook tracks:
@@ -125,22 +172,28 @@ The workbook tracks:
 - Role / Track
 - Season / Year
 - Location
-- Deadline
+- Deadline (an ISO date such as `2026-10-15` when the post names one, so it sorts)
 - Application / Registration Link
 - Instagram Source
 - Source Type
 - Raw Text
-- Status
+- Status (New, Open, Reopened, Closed, or Expired once the deadline passes)
 - Priority
 - Actioned?
 - Notes
 
-There is also a Dashboard sheet.
+There is also a Dashboard sheet with counts. It holds plain values rather than
+formulas, so it also reads correctly in GitHub's preview and Google Drive.
+
+Actioned? accepts `Yes`, `y`, `x`, `✓`, `done` or `applied`; they are all
+normalized to `Yes`.
 
 ## Files
 
 - `opportunity_monitor.py` — scraping, OCR, extraction, deduplication, Excel updates, GitHub alerts
+- `google_sheets_sync.py` — optional Google Sheets mirror
 - `requirements.txt` — Python dependencies
+- `tests/` — unit tests; `tests/fixtures/sample_items.json` is a sample Apify payload for offline runs
 - `.github/workflows/hourly.yml` — hourly cloud schedule
 - `Zero2Sudo_Opportunity_Tracker.xlsx` — generated after the first successful run
 
@@ -163,9 +216,14 @@ No hourly Instagram refreshing required.
 
 The monitor now ranks new opportunities and makes GitHub alerts much easier to scan:
 
-- **HIGH** — especially relevant organizations / opportunities
-- **MEDIUM** — strong SWE / AI / data / internship / new-grad matches
+- **HIGH** — a company on the high-priority list (default: Palantir, Anduril,
+  Scale AI, Primer, Vannevar Labs, Shield AI, OpenAI, Anthropic, Databricks)
+- **MEDIUM** — a software engineering, AI / ML, data science or data engineering role
 - **NORMAL** — everything else actionable
+
+To change the high-priority list, add a repository **variable** (Settings →
+Secrets and variables → Actions → Variables) named `HIGH_PRIORITY_ORGS` with a
+comma-separated list, for example `Palantir, Jane Street, Ramp`.
 
 GitHub Issue titles now look like:
 
@@ -192,3 +250,7 @@ Once that secret exists, the hourly workflow automatically sends a push when som
 HIGH-priority alerts use ntfy's urgent notification priority and include an **Apply / Open** action that jumps directly to the opportunity link.
 
 If `NTFY_TOPIC` is not configured, the workflow does not fail; it simply uses GitHub Issue/email notifications only.
+
+Using a self-hosted ntfy server or a protected topic? Set the repository
+variable `NTFY_SERVER` (for example `https://ntfy.example.com`) and/or the
+secret `NTFY_TOKEN` (an ntfy access token).
