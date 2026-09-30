@@ -1,11 +1,17 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-29T20:54:26.047462+00:00
+Last updated: 2026-09-30T00:33:55.361595+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Job Type Intern/Apprentice | Internship | New | Medium | [Apply / Register](https://www.tesla.com/careers/search/job/285089) |
+| Enova — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/enova/jobs/8239619) |
+| Robinhood — Data Science | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/robinhood/jobs/8241738?t=gh_src%3D&gh_jid=8241738) |
+| Acuityinc — Internship | Internship | New | Medium | [Apply / Register](https://careers.acuityinc.com/job/Conyers-Intern-Program-Manager%2C-Early-Careers-GA-30012/1433760700) |
+| SIG — Other Opportunity | Other Opportunity | New | Normal | [Apply / Register](https://careers.sig.com/event-36238/talentcommunity/form) |
+| Job Type Intern/Apprentice | Internship | New | Medium | [Apply / Register](https://www.tesla.com/careers/search/job/285085) |
 | Adobe — Software Engineering, Machine Learning / AI | Hackathon / Competition | Open | Medium | [Apply / Register](https://careers.adobe.com/us/en/event/6a90701b41b49ecd36166e14/Adobe-University-Hackathon-2026) |
 | Moog — Software Engineering | Internship | New | Medium | [Apply / Register](https://moog.wd5.myworkdayjobs.com/en-US/MOOG_External_Career_Site/job/Intern--Software-Engineering_R-26-19948) |
 | EA — Internship | Internship | New | Medium | [Apply / Register](https://jobs.ea.com/en_US/careers/JobDetail/Software-Engineer-Intern/216241) |
