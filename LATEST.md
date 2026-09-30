@@ -1,11 +1,21 @@
 # Zero2Sudo Opportunity Tracker
 
-Last updated: 2026-09-30T13:52:58.744382+00:00
+Last updated: 2026-09-30T19:27:53.688030+00:00
 
 This page updates automatically. The Excel workbook remains available as a backup.
 
 | Opportunity | Category | Status | Priority | Link |
 |---|---|---|---|---|
+| Meta — Design | Internship | Open | Medium | [Apply / Register](https://www.metacareers.com/profile/job_details/1613359540444032) |
+| Intern - Winter '27 | Internship | Open | Medium | [Apply / Register](https://vercel.com/careers/software-engineering-intern-winter-27-6181755004) |
+| Apple — Internship | Internship | New | Medium | [Apply / Register](https://jobs.apple.com/en-us/details/200673612-0836/applied-data-solutions-program-internships-summer-2027?team=CORSV) |
+| Meta — Internship | Internship | Open | Medium | [Apply / Register](https://www.metacareers.com/profile/job_details/1683903403071591) |
+| Amazon — Software Engineering, Machine Learning / AI | Internship | Open | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10565667/software-development-engineer-intern-aws-database-2027-us) |
+| epic games product intern | Internship | New | Medium | [Apply / Register](https://www.epicgames.com/site/careers/jobs/6161289004) |
+| ICF — Internship | Internship | New | Medium | [Apply / Register](https://careers.icf.com/us/en/job/IIIIIIUSR2603312EXTERNALENUS/2027-Summer-Intern-AI-Engineer-Reston-VA) |
+| Amca — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/amca/jobs/4425120009) |
+| Firstcitizens — Internship | Internship | New | Medium | [Apply / Register](https://jobs.firstcitizens.com/jobs/35706?lang=en-us&iis=Social+Media%2FJob+Boards&iisn=zero2sudo) |
+| Intuit — Internship | Internship | New | Medium | [Apply / Register](https://jobs.intuit.com/job/-/-/27595/101313096144?cid=pjob_li_click_us_finance-fy27_cn_text_job_int-tm&p_sid=fkSHJWb&p_uid=1wdOF3YCer&ss=paid) |
 | Data Science | Internship | New | Medium | [Apply / Register](https://mycareer.verizon.com/jobs/r-1101384/verizon-network-and-technology-data-science-summer-2027-internship) |
 | Amca — Software Engineering | Internship | New | Medium | [Apply / Register](https://job-boards.greenhouse.io/amca/jobs/4425120009) |
 | Amazon — Internship | Internship | New | Medium | [Apply / Register](https://www.amazon.jobs/en/jobs/10564599/2027-applied-science-internship-united-states-undergrad-student-science-recruiting-frontier-ai-robotics?jr_id=6abc6f9f2668e0eab35c23d1) |
