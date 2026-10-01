@@ -38,7 +38,10 @@ Exceptions:
   unless asked.
 - Tests are offline (no network); live probes are marked `@live` and skipped.
 - Never commit secrets. Credentials come from env: `IG_SESSIONID`, `APIFY_TOKEN`,
-  `ANTHROPIC_API_KEY`, `NTFY_TOPIC`, `GOOGLE_SERVICE_ACCOUNT_JSON`.
+  `ANTHROPIC_API_KEY`, `NTFY_TOPIC`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GH_TOKEN` (optional for
+  the legacy GitHub-issue alert; needed in production for `github_repo` sources — GitHub's
+  unauthenticated rate limit is 60 req/hr, a token raises it to 5000; a public-read-only
+  fine-grained token or a classic token with no scopes is enough, no write access needed).
 - Preserve existing guarantees: row IDs are permanent, `Actioned?`/`Notes` are never
   overwritten, alerts are sent only after data is persisted, retries never duplicate.
 - Use Anthropic models `claude-opus-5-5` (default) via the `anthropic` SDK; see
