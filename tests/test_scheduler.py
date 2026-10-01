@@ -289,25 +289,16 @@ class StoreMigrationTests(unittest.TestCase):
 
 class RegistryTests(unittest.TestCase):
     def setUp(self):
-        # Real source modules (ats.*, instagram, ...) auto-register as they land and
-        # are imported by other test modules in the same process; this test wants a
-        # clean slate of only what it registers itself, regardless of import order.
+        # Real source modules (ats.*, github_repo, instagram, ...) auto-register as
+        # they land and get imported by other test modules in the same process;
+        # this test wants a clean slate of only what it registers itself, regardless
+        # of import order or which real source modules exist.
         self.saved = dict(registry.FACTORIES)
         registry.FACTORIES.clear()
         patcher = patch.object(registry, "_import_source_modules", lambda: None)
         patcher.start()
         self.addCleanup(patcher.stop)
         self.addCleanup(lambda: (registry.FACTORIES.clear(), registry.FACTORIES.update(self.saved)))
-        # Hermetic: build_sources() auto-imports every real module under
-        # radar/sources/ (e.g. T5's "instagram"), permanently registering real
-        # factories the first time any test anywhere imports them. Block further
-        # imports and start from an empty registry so "unknown kind" below means
-        # what the test says, regardless of import order or which real source
-        # modules exist.
-        patcher = patch.object(registry, "_import_source_modules", lambda: None)
-        patcher.start()
-        self.addCleanup(patcher.stop)
-        registry.FACTORIES.clear()
 
     def test_builds_registered_kinds_and_skips_unknown(self):
         @registry.register("greenhouse")
