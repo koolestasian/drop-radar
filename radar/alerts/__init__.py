@@ -28,7 +28,7 @@ from radar.pipeline.filter import matches_profile
 
 log = logging.getLogger(__name__)
 
-__all__ = ["AlertDispatcher", "NtfyChannel", "should_alert"]
+__all__ = ["AlertDispatcher", "MultiUserAlertDispatcher", "NtfyChannel", "channels_for", "should_alert"]
 
 ZERO2SUDO_SOURCE = f"instagram.{legacy.USERNAME}"  # same env override migrate_legacy.py uses
 
@@ -70,11 +70,11 @@ def _fmt_seconds(seconds):
 
 
 class NtfyChannel:
-    """Reuses radar/legacy's NTFY_* env vars, one push per opportunity (not batched)."""
+    """Reuses radar/legacy's NTFY_* env vars, one push per opportunity (not batched).
+    `name` is the alerts.channel key, so it must be unique per user (see channels_for)."""
 
-    name = "ntfy"
-
-    def __init__(self, topic, server=None, token=None):
+    def __init__(self, topic, server=None, token=None, name="ntfy"):
+        self.name = name
         self.topic = topic
         self.server = (server or os.environ.get("NTFY_SERVER", "").strip() or "https://ntfy.sh").rstrip("/")
         self.token = token if token is not None else os.environ.get("NTFY_TOKEN", "").strip()
@@ -110,6 +110,51 @@ class NtfyChannel:
 def _default_channels():
     topic = os.environ.get("NTFY_TOPIC", "").strip()
     return [NtfyChannel(topic)] if topic else []
+
+
+def channels_for(user_id, owner, env=None):
+    """The owner (first user in users.yaml) keeps NTFY_TOPIC and the channel name
+    "ntfy", so alerts rows written before multi-user support still match. Everyone
+    else: NTFY_TOPIC_<ID> and "ntfy:<id>". Topics live in env, never users.yaml,
+    so reading that file can't subscribe anyone to someone else's pushes."""
+    env = os.environ if env is None else env
+    if owner:
+        topic, name = env.get("NTFY_TOPIC", ""), "ntfy"
+    else:
+        key = "NTFY_TOPIC_" + "".join(c if c.isalnum() else "_" for c in user_id.upper())
+        topic, name = env.get(key, ""), f"ntfy:{user_id}"
+    topic = topic.strip()
+    return [NtfyChannel(topic, name=name)] if topic else []
+
+
+class MultiUserAlertDispatcher:
+    """Fans each item out to every user's own AlertDispatcher, but only for users
+    whose own watchlist includes the item's source: separate profiles means a
+    user is alerted on what *their* sources found and their profile matches,
+    never on another user's companies just because the keywords overlap."""
+
+    def __init__(self, dispatchers, source_names):
+        names = [c.name for d in dispatchers.values() for c in getattr(d, "channels", ())]
+        clashes = sorted({n for n in names if names.count(n) > 1})
+        if clashes:
+            raise ValueError(f"alert channel names must be unique across users: {clashes}")
+        self.dispatchers, self.source_names = dispatchers, source_names
+
+    async def dispatch(self, item, opportunity_id):
+        for user_id, dispatcher in self.dispatchers.items():
+            if item.source not in self.source_names.get(user_id, ()):
+                continue
+            try:
+                await dispatcher.dispatch(item, opportunity_id)
+            except Exception:
+                log.warning("alert dispatch failed for user %s", user_id, exc_info=True)
+
+    async def retry_pending(self):
+        for user_id, dispatcher in self.dispatchers.items():
+            try:
+                await dispatcher.retry_pending()
+            except Exception:
+                log.warning("alert retry failed for user %s", user_id, exc_info=True)
 
 
 class AlertDispatcher:
