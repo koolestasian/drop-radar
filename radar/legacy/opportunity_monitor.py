@@ -594,18 +594,24 @@ def _slug_variants(key):
                 pending.append(current[:-len(suffix)])
     return seen
 
+def _known_org(key):
+    """Known company for an org_key, trying its slug variants; "" if none."""
+    for variant in _slug_variants(key):
+        if variant in ORG_ALIASES:
+            return ORG_ALIASES[variant]
+        if variant in ORG_BY_KEY:
+            return ORG_BY_KEY[variant]
+    return ""
+
 def canonical_org(raw):
     """Map a host label or path slug such as 'doordashusa' to 'DoorDash'."""
     raw = unquote(str(raw or "")).strip()
     key = org_key(raw)
     if not key:
         return ""
-    variants = _slug_variants(key)
-    for variant in variants:
-        if variant in ORG_ALIASES:
-            return ORG_ALIASES[variant]
-        if variant in ORG_BY_KEY:
-            return ORG_BY_KEY[variant]
+    known = _known_org(key)
+    if known:
+        return known
     # Unknown company: drop job-board words and unambiguous corporate
     # suffixes (careers-barrios, gunvorgroup, LinkedIn3), then prettify.
     words = [word for word in re.split(r"[-_.\s]+", raw) if word]
@@ -1134,12 +1140,7 @@ def display_org(name):
     name = " ".join(str(name or "").split())
     if not name or org_key(name) in {"zero2sudo", "greenhouse", "lever", "ashby", "workday", "linktree"}:
         return ""
-    for variant in _slug_variants(org_key(name)):
-        if variant in ORG_ALIASES:
-            return ORG_ALIASES[variant]
-        if variant in ORG_BY_KEY:
-            return ORG_BY_KEY[variant]
-    return name
+    return _known_org(org_key(name)) or name
 
 def clean_page_title(title, organization="", require_role_word=True):
     """Job title from a page/API title, without site or company decoration.

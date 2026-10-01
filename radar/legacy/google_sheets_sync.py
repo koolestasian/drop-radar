@@ -40,17 +40,12 @@ def open_spreadsheet(credentials_json, spreadsheet_id):
     return client.open_by_key(spreadsheet_id)
 
 
-def fetch_manual_fields(credentials_json, spreadsheet_id):
-    spreadsheet = open_spreadsheet(credentials_json, spreadsheet_id)
-    worksheet = _worksheet(spreadsheet, "Opportunities")
-    values = worksheet.get_all_values()
-    if not values:
+def _manual_fields(values):
+    """{ID: {"Actioned?", "Notes"}} from sheet values; {} without those headers."""
+    if not values or not {"ID", "Actioned?", "Notes"}.issubset(values[0]):
         return {}
     headers = values[0]
-    required = {"ID", "Actioned?", "Notes"}
-    if not required.issubset(headers):
-        return {}
-    positions = {name: headers.index(name) for name in required}
+    positions = {name: headers.index(name) for name in ("ID", "Actioned?", "Notes")}
     result = {}
     for row in values[1:]:
         row = row + [""] * (len(headers) - len(row))
@@ -63,21 +58,17 @@ def fetch_manual_fields(credentials_json, spreadsheet_id):
     return result
 
 
+def fetch_manual_fields(credentials_json, spreadsheet_id):
+    spreadsheet = open_spreadsheet(credentials_json, spreadsheet_id)
+    worksheet = _worksheet(spreadsheet, "Opportunities")
+    return _manual_fields(worksheet.get_all_values())
+
+
 def sync_records(credentials_json, spreadsheet_id, headers, records, metrics=None):
     spreadsheet = open_spreadsheet(credentials_json, spreadsheet_id)
     worksheet = _worksheet(spreadsheet, "Opportunities", rows=max(len(records) + 100, 1000))
     existing = worksheet.get_all_values()
-    manual = {}
-    if existing and {"ID", "Actioned?", "Notes"}.issubset(existing[0]):
-        positions = {name: existing[0].index(name) for name in ("ID", "Actioned?", "Notes")}
-        for row in existing[1:]:
-            row = row + [""] * (len(existing[0]) - len(row))
-            record_id = row[positions["ID"]].strip()
-            if record_id:
-                manual[record_id] = {
-                    "Actioned?": row[positions["Actioned?"]],
-                    "Notes": row[positions["Notes"]],
-                }
+    manual = _manual_fields(existing)
 
     merged = []
     for source in records:

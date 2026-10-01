@@ -12,8 +12,11 @@ Do this without asking questions:
    (or `doing`: resume it). Dependencies are in `docs/specs/00-overview.md`.
 2. Read ONLY `docs/specs/00-overview.md` and that task's spec, plus the files the
    spec lists under "Context". Do not read the rest of the repo up front.
+   For a legacy function named in Context, locate it with `graphify explain "<fn>"`
+   or `grep -n "def <fn>"` and Read only that range; never read the 2200-line
+   `radar/legacy/opportunity_monitor.py` whole.
 3. Set the task to `doing` in PROGRESS.md, implement it tests-first, and run
-   `python -m unittest discover -s tests` plus `python -m pyflakes` on changed files.
+   the test and lint commands below.
 4. Commit on the current branch (one commit per task), set the task to `done`
    with the commit hash and date in PROGRESS.md, push with `git push -u origin <branch>`.
 5. Report in under 10 lines: what shipped, what was verified, what was not,
@@ -28,6 +31,9 @@ Exceptions:
 - If every task is `done` or `deferred`, say so and suggest opening the PR. Never start a `deferred` task unless asked.
 
 ## Working rules
+- Do not Read generated data whole: `LATEST.md`, `*.xlsx`, `monitor_*.json`,
+  `enrichment_cache.json`, `QA_TEST_REPORT.md`, `graphify-out/`. When a spec needs
+  their format, sample with code (`head -c`, `jq 'keys'`, openpyxl, `cmp`).
 - Never push to a branch other than the one the session assigns. Do not open a PR
   unless asked.
 - Tests are offline (no network); live probes are marked `@live` and skipped.
@@ -41,12 +47,16 @@ Exceptions:
 
 ## Commands
 - Tests: `python -m unittest discover -s tests`
-- Lint: `python -m pyflakes *.py tests/*.py`
+- Lint: `python -m pyflakes ./*.py radar tests`
 - Offline demo: `python opportunity_monitor.py --fixture tests/fixtures/sample_items.json`
-- Needs `tesseract-ocr` installed for OCR and `pip install -r requirements.txt`.
+- If `python` or the deps are missing: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt pyflakes`,
+  then use `.venv/bin/python` (pyflakes stays out of requirements.txt, which CI installs hourly).
+  Tests do not need tesseract; real OCR does.
+- Code graph, when present (local only; hooks are per-clone): `graphify-out/`, kept fresh by
+  `graphify hook install`; `.graphifyignore` excludes generated data.
 
 ## Current state (update when it changes)
-- Live pipeline: `opportunity_monitor.py` (+ `job_pages.py`, `llm_extraction.py`,
-  `instagram_scraper.py`, `google_sheets_sync.py`), workflow `.github/workflows/hourly.yml`.
-- 98 tests passing (87 legacy + 11 radar foundations; legacy modules live in `radar/legacy/` with root shims). Tracker data lives in `Zero2Sudo_Opportunity_Tracker.xlsx`,
+- Live pipeline: `radar/legacy/` (`opportunity_monitor.py`, `job_pages.py`, `llm_extraction.py`,
+  `instagram_scraper.py`, `google_sheets_sync.py`; root files are import shims), workflow `.github/workflows/hourly.yml`.
+- 99 tests passing (88 legacy + 11 radar foundations). Tracker data lives in `Zero2Sudo_Opportunity_Tracker.xlsx`,
   `monitor_state.json`, `enrichment_cache.json` (committed by the workflow).
