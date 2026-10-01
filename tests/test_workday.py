@@ -51,9 +51,14 @@ def ctx(http, cursor=None):
     return FetchContext("t", http, clock, HostLimiter(clock, per_second=1000.0), asyncio.Semaphore(5), None, cursor)
 
 
-def posting(n, title, location="New York, NY"):
-    return {"title": title, "externalPath": f"/job/NY/{n}", "locationsText": location,
-            "postedOn": "Posted Today", "bulletFields": [f"R{n}"]}
+def posting(n, title, location="New York, NY", posted="Posted Today"):
+    slug = title.replace(" ", "-")  # real paths embed the title, so they change when it's edited
+    return {"title": title, "externalPath": f"/job/NY/{slug}_R{n}", "locationsText": location,
+            "postedOn": posted, "bulletFields": [f"R{n}"]}
+
+
+def filler(count, start=1000):
+    return [posting(start + i, f"Vice President {i}") for i in range(count)]
 
 
 def source(slug="acme.wd5/Campus"):
@@ -86,9 +91,11 @@ class WorkdaySourceTests(unittest.IsolatedAsyncioTestCase):
         items = await source().fetch(ctx(FakeWorkday({"": later}), cursor=seed.pending["cursor"]))
         [item] = items
         self.assertEqual((item.source, item.external_id, item.title, item.location, item.company),
-                         ("ats.workday.acme.wd5/Campus", "/job/NY/3", "Software Engineer Intern - Summer 2027",
+                         ("ats.workday.acme.wd5/Campus", "R3", "Software Engineer Intern - Summer 2027",
                           "Santa Clara, CA", "Acme Bank"))
-        self.assertEqual(item.url, "https://acme.wd5.myworkdayjobs.com/Campus/job/NY/3")
+        self.assertEqual(item.url,
+                         "https://acme.wd5.myworkdayjobs.com/Campus/job/NY/Software-Engineer-Intern---Summer-2027_R3")
+        self.assertEqual(item.published_at.date(), utcnow().date())
 
     async def test_a_posting_found_only_by_a_targeted_search_counts(self):
         """The newest-first page can miss an older posting a search still finds."""
@@ -96,7 +103,7 @@ class WorkdaySourceTests(unittest.IsolatedAsyncioTestCase):
         await source().fetch(seed)
         http = FakeWorkday({"summer analyst": [posting(9, "Summer Analyst - Sales & Trading")]})
         items = await source().fetch(ctx(http, cursor=seed.pending["cursor"]))
-        self.assertEqual([i.external_id for i in items], ["/job/NY/9"])
+        self.assertEqual([i.external_id for i in items], ["R9"])
 
     async def test_the_same_posting_from_several_searches_is_one_item(self):
         seed = ctx(FakeWorkday({}))
@@ -112,14 +119,44 @@ class WorkdaySourceTests(unittest.IsolatedAsyncioTestCase):
         await source().fetch(ctx(http))
         self.assertLessEqual(len(http.calls), len(QUERIES) + 1)  # newest-first gets 2 pages, searches 1
 
-    async def test_never_reports_closed_postings(self):
-        """Paged search can't see the whole board, so a vanished id may just
+    async def test_a_big_board_never_reports_closed_postings(self):
+        """Paged search can't see a big board whole, so a vanished id may just
         have slid off a page -- never guess it closed."""
-        seed = ctx(FakeWorkday({"": [posting(1, "2027 Summer Analyst")]}))
+        seed = ctx(FakeWorkday({"": [posting(1, "2027 Summer Analyst")] + filler(60)}))
         await source().fetch(seed)
-        slid_off = FakeWorkday({"": [posting(2, "Vice President, Risk")]})
+        slid_off = FakeWorkday({"": filler(60)})
         items = await source().fetch(ctx(slid_off, cursor=seed.pending["cursor"]))
         self.assertEqual([i for i in items if i.raw.get("closed")], [])
+
+    async def test_a_board_that_fits_in_the_newest_pages_does_report_closed(self):
+        seed = ctx(FakeWorkday({"": [posting(1, "2027 Summer Analyst"), posting(2, "Vice President")]}))
+        await source().fetch(seed)
+        items = await source().fetch(ctx(FakeWorkday({"": [posting(2, "Vice President")]}),
+                                         cursor=seed.pending["cursor"]))
+        self.assertEqual([(i.external_id, i.raw) for i in items], [("R1", {"closed": True})])
+
+    async def test_an_old_posting_surfacing_on_a_search_page_is_not_a_new_drop(self):
+        """Searches rank by relevance, so when something above closes an older
+        posting moves up into view. It must join the baseline silently."""
+        seed = ctx(FakeWorkday({"": filler(60)}))
+        await source().fetch(seed)
+        http = FakeWorkday({"": filler(60), "summer analyst": [
+            posting(7, "Summer Analyst - Markets", posted="Posted 30+ Days Ago"),
+            posting(8, "Summer Analyst - Credit", posted="Posted 12 Days Ago"),
+            posting(9, "Summer Analyst - Equities", posted="Posted 2 Days Ago"),
+            posting(10, "Summer Analyst - Rates", posted=None),  # some tenants (Blackstone) send no date
+        ]})
+        poll = ctx(http, cursor=seed.pending["cursor"])
+        items = await source().fetch(poll)
+        self.assertEqual(sorted(i.external_id for i in items), ["R10", "R9"])
+        later = await source().fetch(ctx(http, cursor=poll.pending["cursor"]))
+        self.assertEqual(later, [], "the stale ones are in the baseline now, not re-checked every poll")
+
+    async def test_a_title_edit_keeps_the_same_external_id(self):
+        seed = ctx(FakeWorkday({"": [posting(4, "Summer Analyst")] + filler(60)}))
+        await source().fetch(seed)
+        edited = FakeWorkday({"": [posting(4, "Summer Analyst - Investment Banking")] + filler(60)})
+        self.assertEqual(await source().fetch(ctx(edited, cursor=seed.pending["cursor"])), [])
 
     async def test_http_errors_map_to_source_error_kinds(self):
         for status, kind in ((429, "blocked"), (503, "transient"), (422, "schema"), (401, "schema")):
