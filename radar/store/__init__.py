@@ -69,8 +69,22 @@ class Store:
 
         An existing opportunity only gets blanks filled and earlier timestamps,
         so the first source to see it keeps its title and first_seen.
+
+        A (source, external_id) already on file keeps the opportunity_id it was
+        first stored under (e.g. a migrated row's kept legacy id) rather than
+        recomputing one from this Item's url: otherwise re-polling an
+        already-migrated, still-open posting would mint a second, orphaned
+        opportunities row that no item points to. item.opportunity_id (the
+        url-hash dedupe key) is only used the first time this (source,
+        external_id) pair is seen.
         """
-        opp_id = opportunity_id or item.opportunity_id
+        if opportunity_id is None:
+            existing = self.conn.execute(
+                "SELECT opportunity_id FROM items WHERE source = ? AND external_id = ?",
+                (item.source, item.external_id),
+            ).fetchone()
+            opportunity_id = existing[0] if existing else item.opportunity_id
+        opp_id = opportunity_id
         values = {
             "id": opp_id, "source": item.source, "external_id": item.external_id, "url": item.url,
             "title": item.title, "company": item.company, "location": item.location,

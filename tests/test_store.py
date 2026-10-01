@@ -80,6 +80,18 @@ class StoreTests(unittest.TestCase):
     def test_get_missing_opportunity(self):
         self.assertIsNone(self.store.get_opportunity("missing"))
 
+    def test_upsert_item_reuses_existing_items_opportunity_id(self):
+        """A (source, external_id) already on file (e.g. migrated, keeping a
+        legacy id unrelated to sha256(url)) must not get a second, orphaned
+        opportunities row the next time a live source upserts it with no
+        explicit opportunity_id override."""
+        migrated = item(source="instagram.zero2sudo", external_id="media:999",
+                         url="https://boards.greenhouse.io/stripe/jobs/1", seen_at=T0)
+        self.store.upsert_item(migrated, opportunity_id="legacy123")
+        opp_id, is_new = self.store.upsert_item(migrated)  # live source re-seeing it, no override
+        self.assertEqual((opp_id, is_new), ("legacy123", False))
+        self.assertEqual(len(self.store.list_opportunities()), 1)
+
 
 class MigrationAndViewTests(unittest.TestCase):
     def setUp(self):
