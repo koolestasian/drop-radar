@@ -60,4 +60,6 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
 instagram:
   - {username: zero2sudo, interval_s: 120, priority: 1}
 feeds: []           # - {url: "https://example.com/feed.xml", kind: rss}   kind: rss|atom|json|html
-repos: []           # - {name: owner/name, path: README.md}
+repos:               # - {name: owner/name, path: README.md}
+  - {name: SimplifyJobs/Summer2027-Internships, path: README.md}
+  - {name: SimplifyJobs/New-Grad-Positions, path: README.md}
