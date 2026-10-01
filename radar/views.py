@@ -25,12 +25,16 @@ def is_actioned(status):
     return bool(status) and status != "new"
 
 
-def legacy_records(store):
-    """Every opportunity as a tracker row, in insertion (= workbook) order."""
+def legacy_records(store, user_id):
+    """Every opportunity as a tracker row, in insertion (= workbook) order, with
+    one user's Actioned?/Notes. The user scope is in the join's ON, not a
+    WHERE: a WHERE would drop every opportunity this user never actioned."""
     rows = store.conn.execute(
         """SELECT o.*, a.status AS action_status, a.notes AS action_notes
-           FROM opportunities o LEFT JOIN actions a ON a.opportunity_id = o.id
-           ORDER BY o.rowid"""
+           FROM opportunities o
+           LEFT JOIN actions a ON a.opportunity_id = o.id AND a.user_id = ?
+           ORDER BY o.rowid""",
+        (user_id,),
     )
     records = []
     for row in rows:
@@ -47,10 +51,10 @@ def legacy_records(store):
     return records
 
 
-def write_views(store, tracker=None, latest=None, now=None):
-    """Regenerate the workbook and LATEST.md from the store."""
+def write_views(store, user_id, tracker=None, latest=None, now=None):
+    """Regenerate the workbook and LATEST.md from the store, for one user (it's one spreadsheet)."""
     tracker = Path(tracker or legacy.TRACKER_PATH)
-    records = legacy_records(store)
+    records = legacy_records(store, user_id)
     if not tracker.exists():
         legacy.create_workbook(tracker)
     legacy.save_records(records, tracker)

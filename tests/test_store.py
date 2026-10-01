@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -6,7 +7,7 @@ from pathlib import Path
 
 import opportunity_monitor as legacy
 from radar.models import Item
-from radar.store import Store
+from radar.store import MIGRATIONS, SCHEMA, Store
 from radar.store.migrate_legacy import migrate
 from radar.views import legacy_records, write_views
 
@@ -82,10 +83,42 @@ class StoreTests(unittest.TestCase):
 
     def test_set_action_only_changes_given_fields(self):
         opp_id, _ = self.store.upsert_item(item())
-        self.store.set_action(opp_id, status="applied", notes="emailed recruiter")
-        self.store.set_action(opp_id, status="interview")
-        action = self.store.get_opportunity(opp_id)["action"]
+        self.store.set_action(opp_id, "kevin", status="applied", notes="emailed recruiter")
+        self.store.set_action(opp_id, "kevin", status="interview")
+        action = self.store.get_opportunity(opp_id, user_id="kevin")["action"]
         self.assertEqual((action["status"], action["notes"]), ("interview", "emailed recruiter"))
+
+    def test_actions_are_per_user_and_never_returned_without_asking_for_one(self):
+        opp_id, _ = self.store.upsert_item(item())
+        self.store.set_action(opp_id, "kevin", status="applied", notes="kevin's private note")
+        self.store.set_action(opp_id, "friend", status="ignored")
+        kevin = self.store.get_opportunity(opp_id, user_id="kevin")["action"]
+        friend = self.store.get_opportunity(opp_id, user_id="friend")["action"]
+        self.assertEqual((kevin["status"], kevin["notes"]), ("applied", "kevin's private note"))
+        self.assertEqual((friend["status"], friend["notes"]), ("ignored", ""))
+        self.assertIsNone(self.store.get_opportunity(opp_id, user_id="nobody")["action"])
+        self.assertNotIn("action", self.store.get_opportunity(opp_id))
+
+    def test_migration_3_backfills_existing_actions_to_kevin(self):
+        """A real data/radar.db already holds single-user actions (from
+        migrate_legacy); upgrading must keep every one of them, as kevin's."""
+        db = self.dir / "v2.db"
+        conn = sqlite3.connect(db)
+        conn.executescript(SCHEMA.read_text())
+        for sql in MIGRATIONS[:2]:
+            conn.executescript(sql)
+        conn.executescript("""
+            PRAGMA user_version = 2;
+            INSERT INTO opportunities (id, first_seen) VALUES ('o1', '2026-09-01T00:00:00+00:00');
+            INSERT INTO actions (opportunity_id, status, notes, updated_at)
+                VALUES ('o1', 'applied', 'applied 9/21', '2026-09-21T00:00:00+00:00');
+        """)
+        conn.close()
+        with Store(db) as store:
+            self.assertEqual(store.conn.execute("PRAGMA user_version").fetchone()[0], len(MIGRATIONS))
+            action = store.get_opportunity("o1", user_id="kevin")["action"]
+            self.assertEqual((action["status"], action["notes"]), ("applied", "applied 9/21"))
+            self.assertIsNone(store.get_opportunity("o1", user_id="friend")["action"])
 
     def test_list_filters(self):
         a, _ = self.store.upsert_item(item(company="Stripe", seen_at=T0))
@@ -142,16 +175,16 @@ class MigrationAndViewTests(unittest.TestCase):
 
     def migrate(self):
         with Store(self.db) as store:
-            return migrate(store, self.tracker, self.cache)
+            return migrate(store, self.tracker, self.cache, "kevin")
 
     def test_migrate_twice_is_identical(self):
         first = self.migrate()
         self.assertEqual(first, {"opportunities": 3, "actions": 1, "enrichment": 2})
         with Store(self.db) as store:
-            ids = [r["ID"] for r in legacy_records(store)]
+            ids = [r["ID"] for r in legacy_records(store, "kevin")]
         self.assertEqual(self.migrate(), first)
         with Store(self.db) as store:
-            self.assertEqual([r["ID"] for r in legacy_records(store)], ids)
+            self.assertEqual([r["ID"] for r in legacy_records(store, "kevin")], ids)
             self.assertEqual(ids, ["aaa", "bbb", "ccc"])
             counts = [store.conn.execute(f"SELECT count(*) FROM {t}").fetchone()[0]
                       for t in ("opportunities", "items", "actions", "enrichment")]
@@ -160,14 +193,27 @@ class MigrationAndViewTests(unittest.TestCase):
     def test_migration_keeps_manual_fields_and_never_overwrites_db_edits(self):
         self.migrate()
         with Store(self.db) as store:
-            self.assertEqual(store.get_opportunity("aaa")["action"]["notes"], "applied 9/21")
-            store.set_action("aaa", notes="interview booked")
-            store.set_action("bbb", status="ignored")
+            self.assertEqual(store.get_opportunity("aaa", user_id="kevin")["action"]["notes"], "applied 9/21")
+            store.set_action("aaa", "kevin", notes="interview booked")
+            store.set_action("bbb", "kevin", status="ignored")
             self.assertEqual(store.get_enrichment("page:https://stripe.com/jobs/1")["status"], "open")
         self.migrate()
         with Store(self.db) as store:
-            self.assertEqual(store.get_opportunity("aaa")["action"]["notes"], "interview booked")
-            self.assertEqual(store.get_opportunity("bbb")["action"]["status"], "ignored")
+            self.assertEqual(store.get_opportunity("aaa", user_id="kevin")["action"]["notes"], "interview booked")
+            self.assertEqual(store.get_opportunity("bbb", user_id="kevin")["action"]["status"], "ignored")
+
+    def test_legacy_view_shows_only_its_users_actions_and_every_opportunity_once(self):
+        """The join must scope by user inside ON, not WHERE: a WHERE would drop
+        every opportunity this user hasn't actioned, and no scope at all would
+        duplicate a row both users actioned."""
+        self.migrate()
+        with Store(self.db) as store:
+            store.set_action("aaa", "friend", status="applied", notes="friend's note")
+            store.set_action("bbb", "friend", status="applied")
+            records = {r["ID"]: r for r in legacy_records(store, "kevin")}
+        self.assertEqual(sorted(records), ["aaa", "bbb", "ccc"])
+        self.assertEqual(records["aaa"]["Notes"], "applied 9/21")
+        self.assertEqual(records["bbb"]["Actioned?"], "No")
 
     def test_missing_enrichment_cache_is_fine(self):
         self.cache.unlink()
@@ -180,7 +226,7 @@ class MigrationAndViewTests(unittest.TestCase):
         legacy.write_live_view(legacy.workbook_records(self.tracker), now, expected_md)
         out_xlsx, out_md = self.dir / "out.xlsx", self.dir / "LATEST.md"
         with Store(self.db) as store:
-            write_views(store, out_xlsx, out_md, now)
+            write_views(store, "kevin", out_xlsx, out_md, now)
         self.assertEqual(out_md.read_bytes(), expected_md.read_bytes())
         self.assertEqual(legacy.workbook_records(out_xlsx), legacy.workbook_records(self.tracker))
 

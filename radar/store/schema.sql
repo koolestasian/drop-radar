@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS alerts (
     -- drop_latency_s REAL added by MIGRATIONS[1] (T7), like source_state.last_error above
 );
 
+-- MIGRATIONS[2] (T8a) rebuilds this with user_id and PRIMARY KEY (opportunity_id, user_id).
 CREATE TABLE IF NOT EXISTS actions (
     opportunity_id TEXT PRIMARY KEY REFERENCES opportunities(id),
     status         TEXT NOT NULL DEFAULT '',

@@ -16,6 +16,20 @@ SOURCE_STATE_COLUMNS = ("etag", "cursor", "last_ok", "fail_count", "next_run", "
 MIGRATIONS = (
     "ALTER TABLE source_state ADD COLUMN last_error TEXT",  # 1: scheduler health (T2)
     "ALTER TABLE alerts ADD COLUMN drop_latency_s REAL",     # 2: alerts latency metric (T7)
+    # 3: actions become per-user (T8a). SQLite can't ALTER a primary key, so rebuild;
+    # every action recorded before multi-user support belonged to the one user there was.
+    """CREATE TABLE actions_new (
+           opportunity_id TEXT NOT NULL REFERENCES opportunities(id),
+           user_id        TEXT NOT NULL,
+           status         TEXT NOT NULL DEFAULT '',
+           notes          TEXT NOT NULL DEFAULT '',
+           updated_at     TEXT NOT NULL,
+           PRIMARY KEY (opportunity_id, user_id)
+       );
+       INSERT INTO actions_new (opportunity_id, user_id, status, notes, updated_at)
+           SELECT opportunity_id, 'kevin', status, notes, updated_at FROM actions;
+       DROP TABLE actions;
+       ALTER TABLE actions_new RENAME TO actions""",
 )
 
 
@@ -138,7 +152,10 @@ class Store:
             )
         return cursor.rowcount == 1
 
-    def get_opportunity(self, id):
+    def get_opportunity(self, id, user_id=None):
+        """With user_id, opp["action"] is that user's status/notes (or None).
+        Without it there is no "action" key at all: one user's private notes
+        are never in a dict that isn't explicitly theirs."""
         row = self.conn.execute("SELECT * FROM opportunities WHERE id = ?", (id,)).fetchone()
         if row is None:
             return None
@@ -146,8 +163,11 @@ class Store:
         opp["fields"] = json.loads(opp["fields"])
         opp["items"] = [dict(r) for r in self.conn.execute(
             "SELECT * FROM items WHERE opportunity_id = ? ORDER BY seen_at", (id,))]
-        action = self.conn.execute("SELECT * FROM actions WHERE opportunity_id = ?", (id,)).fetchone()
-        opp["action"] = dict(action) if action else None
+        if user_id is not None:
+            action = self.conn.execute(
+                "SELECT * FROM actions WHERE opportunity_id = ? AND user_id = ?", (id, user_id)
+            ).fetchone()
+            opp["action"] = dict(action) if action else None
         return opp
 
     def list_opportunities(self, status=None, company=None, since=None, limit=None):
@@ -233,15 +253,17 @@ class Store:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def set_action(self, opportunity_id, status=None, notes=None):
-        """Set the user's status and/or notes; None leaves that field as it is."""
+    def set_action(self, opportunity_id, user_id, status=None, notes=None):
+        """Set one user's status and/or notes; None leaves that field as it is.
+        user_id has no default, so no caller can write to someone else's row by omission."""
         with self.conn:
             self.conn.execute(
-                """INSERT INTO actions (opportunity_id, status, notes, updated_at)
-                   VALUES (:id, coalesce(:status, ''), coalesce(:notes, ''), :now)
-                   ON CONFLICT(opportunity_id) DO UPDATE SET
+                """INSERT INTO actions (opportunity_id, user_id, status, notes, updated_at)
+                   VALUES (:id, :user_id, coalesce(:status, ''), coalesce(:notes, ''), :now)
+                   ON CONFLICT(opportunity_id, user_id) DO UPDATE SET
                      status = coalesce(:status, status), notes = coalesce(:notes, notes), updated_at = :now""",
-                {"id": opportunity_id, "status": status, "notes": notes, "now": _iso(utcnow())},
+                {"id": opportunity_id, "user_id": user_id, "status": status, "notes": notes,
+                 "now": _iso(utcnow())},
             )
 
     def get_enrichment(self, key):
