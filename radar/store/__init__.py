@@ -170,15 +170,21 @@ class Store:
             opp["action"] = dict(action) if action else None
         return opp
 
-    def list_opportunities(self, status=None, company=None, since=None, limit=None):
-        """Newest first. `since` filters on first_seen."""
+    def list_opportunities(self, status=None, company=None, since=None, limit=None, source_names=None):
+        """Newest first (ties by id, so a cursor can page through). `since` filters on
+        first_seen; `source_names` keeps opportunities at least one of those sources saw."""
         where, params = [], []
         for clause, value in (("status = ?", status), ("company = ?", company), ("first_seen >= ?", _iso(since))):
             if value is not None:
                 where.append(clause)
                 params.append(value)
+        if source_names is not None:
+            names = sorted(source_names)
+            where.append("EXISTS (SELECT 1 FROM items i WHERE i.opportunity_id = opportunities.id "
+                         f"AND i.source IN ({', '.join('?' * len(names)) or 'NULL'}))")
+            params.extend(names)
         sql = "SELECT * FROM opportunities" + (" WHERE " + " AND ".join(where) if where else "")
-        sql += " ORDER BY first_seen DESC"
+        sql += " ORDER BY first_seen DESC, id DESC"
         if limit is not None:
             sql += " LIMIT ?"
             params.append(int(limit))

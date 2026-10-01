@@ -24,6 +24,7 @@ class Settings:
     google_service_account_json: str = ""
     db_path: str = "data/radar.db"
     config_dir: Path = CONFIG_DIR
+    api_tokens: dict = field(default_factory=dict)  # secret -> user id, from API_TOKENS
 
 
 def load_settings(env=None) -> Settings:
@@ -36,7 +37,29 @@ def load_settings(env=None) -> Settings:
         google_service_account_json=env.get("GOOGLE_SERVICE_ACCOUNT_JSON", ""),
         db_path=env.get("RADAR_DB_PATH", "data/radar.db"),
         config_dir=Path(env.get("RADAR_CONFIG_DIR", "config")),
+        api_tokens=parse_api_tokens(env.get("API_TOKENS", "")),
     )
+
+
+MIN_TOKEN_LENGTH = 20
+
+
+def parse_api_tokens(value: str) -> dict:
+    """'kevin:<secret>,friend:<secret>' -> {secret: user_id}. A short secret is a
+    config error, not a warning: the API is meant to be reachable from a phone."""
+    tokens = {}
+    for pair in filter(None, (p.strip() for p in (value or "").split(","))):
+        user_id, _, secret = pair.partition(":")
+        user_id, secret = user_id.strip(), secret.strip()
+        if not user_id or not secret:
+            raise ConfigError("API_TOKENS entries must look like '<user_id>:<secret>'")
+        if len(secret) < MIN_TOKEN_LENGTH:
+            raise ConfigError(f"API_TOKENS: {user_id}'s secret is shorter than {MIN_TOKEN_LENGTH} characters "
+                              f"(make one with: python -c 'import secrets; print(secrets.token_urlsafe(32))')")
+        if secret in tokens:
+            raise ConfigError("API_TOKENS: two users share a secret")
+        tokens[secret] = user_id
+    return tokens
 
 
 @dataclass(frozen=True)

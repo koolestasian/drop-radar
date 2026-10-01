@@ -28,7 +28,7 @@ from radar.pipeline.filter import matches_profile
 
 log = logging.getLogger(__name__)
 
-__all__ = ["AlertDispatcher", "MultiUserAlertDispatcher", "NtfyChannel", "channels_for", "should_alert"]
+__all__ = ["AlertDispatcher", "MultiUserAlertDispatcher", "NtfyChannel", "channels_for", "should_alert", "visible_to"]
 
 ZERO2SUDO_SOURCE = f"instagram.{legacy.USERNAME}"  # same env override migrate_legacy.py uses
 
@@ -39,6 +39,22 @@ def should_alert(source: str, opp: dict, profile) -> tuple[bool, list[str]]:
     if source == ZERO2SUDO_SOURCE:
         return True, ["insider source: @zero2sudo"]
     return matches_profile(opp, profile, level_implied=source.startswith("github_repo."))
+
+
+def visible_to(opp, profile, owned):
+    """The one rule for both "in this user's feed" and "alerts this user":
+    an item on the opportunity came from one of the user's own sources and
+    should_alert holds for that source (MultiUserAlertDispatcher applies the
+    same two checks to each arriving item). Returns (owned, matches, reasons)."""
+    sources = {i["source"] for i in opp.get("items") or () if i["source"] in owned}
+    if not sources:
+        return False, False, ["not from your sources"]
+    reasons = []
+    for source in sorted(sources, key=lambda s: (s != ZERO2SUDO_SOURCE, s)):
+        ok, reasons = should_alert(source, opp, profile)
+        if ok:
+            return True, True, reasons
+    return True, False, reasons
 
 
 def _drop_latency_s(opp, sent_at):
