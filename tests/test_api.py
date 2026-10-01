@@ -1,5 +1,7 @@
 import asyncio
+import json
 import tempfile
+import time
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -9,10 +11,13 @@ import httpx
 
 from radar.alerts import AlertDispatcher, MultiUserAlertDispatcher, visible_to
 from radar.api.app import create_app
+from radar.api.events import EventBus
 from radar.api.runtime import Runtime
 from radar.config import load_settings
 from radar.config import Profile, User, Watchlist
 from radar.models import Item
+from radar.pipeline import Pipeline
+from radar.pipeline.enrich import Enricher
 from radar.store import Store
 
 T0 = datetime(2026, 9, 20, 12, tzinfo=timezone.utc)
@@ -281,6 +286,128 @@ class ConfigApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.runtime.users["friend"].profile.roles, ("private equity",))
         dispatcher = self.runtime.pipeline.alerter.dispatchers["friend"]
         self.assertEqual(dispatcher.profile.roles, ("private equity",))
+
+
+class NoLLM:
+    usage = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
+
+    def extract(self, *a, **kw):
+        return None
+
+
+class StreamTests(unittest.IsolatedAsyncioTestCase):
+    """A real server on 127.0.0.1 (ASGITransport buffers whole responses, so it
+    can't carry an endless stream). Loopback only -- nothing leaves the machine."""
+
+    async def asyncSetUp(self):
+        import uvicorn
+
+        self.store = Store(Path(tempfile.mkdtemp()) / "radar.db")
+        self.addCleanup(self.store.close)
+        bus = EventBus()
+        no_channels = {uid: AlertDispatcher(self.store, profile=p, channels=[]) for uid, p in PROFILES.items()}
+        self.pipeline = Pipeline(self.store, enricher=Enricher(self.store, extractor=NoLLM()),
+                                 alerter=MultiUserAlertDispatcher(no_channels, OWNED))
+        self.pipeline.on_new = lambda opp_id: bus.publish("opportunity", opp_id)
+        runtime = SimpleNamespace(**vars(directory()), events=bus)
+        app = create_app(self.store, runtime, tokens=TOKENS)
+        self.server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=0, log_level="warning",
+                                                    lifespan="off"))
+        self.serving = asyncio.create_task(self.server.serve())
+        while not self.server.started:
+            await asyncio.sleep(0.01)
+        port = self.server.servers[0].sockets[0].getsockname()[1]
+        self.client = httpx.AsyncClient(base_url=f"http://127.0.0.1:{port}", timeout=5)
+
+    async def asyncTearDown(self):
+        await self.client.aclose()
+        self.server.should_exit = True
+        await self.serving
+
+    async def frames(self, token, out, ready):
+        async with self.client.stream("GET", "/api/stream", headers=auth(token)) as r:
+            event = None
+            async for line in r.aiter_lines():
+                if line.startswith("retry:"):
+                    ready.set()
+                elif line.startswith("event: "):
+                    event = line[len("event: "):]
+                elif line.startswith("data: "):
+                    out.append((event, json.loads(line[len("data: "):]), time.monotonic()))
+
+    async def test_a_new_matching_opportunity_reaches_its_users_stream_within_a_second_and_no_one_elses(self):
+        kevin, friend = [], []
+        ready_k, ready_f = asyncio.Event(), asyncio.Event()
+        streams = [asyncio.create_task(self.frames(KEVIN, kevin, ready_k)),
+                   asyncio.create_task(self.frames(FRIEND, friend, ready_f))]
+        await asyncio.wait_for(asyncio.gather(ready_k.wait(), ready_f.wait()), 5)
+
+        inserted = time.monotonic()
+        await self.pipeline(None, [Item(source="ats.greenhouse.airbnb", external_id="ng", url="https://x.example/ng",
+                                        title="Software Engineer, New Grad", company="Airbnb")])
+        for _ in range(100):
+            if kevin:
+                break
+            await asyncio.sleep(0.01)
+        await asyncio.sleep(0.3)  # give the friend's stream every chance to (wrongly) get it
+        for task in streams:
+            task.cancel()
+        await asyncio.gather(*streams, return_exceptions=True)
+
+        [(event, body, at)] = kevin
+        self.assertEqual((event, body["title"], body["match"]["ok"]), ("opportunity", "Software Engineer, New Grad", True))
+        self.assertLess(at - inserted, 1.0)
+        self.assertEqual(friend, [], "airbnb is only on kevin's watchlist")
+
+    async def test_the_stream_needs_a_token(self):
+        r = await self.client.get("/api/stream")
+        self.assertEqual(r.status_code, 401)
+
+
+class HealthAndMetricsTests(unittest.IsolatedAsyncioTestCase):
+    async def test_each_user_sees_only_their_own_sources_health_and_latency(self):
+        store = Store(Path(tempfile.mkdtemp()) / "radar.db")
+        self.addCleanup(store.close)
+        health = [{"name": n, "disabled": False, "running": False, "next_run": T0.isoformat(), "last_ok": None,
+                   "fail_count": 0, "last_error": None, "items_24h": 0}
+                  for n in ("ats.greenhouse.stripe", "ats.greenhouse.airbnb", "ats.greenhouse.point72")]
+        runtime = SimpleNamespace(**vars(directory()))
+        runtime.scheduler = SimpleNamespace(health=lambda: health)
+        for source, eid in (("ats.greenhouse.airbnb", "a"), ("ats.greenhouse.point72", "p")):
+            opp_id, _ = store.upsert_item(Item(source=source, external_id=eid, url=f"https://x.example/{eid}",
+                                               title="t", seen_at=T0))
+            store.record_alert(opp_id, "ntfy")
+            store.mark_alert_sent(opp_id, "ntfy", T0 + timedelta(seconds=30), 30.0)
+        app = create_app(store, runtime, tokens=TOKENS, now=lambda: T0 + timedelta(hours=1))
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
+            names = [h["name"] for h in (await client.get("/api/sources/health", headers=auth(FRIEND))).json()]
+            self.assertEqual(sorted(names), ["ats.greenhouse.point72", "ats.greenhouse.stripe"])
+            m = (await client.get("/api/metrics", headers=auth(KEVIN))).json()
+        self.assertEqual([x["source"] for x in m["latency"]], ["ats.greenhouse.airbnb"])
+        self.assertEqual(m["items_per_day"], {T0.date().isoformat(): 1})
+
+
+class OpenApiAndWebTests(unittest.IsolatedAsyncioTestCase):
+    def test_committed_openapi_json_matches_the_app(self):
+        """docs/openapi.json is what the web app generates its types from; regenerate
+        with `python -m radar openapi > docs/openapi.json` when this fails."""
+        committed = json.loads((Path(__file__).resolve().parent.parent / "docs" / "openapi.json").read_text())
+        self.assertEqual(committed, json.loads(json.dumps(create_app(None, tokens={}).openapi())))
+
+    async def test_the_built_web_app_is_served_with_client_side_routes_falling_back_to_index(self):
+        dist = Path(tempfile.mkdtemp())
+        (dist / "index.html").write_text("<html>radar</html>")
+        (dist / "assets").mkdir()
+        (dist / "assets" / "app.js").write_text("console.log(1)")
+        (dist.parent / "secret.txt").write_text("nope")
+        app = create_app(None, tokens={}, web_dist=dist)
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
+            self.assertEqual((await client.get("/assets/app.js")).text, "console.log(1)")
+            self.assertEqual((await client.get("/pipeline")).text, "<html>radar</html>")
+            self.assertEqual((await client.get("/")).text, "<html>radar</html>")
+            self.assertNotIn("nope", (await client.get("/..%2Fsecret.txt")).text)
+            self.assertEqual((await client.get("/api/nope")).status_code, 404)
+            self.assertEqual((await client.get("/healthz")).json(), {"ok": True})
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 
 from radar.alerts import AlertDispatcher, MultiUserAlertDispatcher, channels_for
+from radar.api.events import EventBus
 from radar.config import load_settings, load_users
 from radar.errors import ConfigError
 from radar.pipeline import Pipeline
@@ -44,6 +45,7 @@ class Runtime:
         self.users_path = users_path
         self.env = os.environ if env is None else env
         self.scheduler = self.pipeline = None
+        self.events = EventBus()
         self.reload()
 
     def reload(self):
@@ -57,6 +59,7 @@ class Runtime:
         )
         if self.scheduler is None:
             self.pipeline = Pipeline(self.store, alerter=alerter)
+            self.pipeline.on_new = lambda opportunity_id: self.events.publish("opportunity", opportunity_id)
             self.scheduler = Scheduler(sources, self.store, sink=self.pipeline)
         else:
             self.scheduler.reload(sources)

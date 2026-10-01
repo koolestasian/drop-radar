@@ -4,6 +4,8 @@
   serve   scheduler + pipeline + API in one process, for every user in
           config/users.yaml (T8b). Binds 127.0.0.1 unless --host says
           otherwise: putting it on the internet is a deploy decision (T10).
+  openapi print the API schema; docs/openapi.json is this output (the web
+          app's types are generated from it)
 """
 from __future__ import annotations
 
@@ -22,15 +24,22 @@ def main(argv=None):
     serve = sub.add_parser("serve", parents=[db], help="run the scheduler, pipeline and API as one process")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
+    sub.add_parser("openapi", help="print the API's OpenAPI schema as JSON")
     args = parser.parse_args(argv)
 
     settings = load_settings()
-    db_path = args.db or settings.db_path
+    db_path = getattr(args, "db", None) or settings.db_path
     if args.command == "stats":
         from radar.stats import format_latency_table, latency_by_source
 
         with Store(db_path) as store:
             print(format_latency_table(latency_by_source(store)))
+    elif args.command == "openapi":
+        import json
+
+        from radar.api.app import create_app
+
+        print(json.dumps(create_app(None, tokens={}).openapi(), indent=2, sort_keys=True))
     elif args.command == "serve":
         import logging
 

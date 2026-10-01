@@ -21,20 +21,27 @@ import json
 import logging
 import os
 import tempfile
+from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
 
 import yaml
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.responses import FileResponse, StreamingResponse
 
 from radar.alerts import visible_to
-from radar.api.models import Action, ActionPatch, Match, Me, Opportunity, Page, ProfileConfig, WatchlistConfig
+from radar.api import events
+from radar.api.models import (Action, ActionPatch, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
+                              SourceHealth, SourceLatency, WatchlistConfig)
 from radar.config import User, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
 from radar.models import utcnow
+from radar.pipeline.enrich import DEFAULT_DAILY_TOKEN_BUDGET
+from radar.stats import latency_by_source
 
 log = logging.getLogger(__name__)
 HIDDEN_BY_DEFAULT = "ignored"  # a user's own ignored opportunities leave their feed unless asked for
+WEB_DIST = Path(__file__).resolve().parents[2] / "web" / "dist"
 
 
 def _log_crash(task):
@@ -71,8 +78,9 @@ def _atomic_write(path, text):
     os.replace(tmp, path)
 
 
-def create_app(store, runtime=None, tokens=None, now=utcnow):
+def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST):
     tokens = load_settings().api_tokens if tokens is None else tokens
+    bus = getattr(runtime, "events", None) or events.EventBus()
     if runtime is not None and not tokens:
         log.warning("API_TOKENS is empty: every /api request will be refused")
 
@@ -198,6 +206,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow):
         visible_opportunity(opp_id, user)
         if patch.status is not None or patch.notes is not None:
             store.set_action(opp_id, user.id, status=patch.status, notes=patch.notes)
+            bus.publish("action", opp_id, user.id)
         return serialize(store.get_opportunity(opp_id, user_id=user.id), user)
 
     def replace_config(user, kind, data, parse, path):
@@ -241,5 +250,64 @@ def create_app(store, runtime=None, tokens=None, now=utcnow):
     async def put_profile(body: ProfileConfig, user: User = Depends(current_user)):
         replace_config(user, "profile", body.model_dump(), parse_profile, user.profile_path)
         return ProfileConfig(**dataclasses.asdict(runtime.users[user.id].profile))
+
+    @app.get("/api/stream", response_class=StreamingResponse,
+             responses={200: {"content": {"text/event-stream": {}},
+                              "description": "SSE: `opportunity` (a new one in your feed) and `action` (yours changed)"}})
+    async def stream(request: Request, user: User = Depends(current_user)):
+        def render(kind, opp_id):
+            opp = store.get_opportunity(opp_id, user_id=user.id)
+            if opp is None:
+                return None
+            owned_it, matches, _ = visible_to(opp, user.profile, owned(user))
+            if not owned_it or (kind == "opportunity" and not matches):
+                return None
+            return serialize(opp, user).model_dump()
+
+        queue = bus.subscribe()
+
+        async def frames():
+            try:
+                async for frame in events.stream(queue, user.id, render, request.is_disconnected):
+                    yield frame
+            finally:
+                bus.unsubscribe(queue)
+
+        return StreamingResponse(frames(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+    @app.get("/api/sources/health", response_model=list[SourceHealth])
+    async def sources_health(user: User = Depends(current_user)):
+        scheduler = getattr(runtime, "scheduler", None)
+        mine = owned(user)
+        return [h for h in (scheduler.health() if scheduler else []) if h["name"] in mine]
+
+    @app.get("/api/metrics", response_model=Metrics)
+    async def metrics(user: User = Depends(current_user)):
+        mine = sorted(owned(user))
+        latency = [SourceLatency(source=source, **s) for source, s in latency_by_source(store).items()
+                   if source in owned(user)]
+        since = (now() - timedelta(days=7)).date().isoformat()
+        rows = store.conn.execute(
+            f"SELECT substr(seen_at, 1, 10), count(*) FROM items WHERE seen_at >= ? "
+            f"AND source IN ({', '.join('?' * len(mine)) or 'NULL'}) GROUP BY 1 ORDER BY 1",
+            [since, *mine],
+        ).fetchall()
+        spent = (store.get_enrichment(f"llm_budget:{now().date().isoformat()}") or {}).get("tokens", 0)
+        return Metrics(latency=latency, items_per_day={d: n for d, n in rows},
+                       llm_tokens_today=spent, llm_daily_budget=DEFAULT_DAILY_TOKEN_BUDGET)
+
+    if Path(web_dist, "index.html").is_file():
+        root = Path(web_dist).resolve()
+
+        @app.get("/{path:path}", include_in_schema=False)
+        async def spa(path: str):
+            """The built web app (T9): a real file if there is one, else index.html for client routes."""
+            if path.startswith("api/"):
+                raise HTTPException(404)
+            candidate = (root / path).resolve()
+            if path and candidate.is_file() and candidate.is_relative_to(root):  # no ../ escapes
+                return FileResponse(candidate)
+            return FileResponse(root / "index.html")
 
     return app

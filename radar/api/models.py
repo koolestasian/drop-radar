@@ -88,3 +88,28 @@ class ProfileConfig(BaseModel):
     grad_year: int | None = Field(None, description="target season year, e.g. 2027")
     locations: list[str] = []
     company_tiers: dict[str, str] = {}
+
+
+class SourceHealth(BaseModel):
+    name: str
+    disabled: bool
+    running: bool
+    next_run: str
+    last_ok: str | None
+    fail_count: int
+    last_error: str | None
+    items_24h: int
+
+
+class SourceLatency(BaseModel):
+    source: str
+    n: int
+    p50: float
+    p95: float
+
+
+class Metrics(BaseModel):
+    latency: list[SourceLatency] = Field(description="drop latency per source, your sources only")
+    items_per_day: dict[str, int] = Field(description="last 7 days, items your sources saw first that day")
+    llm_tokens_today: int = Field(description="shared by every user")
+    llm_daily_budget: int
