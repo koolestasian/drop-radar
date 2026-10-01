@@ -210,6 +210,17 @@ class AlertDispatcherTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(channel.sent[0][2])  # drop_latency_s
         self.assertIsNone(self.store.get_alert(opp_id, "ntfy")["drop_latency_s"])
 
+    async def test_expired_or_not_actionable_opportunity_does_not_alert(self):
+        for status in ("Expired", "Not actionable"):
+            with self.subTest(status=status):
+                channel = FakeChannel()
+                dispatcher = AlertDispatcher(self.store, profile=PROFILE, channels=[channel])
+                it = item(external_id=status, url=f"https://x.example/{status}")
+                opp_id, _ = self.store.upsert_item(it)
+                self.store.save_opportunity(opp_id, first_seen=T0, status=status)
+                await dispatcher.dispatch(it, opp_id)
+                self.assertEqual(channel.sent, [])
+
     async def test_closed_opportunity_does_not_alert(self):
         channel = FakeChannel()
         dispatcher = AlertDispatcher(self.store, profile=PROFILE, channels=[channel])

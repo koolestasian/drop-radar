@@ -39,8 +39,9 @@ def claim_owner(store, users):
 
 
 class Runtime:
-    def __init__(self, store, settings=None, users_path=None, env=None):
+    def __init__(self, store, settings=None, users_path=None, env=None, channels_for=channels_for):
         self.store = store
+        self.channels_for = channels_for
         self.settings = settings or load_settings()
         self.users_path = users_path
         self.env = os.environ if env is None else env
@@ -52,11 +53,18 @@ class Runtime:
         users = load_users(self.users_path)
         claim_owner(self.store, users)
         sources, owned, _skipped = build_sources_for_users(users, self.settings)
-        alerter = MultiUserAlertDispatcher(
-            {u.id: AlertDispatcher(self.store, profile=u.profile, channels=channels_for(u.id, i == 0, self.env))
-             for i, u in enumerate(users)},
-            owned,
-        )
+        # Keep each user's AlertDispatcher across reloads: its in-flight/backoff memory is
+        # what stops a send already under way from being sent again by the next retry sweep.
+        previous = self.pipeline.alerter.dispatchers if self.pipeline is not None else {}
+        dispatchers, profiles = {}, {}
+        for i, user in enumerate(users):
+            channels = self.channels_for(user.id, i == 0, self.env)
+            old = previous.get(user.id)
+            if old is not None and [c.name for c in old.channels] == [c.name for c in channels]:
+                dispatchers[user.id], profiles[user.id] = old, user.profile  # profile applied once all is valid
+            else:
+                dispatchers[user.id] = AlertDispatcher(self.store, profile=user.profile, channels=channels)
+        alerter = MultiUserAlertDispatcher(dispatchers, owned)
         if self.scheduler is None:
             self.pipeline = Pipeline(self.store, alerter=alerter)
             self.pipeline.on_new = lambda opportunity_id: self.events.publish("opportunity", opportunity_id)
@@ -64,5 +72,7 @@ class Runtime:
         else:
             self.scheduler.reload(sources)
             self.pipeline.alerter = alerter
+        for user_id, profile in profiles.items():
+            dispatchers[user_id].profile = profile
         self.users = {u.id: u for u in users}
         self.owned = owned

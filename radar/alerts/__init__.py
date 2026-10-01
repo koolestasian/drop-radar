@@ -28,9 +28,12 @@ from radar.pipeline.filter import matches_profile
 
 log = logging.getLogger(__name__)
 
-__all__ = ["AlertDispatcher", "MultiUserAlertDispatcher", "NtfyChannel", "channels_for", "should_alert", "visible_to"]
+__all__ = ["DEAD_STATUSES", "AlertDispatcher", "MultiUserAlertDispatcher", "NtfyChannel", "channels_for", "should_alert", "visible_to"]
 
 ZERO2SUDO_SOURCE = f"instagram.{legacy.USERNAME}"  # same env override migrate_legacy.py uses
+# A posting that is over, by the source (Closed), its deadline (Expired) or the legacy
+# LLM verdict (Not actionable): never alerts, and is out of the default feed.
+DEAD_STATUSES = frozenset({"Closed", "Expired", "Not actionable"})
 
 
 def should_alert(source: str, opp: dict, profile) -> tuple[bool, list[str]]:
@@ -200,7 +203,7 @@ class AlertDispatcher:
         if not self.channels:
             return
         opp = self.store.get_opportunity(opportunity_id)
-        if opp is None or opp["status"] == "Closed":
+        if opp is None or opp["status"] in DEAD_STATUSES:
             return
         ok, reasons = should_alert(item.source, opp, self.profile)
         if not ok:
@@ -241,7 +244,7 @@ class AlertDispatcher:
             if channel is None:
                 continue  # no longer configured; leave it pending
             opp = self.store.get_opportunity(row["opportunity_id"])
-            if opp is None or opp["status"] == "Closed":
+            if opp is None or opp["status"] in DEAD_STATUSES:
                 continue
             sources = [i["source"] for i in opp.get("items") or []]
             source = ZERO2SUDO_SOURCE if ZERO2SUDO_SOURCE in sources else (sources[0] if sources else "")

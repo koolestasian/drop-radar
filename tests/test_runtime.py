@@ -1,10 +1,13 @@
+import asyncio
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 from radar.api.runtime import Runtime
 from radar.config import load_settings
 from radar.errors import ConfigError
+from radar.models import Item
 from radar.store import Store
 
 KEVIN_WL = "companies: [{name: Stripe, ats: greenhouse, slug: stripe}, {name: Airbnb, ats: greenhouse, slug: airbnb}]"
@@ -77,6 +80,48 @@ class RuntimeTests(unittest.TestCase):
         self.write("users.yaml", "users:\n" + "\n".join(reversed(USERS.splitlines()[1:])) + "\n")
         with self.assertRaisesRegex(ConfigError, "first user"):
             self.runtime()
+
+
+class SlowChannel:
+    def __init__(self, name, sent):
+        self.name, self.sent = name, sent
+
+    def send(self, opp, reasons, latency):
+        time.sleep(0.1)
+        self.sent.append(opp["id"])
+
+
+class ReloadDuringSendTests(unittest.IsolatedAsyncioTestCase):
+    async def test_a_config_edit_mid_send_never_sends_the_same_alert_twice(self):
+        """reload() must keep each user's AlertDispatcher (and its in-flight/backoff
+        memory): a fresh one would see the row still pending, not know it's being
+        sent right now, and send it again."""
+        d = Path(tempfile.mkdtemp())
+        for rel, text in {"users.yaml": "users: [{id: kevin, watchlist: w.yaml, profile: p.yaml}]",
+                          "w.yaml": KEVIN_WL, "p.yaml": "roles: [software engineer]\nkeywords: [intern]"}.items():
+            (d / rel).write_text(text)
+        store = Store(d / "radar.db")
+        self.addCleanup(store.close)
+        sent, channels = [], {}
+
+        def channel_factory(user_id, owner, env):
+            channels.setdefault(user_id, [SlowChannel("ntfy" if owner else f"ntfy:{user_id}", sent)])
+            return channels[user_id]
+
+        rt = Runtime(store, settings=load_settings({}), users_path=d / "users.yaml", env={},
+                     channels_for=channel_factory)
+        it = Item(source="ats.greenhouse.stripe", external_id="1", url="https://x.example/1",
+                  title="Software Engineer Intern")
+        opp_id, _ = store.upsert_item(it)
+        sending = asyncio.create_task(rt.pipeline.alerter.dispatch(it, opp_id))
+        await asyncio.sleep(0.03)  # the send is now in flight in a worker thread
+        (d / "p.yaml").write_text("roles: [software engineer, data engineer]\nkeywords: [intern]")
+        rt.reload()
+        await rt.pipeline.alerter.retry_pending()  # the next sink tick
+        await sending
+        self.assertEqual(sent, [opp_id])
+        self.assertEqual(rt.pipeline.alerter.dispatchers["kevin"].profile.roles,
+                         ("software engineer", "data engineer"), "the edit still took effect")
 
 
 if __name__ == "__main__":

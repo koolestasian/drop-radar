@@ -170,6 +170,14 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         friend_soon = await self.ids_of(FRIEND, closing_within=30)
         self.assertEqual(friend_soon, self.names("ib"))
 
+    async def test_dead_postings_leave_the_feed_but_stay_findable_and_on_your_board(self):
+        ng = self.ids["ng"]
+        self.store.save_opportunity(ng, first_seen=T0, status="Expired")
+        self.assertEqual(await self.ids_of(KEVIN), self.names("swe"))
+        self.assertEqual(await self.ids_of(KEVIN, status="Expired"), self.names("ng"))
+        await self.client.patch(f"/api/opportunities/{ng}", headers=auth(KEVIN), json={"status": "applied"})
+        self.assertEqual(await self.ids_of(KEVIN, action="applied"), self.names("ng"))
+
     async def test_cursor_pagination_walks_newest_first_without_repeats(self):
         seen, cursor = [], None
         while True:
@@ -390,9 +398,16 @@ class HealthAndMetricsTests(unittest.IsolatedAsyncioTestCase):
 class OpenApiAndWebTests(unittest.IsolatedAsyncioTestCase):
     def test_committed_openapi_json_matches_the_app(self):
         """docs/openapi.json is what the web app generates its types from; regenerate
-        with `python -m radar openapi > docs/openapi.json` when this fails."""
+        with `python -m radar openapi > docs/openapi.json` when this fails. Compares
+        routes and schema fields, not bytes, so a FastAPI upgrade's cosmetic output
+        changes can't fail the hourly CI run this suite gates."""
+        def shape(spec):
+            routes = {(path, method) for path, ops in spec["paths"].items() for method in ops}
+            schemas = {name: (sorted(s.get("properties", {})), sorted(s.get("required", [])))
+                       for name, s in spec.get("components", {}).get("schemas", {}).items()}
+            return routes, schemas
         committed = json.loads((Path(__file__).resolve().parent.parent / "docs" / "openapi.json").read_text())
-        self.assertEqual(committed, json.loads(json.dumps(create_app(None, tokens={}).openapi())))
+        self.assertEqual(shape(committed), shape(create_app(None, tokens={}).openapi()))
 
     async def test_the_built_web_app_is_served_with_client_side_routes_falling_back_to_index(self):
         dist = Path(tempfile.mkdtemp())

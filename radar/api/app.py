@@ -29,7 +29,7 @@ import yaml
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse
 
-from radar.alerts import visible_to
+from radar.alerts import DEAD_STATUSES, visible_to
 from radar.api import events
 from radar.api.models import (Action, ActionPatch, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
                               SourceHealth, SourceLatency, WatchlistConfig)
@@ -155,7 +155,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST):
         company: str | None = None,
         source: str | None = None,
         action: str | None = Query(None, description="your status; 'ignored' ones are hidden unless asked for"),
-        status: str | None = Query(None, description="the posting's own status, e.g. New or Closed"),
+        status: str | None = Query(None, description="the posting's own status (New, Open, Closed...); "
+                                                      "Closed/Expired/Not actionable are hidden unless asked for"),
         since: datetime | None = Query(None, description="first seen at or after"),
         closing_within: int | None = Query(None, ge=0, description="deadline within this many days"),
         cursor: str | None = None,
@@ -174,6 +175,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST):
             if action is not None and mine.get("status") != action:
                 continue
             if action is None and mine.get("status") == HIDDEN_BY_DEFAULT:
+                continue
+            if action is None and status is None and opp["status"] in DEAD_STATUSES:
                 continue
             if q and q.lower() not in f"{opp['title']} {opp['company']}".lower():
                 continue

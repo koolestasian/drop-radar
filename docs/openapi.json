@@ -947,7 +947,7 @@
             }
           },
           {
-            "description": "the posting's own status, e.g. New or Closed",
+            "description": "the posting's own status (New, Open, Closed...); Closed/Expired/Not actionable are hidden unless asked for",
             "in": "query",
             "name": "status",
             "required": false,
@@ -960,7 +960,7 @@
                   "type": "null"
                 }
               ],
-              "description": "the posting's own status, e.g. New or Closed",
+              "description": "the posting's own status (New, Open, Closed...); Closed/Expired/Not actionable are hidden unless asked for",
               "title": "Status"
             }
           },
