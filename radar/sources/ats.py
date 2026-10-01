@@ -21,12 +21,20 @@ from radar.models import Item
 
 TIER_INTERVAL_S = {"S": 120.0, "A": 120.0, "B": 300.0, "C": 900.0}
 
-# Spec's exact terms, case-insensitive, word-ish boundaries. Not configurable
-# on purpose (ponytail: one list; add a knob only if the terms actually need
-# to vary per company).
+# Early-career terms, case-insensitive, word-ish boundaries. Runs before any
+# user's profile, so it is the union of every user's industry: the spec's CS
+# terms plus business/finance and university-hiring ones (a 2026-10-01 audit of
+# live boards found "Summer Analyst", "Associate Consultant", "(University
+# Grad)" all dropped here). Profiles do the real per-user filtering after this.
+# ponytail: one hardcoded list; derive it from users' profiles if a third
+# industry ever needs terms this doesn't have.
 _TITLE_RE = re.compile(
-    r"\b(intern(?:ship)?s?|new[- ]?grad(?:uate)?s?|early[- ]career|residenc(?:y|ies)|"
-    r"fellowship|apprentice(?:ship)?|co-?op|202[678])\b",
+    r"\b(intern(?:ship)?s?|new[- ]?grad(?:uate)?s?|early[- ](?:career|talent)|residenc(?:y|ies)|"
+    r"fellowship|apprentice(?:ship)?|co-?op|202[6-9]|"
+    r"summer|(?:under)?grad(?:uate)?s?|universit(?:y|ies)|campus|students?|entry[- ]level|off[- ]cycle|"
+    r"rotational|trainees?|associate consultants?|"
+    r"(?:analyst|associate|development|leadership) program(?:me)?s?|"
+    r"spring (?:week|insight)|insight (?:days?|weeks?|programs?|series))\b",
     re.IGNORECASE,
 )
 

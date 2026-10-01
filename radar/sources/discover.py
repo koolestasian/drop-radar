@@ -1,7 +1,9 @@
 """Manual/live tooling for the ATS sources -- not run by the test suite.
 
-- `python -m radar.sources.discover --check`: one live request per watchlist
-  board, prints whether it returned a parseable 200.
+- `python -m radar.sources.discover --check`: one live request per board on any
+  user's watchlist (config/users.yaml), prints whether it returned a parseable
+  200 and how many postings. A 200 with zero postings is flagged: SmartRecruiters
+  answers 200 + an empty list for a slug that doesn't exist.
 - `mine_tracker_slugs()`: (ats, slug) pairs recovered from the existing
   tracker's application links. Imports the workbook reader lazily so this
   module stays side-effect-free when the registry auto-imports it.
@@ -78,20 +80,23 @@ async def _check_one(client, company):
     if response.status_code != 200:
         return company.ats, company.slug, f"HTTP {response.status_code}"
     try:
-        source.parse(response.json())
+        parsed = source.parse(response.json())
     except Exception as exc:
         return company.ats, company.slug, f"200 but unparseable: {exc}"
-    return company.ats, company.slug, "200 OK"
+    postings = parsed[0] if isinstance(parsed, tuple) else parsed
+    if not postings:
+        return company.ats, company.slug, "200 but EMPTY (unknown slug, or nothing posted)"
+    return company.ats, company.slug, f"200 OK ({len(postings)} postings)"
 
 
 async def check_all():
     import httpx
 
-    from radar.config import load_watchlist
+    from radar.config import load_users
 
-    watchlist = load_watchlist()
+    companies = {(c.ats, c.slug): c for u in load_users() for c in u.watchlist.companies}
     async with httpx.AsyncClient(timeout=15) as client:
-        for company in watchlist.companies:
+        for company in companies.values():
             ats, slug, status = await _check_one(client, company)
             print(f"{ats:16} {slug:35} {status}")
 

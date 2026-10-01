@@ -1,5 +1,38 @@
-# friend's sources. Same format as config/watchlist.yaml; empty until filled in.
-# A company also on kevin's list is polled once, not twice.
-companies: []
+# friend's sources (Berkeley Haas: business / finance). Same format as
+# config/watchlist.yaml. Every board below was verified live on 2026-10-01 with
+# early-career finance/business postings on it; a board also on kevin's list is
+# polled once, not twice.
+# Coverage gap: bulge-bracket and elite-boutique banks, MBB consulting, and the
+# big asset managers (Goldman, JPM, Evercore, Lazard, Moelis, Centerview,
+# Blackstone, McKinsey, Bain, BCG, BlackRock, Fidelity...) are not on
+# Greenhouse/Lever/Ashby -- most use Workday or their own site. See PROGRESS.md.
+companies:          # ats: greenhouse | lever | ashby | workable | smartrecruiters; tier: S|A|B|C
+  # investment banking / investing / hedge funds
+  - {name: William Blair, ats: greenhouse, slug: williamblair, tier: A}
+  - {name: Point72, ats: greenhouse, slug: point72, tier: A}
+  - {name: AQR Capital Management, ats: greenhouse, slug: aqr, tier: A}
+  - {name: Bridgewater Associates, ats: greenhouse, slug: bridgewater89, tier: A}
+  - {name: Schonfeld, ats: greenhouse, slug: schonfeld, tier: B}
+  - {name: Assured Guaranty, ats: greenhouse, slug: assuredguaranty, tier: B}
+  # trading
+  - {name: Jump Trading, ats: greenhouse, slug: jumptrading, tier: B}
+  - {name: IMC Trading, ats: greenhouse, slug: imc, tier: B}
+  - {name: Old Mission Capital, ats: greenhouse, slug: oldmissioncapital, tier: B}
+  - {name: Tower Research Capital, ats: greenhouse, slug: towerresearchcapital, tier: B}
+  - {name: Akuna Capital, ats: greenhouse, slug: akunacapital, tier: B}
+  - {name: DV Trading, ats: greenhouse, slug: dvtrading, tier: B}
+  - {name: Virtu Financial, ats: greenhouse, slug: virtu, tier: B}
+  - {name: Flow Traders, ats: greenhouse, slug: flowtraders, tier: B}
+  - {name: Belvedere Trading, ats: lever, slug: belvederetrading, tier: B}
+  - {name: Optiver, ats: greenhouse, slug: optiverprivate, tier: B}
+  - {name: Geneva Trading, ats: greenhouse, slug: genevatrading, tier: B}
+  # fintech (finance, risk, strategy, product roles)
+  - {name: Stripe, ats: greenhouse, slug: stripe, tier: A}
+  - {name: Robinhood, ats: greenhouse, slug: robinhood, tier: B}
+  - {name: Coinbase, ats: greenhouse, slug: coinbase, tier: B}
+  - {name: Carta, ats: greenhouse, slug: carta, tier: B}
+  - {name: Ramp, ats: ashby, slug: ramp, tier: B}
+  - {name: Gemini, ats: greenhouse, slug: gemini, tier: B}
+  - {name: Enova, ats: greenhouse, slug: enova, tier: B}
 instagram: []
 repos: []

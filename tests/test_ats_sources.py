@@ -321,6 +321,13 @@ class TitleFilterTests(unittest.TestCase):
             "New Grad Software Engineer", "New Graduate - Backend", "Co-Op, Infrastructure",
             "Early Career Analyst", "Research Fellowship", "Residency Program", "Apprentice Electrician",
             "Backend Engineer (Class of 2026)",
+            # Business/finance and big-tech university titles that carry no "intern"/year
+            # (2026-10-01 audit: these were dropped before any profile saw them).
+            "Summer Analyst - Investment Banking", "Private Equity Summer Associate",
+            "Analyst Program - Global Markets", "Associate Consultant", "Off-Cycle Analyst, Equity Research",
+            "Software Engineer (University Grad)", "Student Researcher", "Campus Hire - Sales & Trading",
+            "Rotational Program Associate", "Leadership Development Program", "Entry Level Financial Analyst",
+            "Early Talent - Wealth Management", "Spring Insight Week", "Undergraduate Business Analyst",
         ):
             self.assertTrue(matches_title(title), title)
 

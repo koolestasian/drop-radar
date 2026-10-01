@@ -49,6 +49,12 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: Reddit, ats: greenhouse, slug: reddit, tier: B}
   - {name: Robinhood, ats: greenhouse, slug: robinhood, tier: B}
   - {name: Scale AI, ats: greenhouse, slug: scaleai, tier: S}
+  # quant firms with CS early-career roles (verified live 2026-10-01; shared with config/friend/)
+  - {name: Jump Trading, ats: greenhouse, slug: jumptrading, tier: B}
+  - {name: IMC Trading, ats: greenhouse, slug: imc, tier: B}
+  - {name: Old Mission Capital, ats: greenhouse, slug: oldmissioncapital, tier: B}
+  - {name: Tower Research Capital, ats: greenhouse, slug: towerresearchcapital, tier: B}
+  - {name: Akuna Capital, ats: greenhouse, slug: akunacapital, tier: B}
   - {name: Snowflake, ats: ashby, slug: snowflake, tier: B}
   - {name: Together AI, ats: greenhouse, slug: togetherai, tier: B}
   - {name: Vercel, ats: greenhouse, slug: vercel, tier: B}

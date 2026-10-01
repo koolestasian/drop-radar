@@ -1,5 +1,15 @@
-# friend's filter. Same format as config/profile.yaml; fill in before relying on alerts.
-roles: []
-locations: []
-keywords: []
-exclude: []
+# friend's filter (Berkeley Haas: business / finance). Same format and matching
+# rules as config/profile.yaml: one role (track) AND one keyword (level).
+# TODO confirm with friend: grad_year and locations are unset (every season and
+# location passes) rather than guessed; summer analyst (undergrad) and summer
+# associate (MBA) are both listed -- delete the one that doesn't apply.
+roles: [investment banking, private equity, venture capital, trading, trader, investment, markets,
+        equity research, research analyst,
+        asset management, wealth management, investment management, hedge fund, corporate finance,
+        finance, financial, fp&a, m&a, credit, risk, treasury, real estate, consulting, consultant,
+        strategy, business analyst, business operations, corporate development, product manager,
+        product management]
+keywords: [intern, summer, summer analyst, summer associate, analyst, associate, new grad, grad, early career, campus,
+           university, undergraduate, entry level, off-cycle, rotational, development program, fellowship,
+           co-op]
+exclude: [senior, sr, staff, principal, director, vice president, vp, managing director, head of, lead, phd]

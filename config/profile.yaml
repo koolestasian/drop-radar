@@ -1,7 +1,16 @@
-# Who the radar is looking for. Validated by radar.config.load_profile.
-roles: [software engineer intern, new grad software engineer]
-grad_year: 2027
-locations: [Remote, United States]
+# Who the radar is looking for. Validated by radar.config.load_profile; matched
+# by radar.pipeline.filter.matches_profile.
+# roles = the track, keywords = the level: a title needs one of each. Terms match
+# whole words in any order, incl. plural/-ing/-ship forms ("software engineer
+# intern" also matches "Software Engineering Internship"; "intern" never
+# matches "Internal"). exclude is checked against the title only.
+roles: [software engineer, software developer, software development, swe, sde, backend, frontend,
+        full stack, mobile engineer, ios, android, machine learning engineer, ml engineer, ai engineer,
+        data engineer, infrastructure engineer, platform engineer, site reliability, security engineer,
+        forward deployed engineer]
+grad_year: 2027      # used as the target season: "Summer 2027" passes, "Summer 2026" doesn't
+locations: [Remote, United States]   # "United States" accepts any US city/state; an unknown location is let through
 company_tiers: {Stripe: S}
-keywords: [intern, new grad, university, early career]
-exclude: [senior, staff, principal, director]
+keywords: [intern, co-op, new grad, grad, graduate, university, early career, entry level, junior,
+           summer, winter, fall, residency, fellowship, apprentice]   # a season in the title implies an internship/co-op
+exclude: [senior, staff, principal, director, high school, phd]

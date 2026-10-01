@@ -38,7 +38,7 @@ def should_alert(source: str, opp: dict, profile) -> tuple[bool, list[str]]:
     Everything else only alerts when it matches the profile (T7-alerts.md)."""
     if source == ZERO2SUDO_SOURCE:
         return True, ["insider source: @zero2sudo"]
-    return matches_profile(opp, profile)
+    return matches_profile(opp, profile, level_implied=source.startswith("github_repo."))
 
 
 def _drop_latency_s(opp, sent_at):

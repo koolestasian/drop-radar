@@ -29,7 +29,8 @@ class LoadUsersTests(unittest.TestCase):
         self.assertEqual((kevin.id, friend.id), ("kevin", "friend"))
         self.assertEqual(kevin.watchlist.instagram[0].username, "zero2sudo")
         self.assertEqual(kevin.profile.grad_year, 2027)
-        self.assertEqual(friend.watchlist, Watchlist())
+        self.assertTrue(friend.watchlist.companies)
+        self.assertEqual(friend.watchlist.instagram, ())  # zero2sudo is CS-focused; that one is kevin's
 
     def test_paths_resolve_relative_to_users_yaml_not_the_cwd(self):
         path = config_dir({
