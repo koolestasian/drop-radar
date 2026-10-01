@@ -4,9 +4,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from radar.config import Company
+from radar.alerts import AlertDispatcher
+from radar.config import Company, Profile
 from radar.errors import SourceError
 from radar.models import utcnow
+from radar.pipeline import Pipeline
 from radar.scheduler import FetchContext, HostLimiter, Scheduler
 from radar.sources import registry
 from radar.sources.ashby import AshbySource
@@ -82,12 +84,14 @@ class AtsSourceContractMixin:
     def url(self, slug="acme"):
         return self.source_cls(company(self.ats, slug)).board_url()
 
-    async def test_first_poll_seeds_baseline_and_emits_nothing(self):
+    async def test_first_poll_backfills_open_early_career_postings_marked_as_seed(self):
+        """So a new user's feed isn't empty on day one; the pipeline never alerts on a seed."""
         http = FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()))})
         source = self.source_cls(company(self.ats))
         ctx = make_ctx(http)
         items = await source.fetch(ctx)
-        self.assertEqual(items, [])
+        self.assertEqual([i.external_id for i in items], [self.baseline_matching_id()])  # the senior one is filtered
+        self.assertTrue(all(i.raw == {"seed": True} for i in items))
         self.assertEqual(http.calls, [self.url()])  # fetch went through ctx.get, one request
         self.assertIn("cursor", ctx.pending)
 
@@ -383,30 +387,55 @@ class RegistryTests(unittest.TestCase):
 class SchedulerIntegrationTests(unittest.IsolatedAsyncioTestCase):
     """End-to-end: the real Scheduler + Store drive seed-then-diff across two polls."""
 
-    async def test_first_poll_stores_nothing_second_stores_one_opportunity(self):
+    async def test_backfill_is_silent_then_new_jobs_alert_and_removed_jobs_close(self):
         store = Store(Path(tempfile.mkdtemp()) / "radar.db")
         self.addCleanup(store.close)
         source = GreenhouseSource(company("greenhouse", tier="B"))
         url = source.board_url()
         baseline = [{"id": 1, "title": "Senior Engineer", "updated_at": "2026-01-01T00:00:00Z",
-                     "absolute_url": "https://boards.greenhouse.io/acme/jobs/1", "location": {}}]
+                     "absolute_url": "https://boards.greenhouse.io/acme/jobs/1", "location": {}},
+                    {"id": 3, "title": "SWE Intern, Summer 2027",
+                     "absolute_url": "https://boards.greenhouse.io/acme/jobs/3", "location": {}}]
         grown = baseline + [{"id": 2, "title": "SWE Intern, Summer 2027", "updated_at": "2026-02-01T00:00:00Z",
                               "absolute_url": "https://boards.greenhouse.io/acme/jobs/2", "location": {}}]
         http = FakeHttp({url: FakeResponse(payload={"jobs": baseline})})
         clock = FakeClock()
-        sched = Scheduler([source], store, http=http, clock=clock, jitter=0)
+        class Channel:
+            name = "test"
+
+            def __init__(self):
+                self.sent = []
+
+            def send(self, opp, reasons, latency):
+                self.sent.append(opp["id"])
+
+        channel = Channel()
+        pipeline = Pipeline(store, alerter=AlertDispatcher(store, profile=Profile(), channels=[channel]))
+        sched = Scheduler([source], store, sink=pipeline, http=http, clock=clock, jitter=0)
 
         sched.launch_due()
         await sched.drain()
-        self.assertEqual(store.list_opportunities(), [])
+        [seed] = store.list_opportunities()
+        self.assertEqual(json.loads(store.get_opportunity(seed["id"])["items"][0]["raw"]), {"seed": True})
+        self.assertEqual(channel.sent, [])
 
         http.routes[url] = FakeResponse(payload={"jobs": grown})
+        # A fresh scheduler uses the persisted cursor, preserving the silent baseline.
         clock.t = sched.next_run[source.name]
+        sched = Scheduler([source], store, sink=pipeline, http=http, clock=clock, jitter=0)
         sched.launch_due()
         await sched.drain()
         opportunities = store.list_opportunities()
-        self.assertEqual(len(opportunities), 1)
-        self.assertEqual(opportunities[0]["title"], "SWE Intern, Summer 2027")
+        self.assertEqual(len(opportunities), 2)
+        self.assertEqual(len(channel.sent), 1)
+        self.assertNotEqual(channel.sent[0], seed["id"])
+
+        http.routes[url] = FakeResponse(payload={"jobs": [j for j in grown if j["id"] != 3]})
+        clock.t = sched.next_run[source.name]
+        sched.launch_due()
+        await sched.drain()
+        self.assertEqual(store.get_opportunity(seed["id"])["status"], "Closed")
+        self.assertEqual(len(channel.sent), 1)
 
 
 if __name__ == "__main__":

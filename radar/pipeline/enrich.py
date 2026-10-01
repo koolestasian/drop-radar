@@ -17,6 +17,7 @@ Add when an opportunity needs a live page check, e.g. before T7 alerts on it.
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from datetime import datetime, timezone
 
 from radar.legacy import opportunity_monitor as legacy
@@ -93,6 +94,10 @@ class Enricher:
     async def enrich(self, opportunity_id, item):
         """Fill in blank opportunity fields from this item's text. Mutates the store."""
         if item.source.startswith(STRUCTURED_PREFIXES):
+            # Company, location and link come from the source, never the LLM -- but the
+            # title still carries the season the grad-year filter needs, and the track.
+            facts = _regex_facts(replace(item, text=item.title))
+            self._apply(opportunity_id, {k: facts[k] for k in (CATEGORY, ROLE_TRACK, SEASON_YEAR)})
             return
         facts = _regex_facts(item)
         if _ambiguous(facts) or item.source.startswith("instagram."):

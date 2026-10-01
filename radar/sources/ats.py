@@ -1,8 +1,8 @@
 """Shared seed-then-diff polling for ATS board-listing endpoints.
 
 Each board is one request per poll. First poll (no stored cursor) seeds a
-baseline of currently-listed, title-matching postings and returns no Items
-(no backlog flood). Later polls diff the current id set against the stored
+baseline of currently-listed, title-matching postings and emits seed Items
+for the feed without alerting. Later polls diff the current id set against the stored
 baseline: new ids -> one Item each; ids that dropped off the listing -> a
 closed-signal Item (same source/external_id, raw={"closed": True}) so T6 can
 mark the opportunity closed.
@@ -102,17 +102,14 @@ class AtsSource:
         current_ids = set(current)
 
         if prior is None:
+            # First poll: store what's already open, marked seed -- so a new user's feed
+            # isn't empty on day one -- but the pipeline never alerts on a seed: it was
+            # open before anyone was watching, so it isn't a drop.
             ctx.remember(cursor=json.dumps({eid: [url, title] for eid, (title, url, *_rest) in current.items()}))
-            return []
+            return [self._item(eid, current[eid], raw={"seed": True}) for eid in sorted(current_ids)]
 
         prior_ids = set(prior)
-        items = []
-        for eid in sorted(current_ids - prior_ids):
-            title, url, location, published_at = current[eid]
-            items.append(Item(
-                source=self.name, external_id=eid, url=url, title=title,
-                company=self.company.name, location=location, published_at=published_at,
-            ))
+        items = [self._item(eid, current[eid]) for eid in sorted(current_ids - prior_ids)]
         if complete:
             for eid in sorted(prior_ids - current_ids):
                 url, title = prior[eid]
@@ -131,6 +128,13 @@ class AtsSource:
         }
         ctx.remember(cursor=json.dumps(next_baseline))
         return items
+
+    def _item(self, eid, posting, raw=None):
+        title, url, location, published_at = posting
+        return Item(
+            source=self.name, external_id=eid, url=url, title=title, company=self.company.name,
+            location=location, published_at=published_at, raw=raw or {},
+        )
 
     async def _get_json(self, ctx, url):
         return await self._request_json(ctx.get, url)

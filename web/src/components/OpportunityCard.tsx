@@ -26,7 +26,7 @@ export const OpportunityCard = forwardRef<HTMLElement, Props>(function Opportuni
 ) {
   const due = deadline(o.deadline);
   const status = o.action?.status ?? "new";
-  const seen = seenAfterPosted(o);
+  const seen = o.backfill ? null : seenAfterPosted(o);
   const title = o.title || "Untitled opportunity";
 
   return (
@@ -69,6 +69,11 @@ export const OpportunityCard = forwardRef<HTMLElement, Props>(function Opportuni
               ))}
           {!o.match.ok && <Badge title={o.match.reasons.join("; ")}>not a match</Badge>}
           {o.status !== "New" && o.status !== "Open" && <Badge tone="amber">{o.status}</Badge>}
+          {o.backfill && (
+            <Badge title="It was already open when your sources first looked, so it never alerted your phone.">
+              already open
+            </Badge>
+          )}
         </div>
       )}
 

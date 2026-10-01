@@ -10,7 +10,7 @@ function opp(id: string, company: string, title: string, extra: Partial<Opp> = {
     status: "New", first_seen: new Date(Date.now() - 3_600_000).toISOString(),
     published_at: new Date(Date.now() - 3_900_000).toISOString(), category: "Internship", role_track: "", season: "Summer 2027",
     sources: ["ats.greenhouse.stripe"], match: { ok: true, reasons: ["role: 'software engineer'", "level: 'intern'"] },
-    action: null, ...extra,
+    action: null, backfill: false, ...extra,
   };
 }
 
@@ -18,7 +18,7 @@ async function mockApi(page: Page) {
   const state: Opp[] = [
     opp("o1", "Stripe", "Software Engineer, Intern (Summer 2027)", { deadline: new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10) }),
     opp("o2", "NVIDIA", "Systems Software Engineer - New College Grad 2026", { sources: ["ats.workday.nvidia.wd5/NVIDIAExternalCareerSite"] }),
-    opp("o3", "Airbnb", "Software Engineer, New Grad", { sources: ["github_repo.SimplifyJobs/New-Grad-Positions"] }),
+    opp("o3", "Airbnb", "Software Engineer, New Grad", { sources: ["github_repo.SimplifyJobs/New-Grad-Positions"], backfill: true }),
   ];
   const fresh = opp("o9", "Ramp", "Software Engineer Intern - Summer 2027", { first_seen: new Date().toISOString() });
   const json = (route: Route, body: unknown, status = 200) =>
@@ -77,6 +77,8 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
 
   await expect(page.getByRole("article")).toHaveCount(3);
   await expect(page.getByText("due in 2d")).toBeVisible();
+  await expect(page.getByRole("article").nth(2)).toContainText("already open");
+  await expect(page.getByRole("article").nth(2)).not.toContainText("after posted");
   await page.screenshot({ path: `test-results/feed-${info.project.name}.png`, fullPage: true });
 
   await page.getByRole("button", { name: /1 new drop/ }).click();
@@ -114,4 +116,22 @@ test("dark mode renders", async ({ page }, info) => {
   await page.reload();
   await expect(page.getByRole("article")).toHaveCount(3);
   await page.screenshot({ path: `test-results/feed-dark-${info.project.name}.png`, fullPage: true });
+});
+
+test("an empty feed picks up the first backfill without a live-drop event", async ({ page }) => {
+  await mockApi(page);
+  let ready = false;
+  await page.route("**/api/opportunities?*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: ready ? [opp("old", "Stripe", "Software Engineer Intern", { backfill: true })] : [],
+      next_cursor: null }),
+  }));
+  await page.route("**/api/stream", (route) => route.fulfill({ contentType: "text/event-stream", body: "retry: 5000\n\n" }));
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  await expect(page.getByText("No matches yet")).toBeVisible();
+  ready = true;
+  await expect(page.getByRole("article")).toHaveCount(1, { timeout: 8000 });
+  await expect(page.getByRole("article")).toContainText("already open");
+  await expect(page.getByRole("button", { name: /new drop/ })).toHaveCount(0);
 });

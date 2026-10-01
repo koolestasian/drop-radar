@@ -178,6 +178,29 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         await self.client.patch(f"/api/opportunities/{ng}", headers=auth(KEVIN), json={"status": "applied"})
         self.assertEqual(await self.ids_of(KEVIN, action="applied"), self.names("ng"))
 
+    async def test_backfilled_postings_are_flagged_so_they_are_not_mistaken_for_drops(self):
+        seed = Item(source="ats.greenhouse.airbnb", external_id="old", url="https://x.example/old",
+                    title="Software Engineer Intern", company="Airbnb", raw={"seed": True}, seen_at=T0)
+        old_id, _ = self.store.upsert_item(seed)
+        by_id = {o["id"]: o for o in (await self.get("/api/opportunities", KEVIN, include="all")).json()["items"]}
+        self.assertTrue(by_id[old_id]["backfill"])
+        self.assertFalse(by_id[self.ids["ng"]]["backfill"])
+
+    async def test_backfill_uses_only_the_users_own_sightings(self):
+        url = "https://x.example/shared"
+        opp_id, _ = self.store.upsert_item(Item(
+            source="ats.greenhouse.airbnb", external_id="shared", url=url,
+            title="Software Engineer Intern", raw={"seed": True}, seen_at=T0))
+        self.store.upsert_item(Item(source="ats.greenhouse.point72", external_id="shared", url=url,
+                                   title="Software Engineer Intern", seen_at=T0))
+        for token, expected in ((KEVIN, True), (FRIEND, False)):
+            out = (await self.get(f"/api/opportunities/{opp_id}", token)).json()
+            self.assertEqual(out["backfill"], expected)
+        self.store.upsert_item(Item(source="ats.greenhouse.stripe", external_id="shared", url=url,
+                                   title="Software Engineer Intern", seen_at=T0))
+        out = (await self.get(f"/api/opportunities/{opp_id}", KEVIN)).json()
+        self.assertFalse(out["backfill"], "one live sighting among my own sources makes it a drop")
+
     async def test_cursor_pagination_walks_newest_first_without_repeats(self):
         seen, cursor = [], None
         while True:

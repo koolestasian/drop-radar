@@ -233,6 +233,11 @@
             ],
             "description": "this user's status/notes; nobody else's"
           },
+          "backfill": {
+            "description": "already open when your sources first looked (never alerted), not a live drop",
+            "title": "Backfill",
+            "type": "boolean"
+          },
           "category": {
             "title": "Category",
             "type": "string"
@@ -315,6 +320,7 @@
           "role_track",
           "season",
           "sources",
+          "backfill",
           "match",
           "action"
         ],

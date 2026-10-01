@@ -121,12 +121,14 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST):
         mine = owned(user)
         _, ok, reasons = visible_to(opp, user.profile, mine)
         fields, action = opp["fields"], opp.get("action")
+        seen_by_me = [i for i in opp["items"] if i["source"] in mine]
         return Opportunity(
             id=opp["id"], title=opp["title"], company=opp["company"], location=opp["location"], url=opp["url"],
             deadline=opp["deadline"], status=opp["status"], first_seen=opp["first_seen"],
             published_at=opp["published_at"], category=fields.get("Category", ""),
             role_track=fields.get("Role / Track", ""), season=fields.get("Season / Year", ""),
-            sources=sorted({i["source"] for i in opp["items"] if i["source"] in mine}),
+            sources=sorted({i["source"] for i in seen_by_me}),
+            backfill=bool(seen_by_me) and all(json.loads(i["raw"] or "{}").get("seed") for i in seen_by_me),
             match=Match(ok=ok, reasons=reasons),
             action=Action(status=action["status"], notes=action["notes"]) if action else None,
         )

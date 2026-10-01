@@ -50,6 +50,8 @@ class Pipeline:
         opportunity_id = resolve_opportunity_id(self.store, item, url)
         opportunity_id, is_new = self.store.upsert_item(item, opportunity_id=opportunity_id)
         await self.enricher.enrich(opportunity_id, item)
+        if item.raw.get("seed"):
+            return  # backfill from a source's first poll: open before anyone watched, so not a drop
         await self.alerter.dispatch(item, opportunity_id)
         if is_new and self.on_new is not None:
             self.on_new(opportunity_id)

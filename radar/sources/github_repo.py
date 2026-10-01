@@ -92,13 +92,14 @@ class GithubRepoSource:
             raise SourceError(f"{self.repo.name}: no rows parsed from {self.path!r}", kind="schema")
 
         ids = [_row_id(row) for row in rows]
-        seen = set(json.loads(ctx.cursor)) if ctx.cursor else None  # None => first poll: seed silently
+        seen = set(json.loads(ctx.cursor)) if ctx.cursor else None
+        first = seen is None  # first poll: backfill, marked seed so it never alerts (see AtsSource.fetch)
         items, emitted = [], set()
-        if seen is not None:
-            for row, rid in zip(rows, ids):
-                if rid not in seen and rid not in emitted:
-                    items.append(_to_item(self.name, row, rid, ctx.now()))
-                    emitted.add(rid)
+        for row, rid in zip(rows, ids):
+            if rid in emitted or (not first and rid in seen):
+                continue
+            items.append(_to_item(self.name, row, rid, ctx.now(), raw={"seed": True} if first else None))
+            emitted.add(rid)
 
         etag = resp.headers.get("ETag") or resp.headers.get("etag") or ctx.etag
         ctx.remember(etag=etag, cursor=json.dumps(sorted(set(ids))))
@@ -110,10 +111,10 @@ def _row_id(row):
     return hashlib.sha256(basis.strip().lower().encode("utf-8")).hexdigest()[:16]
 
 
-def _to_item(source, row, rid, now):
+def _to_item(source, row, rid, now, raw=None):
     return Item(
-        source=source, external_id=rid, url=row.url, title=row.role,
-        company=row.company, location=row.location, published_at=_parse_published_at(row.date_text, now),
+        source=source, external_id=rid, url=row.url, title=row.role, company=row.company,
+        location=row.location, published_at=_parse_published_at(row.date_text, now), raw=raw or {},
     )
 
 

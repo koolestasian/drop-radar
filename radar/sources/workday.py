@@ -63,7 +63,8 @@ class WorkdaySource(AtsSource):
 
     async def fetch(self, ctx):
         items = await super().fetch(ctx)  # the cursor keeps stale postings too, so they never alert later
-        return [i for i in items if i.raw.get("closed") or i.external_id not in self._stale]
+        # a seed is kept however old: it is backfill for the feed and never alerts anyway
+        return [i for i in items if i.raw.get("closed") or i.raw.get("seed") or i.external_id not in self._stale]
 
     async def fetch_postings(self, ctx):
         """Complete (closed-detection on) only when the newest pages held the whole board.

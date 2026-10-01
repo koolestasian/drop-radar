@@ -30,6 +30,7 @@ class Opportunity(BaseModel):
     role_track: str
     season: str
     sources: list[str] = Field(description="this user's sources that saw it")
+    backfill: bool = Field(description="already open when your sources first looked (never alerted), not a live drop")
     match: Match
     action: Action | None = Field(description="this user's status/notes; nobody else's")
 

@@ -135,6 +135,19 @@ class LlmBudgetTests(unittest.IsolatedAsyncioTestCase):
         self.store = Store(Path(tempfile.mkdtemp()) / "radar.db")
         self.addCleanup(self.store.close)
 
+    async def test_structured_sources_get_season_and_track_from_the_title_without_the_llm(self):
+        """An ATS/list item has no caption, but its title carries the season the
+        profile's grad year filters on ("... Internship (Summer 2026)")."""
+        extractor = FakeExtractor()
+        await pipeline(self.store, extractor)(
+            None, [item("ats.greenhouse.stripe", "1", title="Software Engineering Internship (Summer 2027)")])
+        [opp] = self.store.list_opportunities()
+        fields = self.store.get_opportunity(opp["id"])["fields"]
+        self.assertEqual(fields["Season / Year"], "Summer 2027")
+        self.assertIn("Software Engineering", fields["Role / Track"])
+        self.assertFalse(matches_profile({**opp, "fields": fields}, Profile(grad_year=2026))[0])
+        self.assertEqual(extractor.calls, 0)
+
     async def test_llm_not_called_for_ats_items(self):
         extractor = FakeExtractor()
         await pipeline(self.store, extractor)(None, [item("ats.greenhouse.stripe", "1", text="whatever")])
@@ -280,6 +293,39 @@ class AlertRetryWiringTests(unittest.IsolatedAsyncioTestCase):
         p = Pipeline(self.store, enricher=Enricher(self.store, extractor=FakeExtractor()), alerter=BrokenAlerter())
         await p(None, [item("ats.greenhouse.stripe", "1")])
         self.assertEqual(len(self.store.list_opportunities()), 1)
+
+
+class BackfillTests(unittest.IsolatedAsyncioTestCase):
+    """A source's first poll stores what's already open (raw={"seed": True}) so the
+    feed isn't empty on day one -- but it was open before anyone was watching, so
+    it is never pushed to a phone or announced on the live stream."""
+
+    async def test_a_seed_is_stored_and_enriched_but_never_alerted_or_announced(self):
+        store = Store(Path(tempfile.mkdtemp()) / "radar.db")
+        self.addCleanup(store.close)
+
+        class Channel:
+            name, sent = "ntfy", []
+
+            def send(self, opp, reasons, latency):
+                self.sent.append(opp["id"])
+
+        channel = Channel()
+        announced = []
+        p = Pipeline(store, enricher=Enricher(store, extractor=FakeExtractor()),
+                     alerter=AlertDispatcher(store, profile=Profile(keywords=("intern",)), channels=[channel]))
+        p.on_new = announced.append
+        await p(None, [item("ats.greenhouse.stripe", "1", raw={"seed": True},
+                            title="Software Engineering Internship (Summer 2027)")])
+        [opp] = store.list_opportunities()
+        self.assertEqual((channel.sent, announced), ([], []))
+        self.assertIsNone(store.get_alert(opp["id"], "ntfy"))
+        self.assertEqual(store.get_opportunity(opp["id"])["fields"].get("Season / Year"), "Summer 2027",
+                         "enriched like any other item")
+
+        await p(None, [item("ats.greenhouse.stripe", "2", url="https://boards.greenhouse.io/stripe/jobs/2")])
+        self.assertEqual(len(channel.sent), 1, "a genuinely new posting still alerts")
+        self.assertEqual(len(announced), 1)
 
 
 if __name__ == "__main__":

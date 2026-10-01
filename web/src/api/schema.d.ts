@@ -278,6 +278,11 @@ export interface components {
         Opportunity: {
             /** @description this user's status/notes; nobody else's */
             action: components["schemas"]["Action"] | null;
+            /**
+             * Backfill
+             * @description already open when your sources first looked (never alerted), not a live drop
+             */
+            backfill: boolean;
             /** Category */
             category: string;
             /** Company */

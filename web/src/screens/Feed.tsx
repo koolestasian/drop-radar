@@ -46,6 +46,8 @@ export function Feed({ incoming, clearIncoming }: { incoming: Opportunity[]; cle
         })}`,
       ),
     getNextPageParam: (last) => last.next_cursor,
+    // Backfill sends no live-drop event; an empty first-day feed needs another look.
+    refetchInterval: (q) => q.state.data?.pages.every((p) => p.items.length === 0) ? 5000 : false,
   });
 
   const items = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);
@@ -144,7 +146,7 @@ export function Feed({ incoming, clearIncoming }: { incoming: Opportunity[]; cle
       ) : items.length === 0 ? (
         <Empty title={plainFeed ? "No matches yet" : "Nothing matches these filters"}>
           {plainFeed
-            ? "Each board is seeded on its first poll, so only postings that go live from now on show up here — instantly. Try “Everything” to see what your sources have found."
+            ? "Sources load already-open jobs during their first look, which can take a few minutes. This feed refreshes while empty; new matching postings also buzz your phone. Try “Everything” to see all your sources found."
             : "Clear the search or switch filters."}
         </Empty>
       ) : (

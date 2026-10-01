@@ -82,10 +82,13 @@ class WorkdaySourceTests(unittest.IsolatedAsyncioTestCase):
                            "instagram": (), "feeds": (), "repos": ()})())
         self.assertEqual(([s.name for s in sources], skipped), (["ats.workday.acme.wd5/Campus"], []))
 
-    async def test_seeds_silently_then_emits_only_new_early_career_postings(self):
-        baseline = [posting(1, "2027 Summer Analyst - Investment Banking"), posting(2, "Vice President, Risk")]
+    async def test_backfills_then_emits_only_new_early_career_postings(self):
+        baseline = [posting(1, "2027 Summer Analyst - Investment Banking", posted="Posted 30+ Days Ago"),
+                    posting(2, "Vice President, Risk")]
         seed = ctx(FakeWorkday({"": baseline}))
-        self.assertEqual(await source().fetch(seed), [])
+        backfill = await source().fetch(seed)
+        self.assertEqual([(i.external_id, i.raw) for i in backfill], [("R1", {"seed": True})],
+                         "a seed is backfilled even when old -- it's never alerted on")
 
         later = [posting(3, "Software Engineer Intern - Summer 2027", "Santa Clara, CA")] + baseline
         items = await source().fetch(ctx(FakeWorkday({"": later}), cursor=seed.pending["cursor"]))

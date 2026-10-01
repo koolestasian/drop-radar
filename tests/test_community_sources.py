@@ -93,11 +93,13 @@ class GithubRepoSourceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(source.name, "github_repo.SimplifyJobs/Summer2027-Internships")
         self.assertEqual(source.interval_s, 60.0)
 
-    async def test_first_poll_seeds_silently(self):
+    async def test_first_poll_backfills_the_listing_marked_as_seed(self):
+        """The backlog is stored (so the feed isn't empty) but marked seed, so it never alerts."""
         source = github_repo.GithubRepoSource(repo())
         ctx = FakeCtx([contents_response(make_table(ROWS_3))])
         items = await source.fetch(ctx)
-        self.assertEqual(items, [])  # backlog is not flooded as Items on first sight
+        self.assertEqual([i.company for i in items], ["Stripe", "Dandy", "Waymo"])
+        self.assertTrue(all(i.raw == {"seed": True} for i in items))
         self.assertEqual(len(json.loads(ctx.pending["cursor"])), 3)
         self.assertEqual(ctx.pending["etag"], '"abc"')
 
