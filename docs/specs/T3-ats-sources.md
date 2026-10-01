@@ -3,7 +3,8 @@
 **Goal:** detect a new posting on a company's own board within minutes, before anyone posts about it.
 **Deliver (one module each, shared `AtsSource` base):**
 - greenhouse (`boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true`), lever (`api.lever.co/v0/postings/{slug}?mode=json`),
-  ashby (`api.ashbyhq.com/posting-api/job-board/{slug}`), smartrecruiters, workable, recruitee; Workday via `/wday/cxs/{tenant}/{site}/jobs` (POST, paginated; note: 403s on some tenants, degrade to `transient`).
+  ashby (`api.ashbyhq.com/posting-api/job-board/{slug}`), smartrecruiters (parsing already exists in job_pages.py).
+- Deferred: workable, recruitee, Workday. Add one when a watchlist company that matters is only on it.
 - Diff by `external_id` against stored set; emit only NEW ids (and removed ids -> `closed` signal for T6).
 - Title filter at the source (cheap): keep intern/new grad/early career/residency/fellowship/apprentice/co-op/2026-2028; drop the rest. Emit `published_at` from API when present.
 - `radar/sources/discover.py`: derive board slugs from existing tracker links + a seed list of ~300 companies in `config/watchlist.yaml`; `python -m radar.sources.discover --check` verifies every slug returns 200.

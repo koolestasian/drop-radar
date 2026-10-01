@@ -18,10 +18,11 @@ Measured by **drop latency** = alert_time - source_published_time.
   real-time engine. It stays as CI and a heartbeat fallback.
 
 ## Architecture
-    sources (plugins) -> Item -> pipeline (dedupe, enrich, score) -> store
+    sources (plugins) -> Item -> pipeline (dedupe, enrich, filter) -> store
                                         |                              |
-                                        +--> alerts (push, instant)    +--> API -> web app
-Runs as ONE always-on Python process (asyncio): scheduler + workers + API.
+                                        +--> alerts (push, instant)    +--> views (xlsx, LATEST.md, Google Sheet)
+Runs as ONE always-on Python process (asyncio): scheduler + workers. The Google Sheet
+and ntfy are the UI; an API and web app are deferred (T8, T9).
 
 ## Package layout (created by T0)
     radar/
@@ -29,11 +30,9 @@ Runs as ONE always-on Python process (asyncio): scheduler + workers + API.
       models.py      Item, Opportunity dataclasses
       store/         SQLite (WAL) access, migrations
       sources/       one module per source, all implement Source
-      pipeline/      normalize, dedupe, enrich, score
+      pipeline/      normalize, dedupe, enrich, filter
       alerts/        channels + rules
-      api/           FastAPI app
-      scheduler.py   per-source adaptive polling
-    web/             React + Vite + TypeScript SPA (T9)
+      scheduler.py   per-source polling with backoff
     config/          watchlist.yaml, profile.yaml
     legacy: opportunity_monitor.py, job_pages.py, llm_extraction.py,
             instagram_scraper.py are MOVED into radar/, not rewritten.
@@ -78,4 +77,5 @@ status, notes, updated_at)`, `enrichment(key, json)`.
 5. Update docs/ only for what you changed. Commit per task.
 
 ## Task graph
-T0 -> T1, T2 -> (T3, T4, T5 in parallel) -> T6 -> T7 -> T8 -> T9 -> T10 -> T11
+T0 -> T1, T2 -> (T3, T4, T5 in parallel) -> T6 -> T7 -> T10
+Deferred: T8 api, T9 web, T11 hardening (see PROGRESS.md for when to add them).

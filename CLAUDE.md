@@ -25,7 +25,7 @@ Exceptions:
 - If a task's acceptance criteria cannot be met (for example live Instagram access),
   finish everything else, mark the task `done` with a clear "not verified live"
   note in PROGRESS.md, and say so.
-- If all tasks are `done`, say so and suggest opening the PR.
+- If every task is `done` or `deferred`, say so and suggest opening the PR. Never start a `deferred` task unless asked.
 
 ## Working rules
 - Never push to a branch other than the one the session assigns. Do not open a PR
