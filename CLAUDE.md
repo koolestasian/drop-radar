@@ -5,6 +5,31 @@ community lists) and alerts the owner. Currently an hourly GitHub Actions job
 (`opportunity_monitor.py`); being rebuilt as "Drop Radar", an always-on service.
 Plan and contracts: `docs/specs/`.
 
+## Session handoff (2026-10-01)
+
+- Branch: `claude/trim-drop-radar-plan`. T9 web shipped in `472b172`; Codex finished
+  the inherited first-day feed changes in `287bf51`, committed and pushed.
+- Verified at `287bf51`: 326 offline backend tests on Python 3.14, pyflakes,
+  exact generated OpenAPI match, frontend production build, and 6 Playwright
+  checks across desktop/phone. The delayed-backfill browser test reproduced the
+  empty-feed bug before the fix. Live scraping, push delivery and Lighthouse
+  performance were not reverified; the updated suite was not rerun on 3.12.
+- User asked how to test locally and how their friend could test remotely,
+  then asked to wrap up for Claude. Remote testing was discussed, not set up:
+  Codex started no app server or public tunnel, and no hosted URL or real login
+  tokens were created. `ngrok` is not currently on PATH. User testing is unconfirmed.
+- Suggested temporary route: run `python -m radar serve` on localhost:8000 with
+  a separate test DB, fresh random `API_TOKENS` assigned to `friend`, and phone
+  pushes/LLM calls disabled; expose it with `ngrok http 8000`. Share the HTTPS
+  URL and only the friend's app token, not the ngrok account token. Mac and
+  both processes must remain running. Settings saves edit the configured YAML
+  files; copy config and set `RADAR_CONFIG_DIR` for an isolated preview.
+- Next implementation task is T10 (`docs/specs/T10-deploy-scale.md`): always-on
+  deployment, backups and heartbeat. Remote friend access needs HTTPS and
+  separate user tokens. T11 remains deferred. Do not remove the legacy hourly
+  schedule until the new runner has been live for a day; review PROGRESS.md's
+  migration/alert-history/cursor-reseed notes before cutover.
+
 ## When the user says "start" (or "continue", "next")
 
 Do this without asking questions:
