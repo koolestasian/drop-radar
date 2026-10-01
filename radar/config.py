@@ -167,6 +167,8 @@ def load_watchlist(path=None) -> Watchlist:
             interval_s=float(_number(e, "interval_s", 300, where, path)),
             priority=int(_number(e, "priority", 5, where, path)),
         ))
+    if len(accounts) > 5:
+        raise ConfigError(f"{path}: 'instagram' supports at most 5 accounts, got {len(accounts)}")
     feeds = []
     for i, raw in enumerate(_section(data, "feeds", path)):
         where = f"feeds[{i}]"

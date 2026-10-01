@@ -5,6 +5,7 @@ import time
 import unittest
 from datetime import timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 from radar.config import Company, InstagramAccount, Watchlist
 from radar.errors import ConfigError, SourceError
@@ -290,6 +291,16 @@ class RegistryTests(unittest.TestCase):
     def setUp(self):
         self.saved = dict(registry.FACTORIES)
         self.addCleanup(lambda: (registry.FACTORIES.clear(), registry.FACTORIES.update(self.saved)))
+        # Hermetic: build_sources() auto-imports every real module under
+        # radar/sources/ (e.g. T5's "instagram"), permanently registering real
+        # factories the first time any test anywhere imports them. Block further
+        # imports and start from an empty registry so "unknown kind" below means
+        # what the test says, regardless of import order or which real source
+        # modules exist.
+        patcher = patch.object(registry, "_import_source_modules", lambda: None)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        registry.FACTORIES.clear()
 
     def test_builds_registered_kinds_and_skips_unknown(self):
         @registry.register("greenhouse")
