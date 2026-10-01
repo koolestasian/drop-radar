@@ -161,11 +161,10 @@ class IdentityTests(unittest.IsolatedAsyncioTestCase):
 
 
 class MigrationConvergenceTests(unittest.IsolatedAsyncioTestCase):
-    """What T5 actually guarantees for a Story already migrated from the legacy
-    tracker (radar/store/migrate_legacy.py) and still live: it converges to the
-    SAME (source, external_id) items row, so it is not double-counted as a new
-    sighting. This does NOT by itself guarantee one opportunities row -- that
-    needs a Store/migration-level fix outside T5's scope; see the final report.
+    """A Story already migrated from the legacy tracker (radar/store/migrate_legacy.py)
+    and still live converges to the SAME (source, external_id) items row -- and,
+    since Store.upsert_item reuses that row's opportunity_id (radar/store/__init__.py),
+    the SAME opportunity, not a second "phantom" one under a freshly-hashed id.
     """
 
     async def test_items_row_converges_with_the_legacy_migration_key(self):
@@ -195,9 +194,11 @@ class MigrationConvergenceTests(unittest.IsolatedAsyncioTestCase):
                  title=legacy_row["Opportunity"], seen_at=utcnow()),
             opportunity_id="legacyid00000000000",  # stand-in for migrate_legacy's preserved tracker ID
         )
-        store.upsert_item(item)
+        opp_id, is_new = store.upsert_item(item)  # the live source re-seeing it, no override
+        self.assertEqual((opp_id, is_new), ("legacyid00000000000", False))
         since = utcnow() - timedelta(days=3650)
         self.assertEqual(store.count_items("instagram.zero2sudo", since), 1)
+        self.assertEqual(len(store.list_opportunities()), 1)  # no second, orphaned row
 
 
 class IntervalTests(unittest.TestCase):

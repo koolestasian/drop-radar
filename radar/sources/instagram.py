@@ -55,13 +55,10 @@ async def _build_item(username, raw, now, text_cache=None) -> Item | None:
     external_id is prefixed "media:<id>" to match radar.store.migrate_legacy's
     record_semantic_key (which also prefers instagram_media_key and uses the
     same prefix) -- so a Story already migrated from the legacy tracker and
-    still live converges to the same (source, external_id) items row instead
-    of being counted as a new sighting. NOTE this converges the items row, not
-    necessarily the opportunities row: migrate_legacy preserves the legacy
-    tracker's own permanent ID as the opportunity id, which does not equal
-    sha256(url) (Item.opportunity_id's formula); see the T5 final report for
-    that gap -- it is a Store/migration concern, out of this module's reach
-    (radar/store/__init__.py is out of scope here). `url` prefers the
+    still live converges to the same (source, external_id) items row, and
+    (via Store.upsert_item reusing that row's opportunity_id) the same
+    opportunity, instead of being counted as a new sighting under a freshly
+    hashed id. `url` prefers the
     extracted application link over the Story permalink, per Item's contract
     ("canonical link (apply link when known)"), so this source's items can
     still merge with an ATS source that independently sees the same posting;
