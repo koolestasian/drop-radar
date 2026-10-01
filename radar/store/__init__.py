@@ -11,6 +11,11 @@ from radar.models import Item, utcnow
 SCHEMA = Path(__file__).with_name("schema.sql")
 # Columns save_opportunity may set; guards the column names it interpolates into SQL.
 OPPORTUNITY_COLUMNS = ("title", "url", "company", "location", "status", "deadline", "published_at", "fields")
+SOURCE_STATE_COLUMNS = ("etag", "cursor", "last_ok", "fail_count", "next_run", "last_error")
+# MIGRATIONS[i] upgrades PRAGMA user_version i -> i + 1, atomically. Append only.
+MIGRATIONS = (
+    "ALTER TABLE source_state ADD COLUMN last_error TEXT",  # 1: scheduler health (T2)
+)
 
 
 def _iso(value):
@@ -26,6 +31,9 @@ class Store:
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA foreign_keys=ON")
         self.conn.executescript(SCHEMA.read_text())
+        version = self.conn.execute("PRAGMA user_version").fetchone()[0]
+        for number, sql in enumerate(MIGRATIONS[version:], start=version + 1):
+            self.conn.executescript(f"BEGIN; {sql}; PRAGMA user_version = {number}; COMMIT;")
 
     def close(self):
         self.conn.close()
@@ -128,6 +136,30 @@ class Store:
             sql += " LIMIT ?"
             params.append(int(limit))
         return [dict(r) for r in self.conn.execute(sql, params)]
+
+    # ---- source state (scheduler) ------------------------------------------
+
+    def get_source_state(self, name):
+        row = self.conn.execute("SELECT * FROM source_state WHERE name = ?", (name,)).fetchone()
+        return dict(row) if row else None
+
+    def save_source_state(self, name, **columns):
+        unknown = set(columns) - set(SOURCE_STATE_COLUMNS)
+        if unknown:
+            raise ValueError(f"unknown source_state columns: {sorted(unknown)}")
+        columns = {"name": name, **{k: _iso(v) for k, v in columns.items()}}
+        updates = ", ".join(f"{k} = excluded.{k}" for k in columns if k != "name")
+        with self.conn:
+            self.conn.execute(
+                f"INSERT INTO source_state ({', '.join(columns)}) VALUES ({', '.join(':' + k for k in columns)}) "
+                f"ON CONFLICT(name) DO " + (f"UPDATE SET {updates}" if updates else "NOTHING"),
+                columns,
+            )
+
+    def count_items(self, source, since):
+        return self.conn.execute(
+            "SELECT count(*) FROM items WHERE source = ? AND seen_at >= ?", (source, _iso(since))
+        ).fetchone()[0]
 
     # ---- alerts, actions, enrichment -------------------------------------
 

@@ -58,6 +58,6 @@ Exceptions:
 ## Current state (update when it changes)
 - Live pipeline: `radar/legacy/` (`opportunity_monitor.py`, `job_pages.py`, `llm_extraction.py`,
   `instagram_scraper.py`, `google_sheets_sync.py`; root files are import shims), workflow `.github/workflows/hourly.yml`.
-- 110 tests passing (88 legacy + 22 radar). SQLite store in `radar/store/` (DB at `data/radar.db`, gitignored);
+- 127 tests passing (88 legacy + 39 radar). Scheduler: `radar/scheduler.py`; sources register in `radar/sources/registry.py`. SQLite store in `radar/store/` (DB at `data/radar.db`, gitignored);
   import the tracker with `python -m radar.store.migrate_legacy`; `radar.views.write_views` regenerates xlsx + LATEST.md. Tracker data lives in `Zero2Sudo_Opportunity_Tracker.xlsx`,
   `monitor_state.json`, `enrichment_cache.json` (committed by the workflow).

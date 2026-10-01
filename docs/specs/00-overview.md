@@ -41,7 +41,7 @@ and ntfy are the UI; an API and web app are deferred (T8, T9).
 ```python
 @dataclass(frozen=True)
 class Item:                      # what a Source emits
-    source: str                  # "ats.greenhouse", "instagram.zero2sudo", ...
+    source: str                  # the emitting Source.name: "ats.greenhouse.stripe", "instagram.zero2sudo"
     external_id: str             # stable id within the source
     url: str                     # canonical link (apply link when known)
     title: str
@@ -58,6 +58,8 @@ class Source(Protocol):
     async def fetch(self, ctx: FetchContext) -> list[Item]: ...
     # Raises SourceError(kind="auth"|"blocked"|"transient"|"schema") so the
     # scheduler can back off correctly. Never returns partial results silently.
+    # HTTP goes through `await ctx.get(url)` (per-host rate limit + global request cap).
+    # fetch must not block the event loop: wrap sync code (requests, OCR) in asyncio.to_thread.
 ```
 Identity: `opportunity_id = sha256(canonical_url or company|title|location)[:20]`;
 an opportunity may have many items (one per source that saw it). The earliest
