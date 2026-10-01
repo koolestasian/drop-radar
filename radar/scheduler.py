@@ -92,6 +92,12 @@ class FetchContext:
         async with self.requests:
             return await self.http.get(url, **kwargs)
 
+    async def post(self, url, **kwargs):
+        """Same limits as get(), for search APIs that only take POST (Workday)."""
+        await self.limiter.wait(urlparse(url).hostname or "")
+        async with self.requests:
+            return await self.http.post(url, **kwargs)
+
 
 def _parse(value):
     try:

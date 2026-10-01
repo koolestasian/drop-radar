@@ -2,10 +2,10 @@
 # config/watchlist.yaml. Every board below was verified live on 2026-10-01 with
 # early-career finance/business postings on it; a board also on kevin's list is
 # polled once, not twice.
-# Coverage gap: bulge-bracket and elite-boutique banks, MBB consulting, and the
-# big asset managers (Goldman, JPM, Evercore, Lazard, Moelis, Centerview,
-# Blackstone, McKinsey, Bain, BCG, BlackRock, Fidelity...) are not on
-# Greenhouse/Lever/Ashby -- most use Workday or their own site. See PROGRESS.md.
+# Banks and asset managers mostly use Workday (ats: workday, slug tenant.wdN/site).
+# Still not covered: Goldman, JPMorgan, Morgan Stanley, Evercore, Lazard, Moelis,
+# Centerview, McKinsey, Bain, BCG -- their own sites, or Workday tenants not yet
+# found/verified. Add a tenant only after `python -m radar.sources.discover --check`.
 companies:          # ats: greenhouse | lever | ashby | workable | smartrecruiters; tier: S|A|B|C
   # investment banking / investing / hedge funds
   - {name: William Blair, ats: greenhouse, slug: williamblair, tier: A}
@@ -14,6 +14,16 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: Bridgewater Associates, ats: greenhouse, slug: bridgewater89, tier: A}
   - {name: Schonfeld, ats: greenhouse, slug: schonfeld, tier: B}
   - {name: Assured Guaranty, ats: greenhouse, slug: assuredguaranty, tier: B}
+  # Workday, verified live 2026-10-01
+  - {name: Blackstone, ats: workday, slug: blackstone.wd1/Blackstone_Campus_Careers, tier: A}
+  - {name: Citi, ats: workday, slug: citi.wd5/2, tier: A}
+  - {name: Wells Fargo, ats: workday, slug: wf.wd1/WellsFargoJobs, tier: A}
+  - {name: BlackRock, ats: workday, slug: blackrock.wd1/BlackRock_Professional, tier: B}
+  - {name: Fidelity, ats: workday, slug: fmr.wd1/FidelityCareers, tier: B}
+  - {name: Mastercard, ats: workday, slug: mastercard.wd1/CorporateCareers, tier: B}
+  - {name: Capital One, ats: workday, slug: capitalone.wd12/Capital_One, tier: B}
+  - {name: Salesforce, ats: workday, slug: salesforce.wd12/External_Career_Site, tier: B}
+  - {name: Adobe, ats: workday, slug: adobe.wd5/external_experienced, tier: B}
   # trading
   - {name: Jump Trading, ats: greenhouse, slug: jumptrading, tier: B}
   - {name: IMC Trading, ats: greenhouse, slug: imc, tier: B}

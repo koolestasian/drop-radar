@@ -79,17 +79,18 @@ class AtsSource:
     def parse(self, data):
         raise NotImplementedError
 
-    async def fetch(self, ctx) -> list[Item]:
+    async def fetch_postings(self, ctx):
+        """(postings, complete). One GET of the whole board; override for an
+        ATS that needs several requests (Workday)."""
         data = await self._get_json(ctx, self.board_url())
         try:
             parsed = self.parse(data)
         except (KeyError, TypeError, AttributeError, IndexError) as exc:
             raise SourceError(f"{self.name}: unexpected response shape: {exc}", kind="schema") from exc
-        complete = True
-        if isinstance(parsed, tuple):
-            raw, complete = parsed
-        else:
-            raw = parsed
+        return parsed if isinstance(parsed, tuple) else (parsed, True)
+
+    async def fetch(self, ctx) -> list[Item]:
+        raw, complete = await self.fetch_postings(ctx)
 
         prior = json.loads(ctx.cursor) if ctx.cursor else None
         if not raw and prior:
@@ -132,8 +133,11 @@ class AtsSource:
         return items
 
     async def _get_json(self, ctx, url):
+        return await self._request_json(ctx.get, url)
+
+    async def _request_json(self, send, url, **kwargs):
         try:
-            response = await ctx.get(url)
+            response = await send(url, **kwargs)
         except Exception as exc:
             raise SourceError(f"{self.name}: request failed: {exc}", kind="transient") from exc
         status = response.status_code

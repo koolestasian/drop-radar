@@ -49,6 +49,12 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: Reddit, ats: greenhouse, slug: reddit, tier: B}
   - {name: Robinhood, ats: greenhouse, slug: robinhood, tier: B}
   - {name: Scale AI, ats: greenhouse, slug: scaleai, tier: S}
+  # Workday (slug: tenant.wdN/site from https://<tenant>.wdN.myworkdayjobs.com/<site>); verified live 2026-10-01
+  - {name: NVIDIA, ats: workday, slug: nvidia.wd5/NVIDIAExternalCareerSite, tier: S}
+  - {name: Salesforce, ats: workday, slug: salesforce.wd12/External_Career_Site, tier: A}
+  - {name: Adobe, ats: workday, slug: adobe.wd5/external_experienced, tier: A}
+  - {name: Intel, ats: workday, slug: intel.wd1/External, tier: B}
+  - {name: Capital One, ats: workday, slug: capitalone.wd12/Capital_One, tier: B}
   # quant firms with CS early-career roles (verified live 2026-10-01; shared with config/friend/)
   - {name: Jump Trading, ats: greenhouse, slug: jumptrading, tier: B}
   - {name: IMC Trading, ats: greenhouse, slug: imc, tier: B}

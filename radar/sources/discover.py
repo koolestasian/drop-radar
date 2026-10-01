@@ -17,6 +17,7 @@ from radar.sources.ashby import AshbySource
 from radar.sources.greenhouse import GreenhouseSource
 from radar.sources.lever import LeverSource
 from radar.sources.smartrecruiters import SmartRecruitersSource
+from radar.sources.workday import WorkdaySource
 
 _BOARD_SOURCE = {
     "greenhouse": GreenhouseSource,
@@ -68,7 +69,22 @@ def mine_tracker_slugs(records=None):
     return sorted(found)
 
 
+async def _check_workday(client, company):
+    source = WorkdaySource(company)
+    body = {"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": ""}
+    try:
+        response = await client.post(source.jobs_url(), json=body)
+    except Exception as exc:
+        return company.ats, company.slug, f"error: {exc}"
+    if response.status_code != 200:
+        return company.ats, company.slug, f"HTTP {response.status_code}"
+    total = (response.json() or {}).get("total") or 0
+    return company.ats, company.slug, f"200 OK ({total} postings)" if total else "200 but EMPTY"
+
+
 async def _check_one(client, company):
+    if company.ats == "workday":
+        return await _check_workday(client, company)
     source_cls = _BOARD_SOURCE.get(company.ats)
     if source_cls is None:
         return company.ats, company.slug, "skipped (no board-listing endpoint)"
