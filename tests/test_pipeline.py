@@ -3,6 +3,7 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
+from radar.alerts import AlertDispatcher
 from radar.config import Profile
 from radar.models import Item
 from radar.pipeline import Pipeline, matches_profile
@@ -41,7 +42,10 @@ class FakeExtractor:
 
 
 def pipeline(store, extractor=None):
-    return Pipeline(store, enricher=Enricher(store, extractor=extractor or FakeExtractor()))
+    # channels=() : the unit suite must never reach a real alert channel (no NTFY_TOPIC
+    # dependence), even if the ambient env happens to have one set (T7-alerts.md review).
+    return Pipeline(store, enricher=Enricher(store, extractor=extractor or FakeExtractor()),
+                     alerter=AlertDispatcher(store, channels=()))
 
 
 class NormalizeTests(unittest.TestCase):
@@ -171,7 +175,7 @@ class LlmBudgetTests(unittest.IsolatedAsyncioTestCase):
     async def test_budget_exhaustion_degrades_to_regex_without_erroring(self):
         extractor = FakeExtractor()
         enricher = Enricher(self.store, extractor=extractor, daily_token_budget=0)
-        await Pipeline(self.store, enricher=enricher)(
+        await Pipeline(self.store, enricher=enricher, alerter=AlertDispatcher(self.store, channels=()))(
             None, [item("instagram.zero2sudo", "media:1", text="Software Engineer Intern at Stripe", title="")]
         )
         self.assertEqual(extractor.calls, 0)
@@ -224,6 +228,58 @@ class FilterTests(unittest.TestCase):
         opp = {"title": "Software Engineer Intern", "company": "Stripe", "location": "London", "fields": {}}
         ok, reasons = matches_profile(opp, self.profile)
         self.assertFalse(ok)
+
+
+class FakeFailOnceChannel:
+    name = "ntfy"
+
+    def __init__(self):
+        self.sent = []
+        self.failed_once = False
+
+    def send(self, opp, reasons, drop_latency_s):
+        if not self.failed_once:
+            self.failed_once = True
+            raise RuntimeError("channel unavailable")
+        self.sent.append(opp["id"])
+
+
+class AlertRetryWiringTests(unittest.IsolatedAsyncioTestCase):
+    """Scheduler._run_one calls the sink every poll tick, even with zero new
+    items (radar/scheduler.py); that is the only retry timer a pending alert
+    gets, so Pipeline must sweep it on an empty batch too (T7-alerts.md)."""
+
+    def setUp(self):
+        self.store = Store(Path(tempfile.mkdtemp()) / "radar.db")
+        self.addCleanup(self.store.close)
+
+    async def test_empty_item_batch_still_retries_a_pending_alert(self):
+        channel = FakeFailOnceChannel()
+        alerter = AlertDispatcher(self.store, profile=Profile(keywords=("intern",)), channels=[channel])
+        p = Pipeline(self.store, enricher=Enricher(self.store, extractor=FakeExtractor()), alerter=alerter)
+
+        await p(None, [item("ats.greenhouse.stripe", "1")])  # claims the alert, fails to send
+        self.assertEqual(channel.sent, [])
+        self.assertIsNone(self.store.get_alert(self.store.list_opportunities()[0]["id"], "ntfy")["sent_at"])
+
+        alerter._backoff_until.clear()  # simulate backoff having elapsed
+        await p(None, [])  # an ordinary poll tick with nothing new
+        self.assertEqual(len(channel.sent), 1)
+
+    async def test_retry_sweep_failure_never_blocks_ingestion(self):
+        """A bug in the retry sweep (any exception) must not stop this or any
+        other source's items from being stored -- Pipeline.__call__ is the
+        sink for every source, so one broken alert must not halt them all."""
+        class BrokenAlerter:
+            async def retry_pending(self):
+                raise RuntimeError("boom")
+
+            async def dispatch(self, item, opportunity_id):
+                pass
+
+        p = Pipeline(self.store, enricher=Enricher(self.store, extractor=FakeExtractor()), alerter=BrokenAlerter())
+        await p(None, [item("ats.greenhouse.stripe", "1")])
+        self.assertEqual(len(self.store.list_opportunities()), 1)
 
 
 if __name__ == "__main__":

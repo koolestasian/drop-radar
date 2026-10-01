@@ -19,12 +19,22 @@ __all__ = ["Pipeline", "matches_profile"]
 
 
 class Pipeline:
-    def __init__(self, store, profile=None, enricher=None):
+    def __init__(self, store, profile=None, enricher=None, alerter=None):
+        from radar.alerts import AlertDispatcher  # local: radar.alerts imports radar.pipeline.filter
+
         self.store = store
         self.profile = profile
         self.enricher = enricher or Enricher(store)
+        self.alerter = alerter or AlertDispatcher(store, profile=profile)
 
     async def __call__(self, source, items):
+        # Scheduler._run_one calls the sink every poll tick of every source,
+        # even with an empty batch -- that cadence is the alert retry timer.
+        # Never let a retry-sweep bug stop ingestion for this or any other source.
+        try:
+            await self.alerter.retry_pending()
+        except Exception:
+            log.warning("alert retry sweep failed", exc_info=True)
         for item in items:
             await self._process(item)
 
@@ -39,6 +49,7 @@ class Pipeline:
         opportunity_id = resolve_opportunity_id(self.store, item, url)
         opportunity_id, _ = self.store.upsert_item(item, opportunity_id=opportunity_id)
         await self.enricher.enrich(opportunity_id, item)
+        await self.alerter.dispatch(item, opportunity_id)
 
     def _close(self, item):
         """T3's closed-signal contract: same (source, external_id), raw={"closed": True}."""

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from radar.config import load_settings
 from radar.errors import SourceError
@@ -40,13 +40,16 @@ def _title(text, username):
 
 
 def _parse_posted_at(raw):
+    """legacy.posted_at may hand back a raw payload date string with no offset
+    (e.g. a "takenAtIso" field); treat it as UTC like radar.sources.ats.parse_date does."""
     value = legacy.posted_at(raw)
     if not value:
         return None
     try:
-        return datetime.fromisoformat(value)
+        parsed = datetime.fromisoformat(value)
     except ValueError:
         return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
 async def _build_item(username, raw, now, text_cache=None) -> Item | None:

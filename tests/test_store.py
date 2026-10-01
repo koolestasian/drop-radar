@@ -62,6 +62,24 @@ class StoreTests(unittest.TestCase):
         self.assertFalse(self.store.record_alert(opp_id, "ntfy"))
         self.assertTrue(self.store.record_alert(opp_id, "github"))
 
+    def test_record_alert_claims_a_pending_slot_then_mark_alert_sent_fills_it_in(self):
+        opp_id, _ = self.store.upsert_item(item())
+        self.store.record_alert(opp_id, "ntfy")
+        self.assertEqual(self.store.get_alert(opp_id, "ntfy"), {"sent_at": None, "drop_latency_s": None})
+        self.store.mark_alert_sent(opp_id, "ntfy", T0, 12.5)
+        alert = self.store.get_alert(opp_id, "ntfy")
+        self.assertEqual(alert["sent_at"], T0.isoformat())
+        self.assertEqual(alert["drop_latency_s"], 12.5)
+        self.assertIsNone(self.store.get_alert(opp_id, "github"))
+
+    def test_alert_latencies_only_counts_sent_alerts_grouped_by_earliest_items_source(self):
+        opp_id, _ = self.store.upsert_item(item(seen_at=T0))
+        self.store.upsert_item(item(source="github.simplify", external_id="row-9", seen_at=T0 + timedelta(hours=1)))
+        self.store.record_alert(opp_id, "ntfy")  # claimed, not yet sent: must not appear
+        self.store.mark_alert_sent(opp_id, "ntfy", T0 + timedelta(seconds=5), 5.0)
+        self.assertEqual(self.store.alert_latencies(), [{"channel": "ntfy", "drop_latency_s": 5.0,
+                                                          "source": "ats.greenhouse"}])
+
     def test_set_action_only_changes_given_fields(self):
         opp_id, _ = self.store.upsert_item(item())
         self.store.set_action(opp_id, status="applied", notes="emailed recruiter")

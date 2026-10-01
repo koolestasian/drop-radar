@@ -40,8 +40,9 @@ CREATE TABLE IF NOT EXISTS source_state (
 CREATE TABLE IF NOT EXISTS alerts (
     opportunity_id TEXT NOT NULL REFERENCES opportunities(id),
     channel        TEXT NOT NULL,
-    sent_at        TEXT,
+    sent_at        TEXT,                    -- NULL = claimed but not yet sent (pending, safe to retry)
     PRIMARY KEY (opportunity_id, channel)   -- one alert per channel, ever
+    -- drop_latency_s REAL added by MIGRATIONS[1] (T7), like source_state.last_error above
 );
 
 CREATE TABLE IF NOT EXISTS actions (

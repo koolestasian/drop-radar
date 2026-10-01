@@ -15,6 +15,7 @@ SOURCE_STATE_COLUMNS = ("etag", "cursor", "last_ok", "fail_count", "next_run", "
 # MIGRATIONS[i] upgrades PRAGMA user_version i -> i + 1, atomically. Append only.
 MIGRATIONS = (
     "ALTER TABLE source_state ADD COLUMN last_error TEXT",  # 1: scheduler health (T2)
+    "ALTER TABLE alerts ADD COLUMN drop_latency_s REAL",     # 2: alerts latency metric (T7)
 )
 
 
@@ -197,6 +198,40 @@ class Store:
                 (opportunity_id, channel, _iso(sent_at)),
             )
         return cursor.rowcount == 1
+
+    def get_alert(self, opportunity_id, channel):
+        """The claimed/sent row for (opportunity, channel), or None if never claimed.
+
+        sent_at is None while claimed-but-not-sent: a crash between record_alert
+        and mark_alert_sent leaves it pending, safe to retry, never a duplicate.
+        """
+        row = self.conn.execute(
+            "SELECT sent_at, drop_latency_s FROM alerts WHERE opportunity_id = ? AND channel = ?",
+            (opportunity_id, channel),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def pending_alerts(self):
+        """[{"opportunity_id", "channel"}] claimed but never sent -- safe to retry."""
+        rows = self.conn.execute("SELECT opportunity_id, channel FROM alerts WHERE sent_at IS NULL").fetchall()
+        return [dict(r) for r in rows]
+
+    def mark_alert_sent(self, opportunity_id, channel, sent_at, drop_latency_s=None):
+        with self.conn:
+            self.conn.execute(
+                "UPDATE alerts SET sent_at = ?, drop_latency_s = ? WHERE opportunity_id = ? AND channel = ?",
+                (_iso(sent_at), drop_latency_s, opportunity_id, channel),
+            )
+
+    def alert_latencies(self):
+        """[{"source", "channel", "drop_latency_s"}] for every sent alert, earliest item's source."""
+        rows = self.conn.execute(
+            """SELECT a.channel, a.drop_latency_s,
+                      (SELECT i.source FROM items i WHERE i.opportunity_id = a.opportunity_id
+                       ORDER BY i.seen_at LIMIT 1) AS source
+               FROM alerts a WHERE a.sent_at IS NOT NULL AND a.drop_latency_s IS NOT NULL"""
+        ).fetchall()
+        return [dict(r) for r in rows]
 
     def set_action(self, opportunity_id, status=None, notes=None):
         """Set the user's status and/or notes; None leaves that field as it is."""
