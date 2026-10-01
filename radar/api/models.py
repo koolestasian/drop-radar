@@ -47,3 +47,44 @@ class ActionPatch(BaseModel):
 class Me(BaseModel):
     user: str
     sources: int
+
+
+# Config shapes mirror the YAML files; radar.config.parse_watchlist/parse_profile
+# still do the real validation (allowed ATS kinds, tiers, the Instagram cap...).
+class CompanyConfig(BaseModel):
+    name: str
+    ats: str = Field(description="greenhouse | lever | ashby | smartrecruiters | workday")
+    slug: str = Field(description="board slug; workday: tenant.wdN/site")
+    tier: str = Field("B", description="S | A | B | C (S/A polled every 2 min)")
+
+
+class InstagramConfig(BaseModel):
+    username: str
+    interval_s: float = 300.0
+    priority: int = 5
+
+
+class FeedConfig(BaseModel):
+    url: str
+    kind: str = "rss"
+
+
+class RepoConfig(BaseModel):
+    name: str = Field(description="owner/name")
+    path: str = ""
+
+
+class WatchlistConfig(BaseModel):
+    companies: list[CompanyConfig] = []
+    instagram: list[InstagramConfig] = []
+    feeds: list[FeedConfig] = []
+    repos: list[RepoConfig] = []
+
+
+class ProfileConfig(BaseModel):
+    roles: list[str] = Field([], description="the track: a title needs one of these...")
+    keywords: list[str] = Field([], description="...and one of these (the level)")
+    exclude: list[str] = Field([], description="any of these in the title rules it out")
+    grad_year: int | None = Field(None, description="target season year, e.g. 2027")
+    locations: list[str] = []
+    company_tiers: dict[str, str] = {}

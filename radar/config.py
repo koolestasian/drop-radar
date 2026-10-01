@@ -113,6 +113,8 @@ class User:
     id: str
     watchlist: Watchlist
     profile: Profile
+    watchlist_path: Path | None = None  # where they came from, so the API can write them back
+    profile_path: Path | None = None
 
 
 # ---- validation helpers -------------------------------------------------
@@ -178,7 +180,13 @@ def _str_list(data: dict, key: str, path: Path) -> tuple[str, ...]:
 
 def load_watchlist(path=None) -> Watchlist:
     path = Path(path) if path else CONFIG_DIR / "watchlist.yaml"
-    data = _read_yaml(path)
+    return parse_watchlist(_read_yaml(path), path)
+
+
+def parse_watchlist(data: dict, path) -> Watchlist:
+    """Validate an already-parsed watchlist mapping; `path` only names it in errors."""
+    if not isinstance(data, dict):
+        raise ConfigError(f"{path}: top level must be a mapping, got {type(data).__name__}")
     companies = []
     for i, raw in enumerate(_section(data, "companies", path)):
         where = f"companies[{i}]"
@@ -221,7 +229,13 @@ def load_watchlist(path=None) -> Watchlist:
 
 def load_profile(path=None) -> Profile:
     path = Path(path) if path else CONFIG_DIR / "profile.yaml"
-    data = _read_yaml(path)
+    return parse_profile(_read_yaml(path), path)
+
+
+def parse_profile(data: dict, path) -> Profile:
+    """Validate an already-parsed profile mapping; `path` only names it in errors."""
+    if not isinstance(data, dict):
+        raise ConfigError(f"{path}: top level must be a mapping, got {type(data).__name__}")
     grad_year = data.get("grad_year")
     if grad_year is not None and (isinstance(grad_year, bool) or not isinstance(grad_year, int)
                                   or not 2000 <= grad_year <= 2100):
@@ -254,10 +268,12 @@ def load_users(path=None) -> tuple[User, ...]:
     for i, raw in enumerate(entries):
         where = f"users[{i}]"
         e = _entry(raw, where, path)
+        watchlist_path = path.parent / _require_str(e, "watchlist", where, path)
+        profile_path = path.parent / _require_str(e, "profile", where, path)
         users.append(User(
             id=_require_str(e, "id", where, path),
-            watchlist=load_watchlist(path.parent / _require_str(e, "watchlist", where, path)),
-            profile=load_profile(path.parent / _require_str(e, "profile", where, path)),
+            watchlist=load_watchlist(watchlist_path), profile=load_profile(profile_path),
+            watchlist_path=watchlist_path, profile_path=profile_path,
         ))
     ids = [u.id for u in users]
     if len(ids) != len(set(ids)):

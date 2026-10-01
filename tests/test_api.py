@@ -9,6 +9,8 @@ import httpx
 
 from radar.alerts import AlertDispatcher, MultiUserAlertDispatcher, visible_to
 from radar.api.app import create_app
+from radar.api.runtime import Runtime
+from radar.config import load_settings
 from radar.config import Profile, User, Watchlist
 from radar.models import Item
 from radar.store import Store
@@ -201,6 +203,84 @@ class FeedAndAlertsAgreeTests(unittest.IsolatedAsyncioTestCase):
             feed = {o["id"] for o in store.list_opportunities()
                     if visible_to(store.get_opportunity(o["id"]), profile, OWNED[uid])[1]}
             self.assertEqual(set(sent[uid]), feed, uid)
+
+
+class ConfigApiTests(unittest.IsolatedAsyncioTestCase):
+    """Each user edits only their own watchlist/profile; edits are checked by the
+    same rules as startup and go live without a restart."""
+
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        files = {
+            "users.yaml": "users:\n  - {id: kevin, watchlist: kevin/w.yaml, profile: kevin/p.yaml}\n"
+                          "  - {id: friend, watchlist: friend/w.yaml, profile: friend/p.yaml}\n",
+            "kevin/w.yaml": "companies: [{name: Stripe, ats: greenhouse, slug: stripe}]\n"
+                            "instagram: [{username: a1}, {username: a2}, {username: a3}]\n",
+            "kevin/p.yaml": "roles: [software engineer]\n",
+            "friend/w.yaml": "companies: [{name: Point72, ats: greenhouse, slug: point72}]\n",
+            "friend/p.yaml": "roles: [investment banking]\n",
+        }
+        for rel, text in files.items():
+            (self.dir / rel).parent.mkdir(parents=True, exist_ok=True)
+            (self.dir / rel).write_text(text)
+        self.store = Store(self.dir / "radar.db")
+        self.addCleanup(self.store.close)
+        self.runtime = Runtime(self.store, settings=load_settings({}), users_path=self.dir / "users.yaml", env={})
+        app = create_app(self.store, self.runtime, tokens=TOKENS)
+        self.client = httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t")
+
+    async def asyncTearDown(self):
+        await self.client.aclose()
+
+    async def put(self, kind, body, token=FRIEND):
+        return await self.client.put(f"/api/config/{kind}", headers=auth(token), json=body)
+
+    async def test_get_returns_only_your_own_config(self):
+        r = await self.client.get("/api/config/watchlist", headers=auth(FRIEND))
+        self.assertEqual([c["slug"] for c in r.json()["companies"]], ["point72"])
+        r = await self.client.get("/api/config/profile", headers=auth(KEVIN))
+        self.assertEqual(r.json()["roles"], ["software engineer"])
+        self.assertEqual((await self.client.get("/api/config/profile")).status_code, 401)
+
+    async def test_a_valid_edit_is_written_and_goes_live_and_nobody_elses_changes(self):
+        kevin_before = (self.dir / "kevin/w.yaml").read_text()
+        body = {"companies": [{"name": "Point72", "ats": "greenhouse", "slug": "point72"},
+                              {"name": "AQR", "ats": "greenhouse", "slug": "aqr", "tier": "A"}]}
+        r = await self.put("watchlist", body)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(self.runtime.owned["friend"], {"ats.greenhouse.point72", "ats.greenhouse.aqr"})
+        self.assertIn("ats.greenhouse.aqr", self.runtime.scheduler.sources)
+        self.assertIn("aqr", (self.dir / "friend/w.yaml").read_text())
+        self.assertEqual((self.dir / "kevin/w.yaml").read_text(), kevin_before)
+
+    async def test_an_invalid_edit_is_a_422_naming_the_field_and_changes_nothing(self):
+        before = (self.dir / "friend/w.yaml").read_text()
+        r = await self.put("watchlist", {"companies": [{"name": "X", "ats": "nope", "slug": "x"}]})
+        self.assertEqual(r.status_code, 422)
+        self.assertIn("companies[0]", r.text)
+        self.assertIn("'ats'", r.text)
+        self.assertEqual((self.dir / "friend/w.yaml").read_text(), before)
+        self.assertEqual(self.runtime.owned["friend"], {"ats.greenhouse.point72"})
+        r = await self.put("profile", {"grad_year": 1999})
+        self.assertEqual(r.status_code, 422)
+        self.assertIn("grad_year", r.text)
+
+    async def test_an_edit_valid_alone_but_not_with_the_other_users_config_is_rolled_back(self):
+        """kevin has 3 Instagram accounts; the friend adding 3 more breaks the
+        shared 5-account cap only when both files are taken together."""
+        before = (self.dir / "friend/w.yaml").read_text()
+        r = await self.put("watchlist", {"instagram": [{"username": f"b{i}"} for i in range(3)]})
+        self.assertEqual(r.status_code, 422)
+        self.assertIn("instagram", r.text)
+        self.assertEqual((self.dir / "friend/w.yaml").read_text(), before)
+        self.assertEqual(self.runtime.owned["friend"], {"ats.greenhouse.point72"})
+
+    async def test_a_profile_edit_changes_what_matches_immediately(self):
+        r = await self.put("profile", {"roles": ["private equity"], "keywords": ["summer analyst"]})
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(self.runtime.users["friend"].profile.roles, ("private equity",))
+        dispatcher = self.runtime.pipeline.alerter.dispatchers["friend"]
+        self.assertEqual(dispatcher.profile.roles, ("private equity",))
 
 
 if __name__ == "__main__":

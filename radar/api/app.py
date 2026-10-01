@@ -15,17 +15,22 @@ to the event loop's thread, and FastAPI runs a plain `def` handler in a pool.
 """
 import asyncio
 import base64
+import dataclasses
 import hmac
 import json
 import logging
+import os
+import tempfile
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
 
+import yaml
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 
 from radar.alerts import visible_to
-from radar.api.models import Action, ActionPatch, Match, Me, Opportunity, Page
-from radar.config import User, load_settings
+from radar.api.models import Action, ActionPatch, Match, Me, Opportunity, Page, ProfileConfig, WatchlistConfig
+from radar.config import User, load_settings, parse_profile, parse_watchlist
+from radar.errors import ConfigError
 from radar.models import utcnow
 
 log = logging.getLogger(__name__)
@@ -54,6 +59,16 @@ def _deadline(value):
         return date.fromisoformat(str(value)[:10])
     except ValueError:
         return None
+
+
+EDITED_HEADER = "# Edited through the API (radar.api); validated by radar.config. Hand-written comments are not kept.\n"
+
+
+def _atomic_write(path, text):
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(text)
+    os.replace(tmp, path)
 
 
 def create_app(store, runtime=None, tokens=None, now=utcnow):
@@ -184,5 +199,47 @@ def create_app(store, runtime=None, tokens=None, now=utcnow):
         if patch.status is not None or patch.notes is not None:
             store.set_action(opp_id, user.id, status=patch.status, notes=patch.notes)
         return serialize(store.get_opportunity(opp_id, user_id=user.id), user)
+
+    def replace_config(user, kind, data, parse, path):
+        """Validate alone, write, reload; if the reload fails (the edit clashes with
+        another user's config, e.g. the shared Instagram cap) put the file back.
+        Nothing here awaits, so no other request sees the half-done state."""
+        try:
+            parse(data, f"{user.id}'s {kind}")
+        except ConfigError as exc:
+            raise HTTPException(422, str(exc)) from None
+        if path is None or not hasattr(runtime, "reload"):
+            raise HTTPException(503, "config can only be edited on the running server")
+        before = path.read_text(encoding="utf-8")
+        _atomic_write(path, EDITED_HEADER + yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
+        try:
+            runtime.reload()
+        except (ConfigError, ValueError) as exc:
+            _atomic_write(path, before)
+            raise HTTPException(422, str(exc)) from None
+        except Exception:
+            _atomic_write(path, before)
+            raise
+
+    def watchlist_out(user):
+        return WatchlistConfig(**dataclasses.asdict(user.watchlist))
+
+    @app.get("/api/config/watchlist", response_model=WatchlistConfig)
+    async def get_watchlist(user: User = Depends(current_user)):
+        return watchlist_out(user)
+
+    @app.put("/api/config/watchlist", response_model=WatchlistConfig)
+    async def put_watchlist(body: WatchlistConfig, user: User = Depends(current_user)):
+        replace_config(user, "watchlist", body.model_dump(), parse_watchlist, user.watchlist_path)
+        return watchlist_out(runtime.users[user.id])
+
+    @app.get("/api/config/profile", response_model=ProfileConfig)
+    async def get_profile(user: User = Depends(current_user)):
+        return ProfileConfig(**dataclasses.asdict(user.profile))
+
+    @app.put("/api/config/profile", response_model=ProfileConfig)
+    async def put_profile(body: ProfileConfig, user: User = Depends(current_user)):
+        replace_config(user, "profile", body.model_dump(), parse_profile, user.profile_path)
+        return ProfileConfig(**dataclasses.asdict(runtime.users[user.id].profile))
 
     return app
