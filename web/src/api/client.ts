@@ -1,0 +1,102 @@
+import type { components } from "./schema";
+
+type S = components["schemas"];
+export type Opportunity = S["Opportunity"];
+export type Page = S["Page"];
+export type Me = S["Me"];
+export type Metrics = S["Metrics"];
+export type SourceHealth = S["SourceHealth"];
+export type ProfileConfig = S["ProfileConfig"];
+export type WatchlistConfig = S["WatchlistConfig"];
+export type CompanyConfig = S["CompanyConfig"];
+export type ActionStatus = NonNullable<S["ActionPatch"]["status"]>;
+
+const TOKEN_KEY = "radar.token";
+
+// localStorage can throw (private mode, blocked storage); the app still works for the session.
+let memoryToken: string | null = null;
+export const token = {
+  get(): string | null {
+    try {
+      return localStorage.getItem(TOKEN_KEY) ?? memoryToken;
+    } catch {
+      return memoryToken;
+    }
+  },
+  set(value: string) {
+    memoryToken = value;
+    try {
+      localStorage.setItem(TOKEN_KEY, value);
+    } catch {
+      /* session-only */
+    }
+  },
+  clear() {
+    memoryToken = null;
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch {
+      /* nothing stored */
+    }
+  },
+};
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+let onUnauthorized = () => {};
+export function setUnauthorizedHandler(handler: () => void) {
+  onUnauthorized = handler;
+}
+export function signalUnauthorized() {
+  onUnauthorized();
+}
+
+export function authHeaders(): Record<string, string> {
+  return { Authorization: `Bearer ${token.get() ?? ""}` };
+}
+
+export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await fetch(path, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...authHeaders(), ...init.headers },
+  });
+  if (res.status === 401) {
+    signalUnauthorized();
+    throw new ApiError(401, "Your token was not accepted. Sign in again.");
+  }
+  if (!res.ok) {
+    let detail = res.statusText || `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      detail =
+        typeof body.detail === "string"
+          ? body.detail
+          : (body.detail ?? []).map((d: { loc?: string[]; msg: string }) => `${(d.loc ?? []).slice(1).join(".")}: ${d.msg}`).join("; ");
+    } catch {
+      /* keep the status text */
+    }
+    throw new ApiError(res.status, detail);
+  }
+  return res.json() as Promise<T>;
+}
+
+export function query(params: Record<string, string | number | boolean | undefined | null>): string {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== "") q.set(k, String(v));
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
+export function setStatus(id: string, patch: { status?: ActionStatus; notes?: string }) {
+  return api<Opportunity>(`/api/opportunities/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
