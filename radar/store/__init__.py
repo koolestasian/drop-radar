@@ -116,6 +116,18 @@ class Store:
             )
         return opp_id, new
 
+    def item_opportunity_id(self, source, external_id):
+        """The opportunity a (source, external_id) is already filed under, or None."""
+        row = self.conn.execute(
+            "SELECT opportunity_id FROM items WHERE source = ? AND external_id = ?", (source, external_id)
+        ).fetchone()
+        return row[0] if row else None
+
+    def opportunity_id_for_url(self, url):
+        """An existing opportunity with this exact (already-canonicalized) url, or None."""
+        row = self.conn.execute("SELECT id FROM opportunities WHERE url = ? LIMIT 1", (url,)).fetchone()
+        return row[0] if row else None
+
     def mark_seen(self, source, external_id, at=None):
         """Bump an item's last_seen_at (a source still lists it). False if unknown."""
         with self.conn:
