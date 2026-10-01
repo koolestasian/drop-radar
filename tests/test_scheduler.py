@@ -320,5 +320,59 @@ class RegistryTests(unittest.TestCase):
             registry.build_sources(watchlist)
 
 
+class ReloadTests(unittest.IsolatedAsyncioTestCase):
+    """Scheduler.reload swaps the source set in a running process (config edits via the API)."""
+
+    def setUp(self):
+        SchedulerTests.setUp(self)
+
+    scheduler = SchedulerTests.scheduler
+    wait_s = SchedulerTests.wait_s
+
+    async def test_a_source_dropped_while_its_fetch_is_in_flight_does_not_resurrect(self):
+        gate = asyncio.Event()
+        old, kept = FakeSource("old", 10, gate=gate), FakeSource("kept", 10)
+        sched = self.scheduler(old, kept)
+        sched.launch_due()
+        await settle()
+        sched.reload([kept])
+        gate.set()
+        await sched.drain()  # old's fetch finishes after it was dropped
+        self.assertNotIn("old", sched.next_run)
+        self.clock.advance(10)
+        sched.launch_due()  # would KeyError on a resurrected next_run["old"]
+        await sched.drain()
+        self.assertEqual([h["name"] for h in sched.health()], ["kept"])
+
+    async def test_an_added_source_is_due_now(self):
+        a = FakeSource("a", 60)
+        sched = self.scheduler(a)
+        sched.launch_due()
+        await sched.drain()
+        b = FakeSource("b", 60)
+        sched.reload([a, b])
+        self.assertLessEqual(self.wait_s(sched, "b"), 0)
+        self.assertGreater(self.wait_s(sched, "a"), 0, "an unchanged source keeps its schedule")
+        sched.launch_due()
+        await sched.drain()
+        self.assertEqual((a.calls, b.calls), (1, 1))
+
+    async def test_an_unchanged_source_keeps_its_object_and_its_in_memory_state(self):
+        """e.g. InstagramSource's Apify cooldown must survive an unrelated config edit."""
+        a = FakeSource("a", 60)
+        sched = self.scheduler(a)
+        sched.reload([FakeSource("a", 60)])
+        self.assertIs(sched.sources["a"], a)
+        faster = FakeSource("a", 30)
+        sched.reload([faster])
+        self.assertIs(sched.sources["a"], faster, "a changed interval takes the new object")
+
+    async def test_duplicate_names_are_rejected(self):
+        sched = self.scheduler(FakeSource("a"))
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            sched.reload([FakeSource("x"), FakeSource("x")])
+        self.assertEqual(list(sched.sources), ["a"], "a rejected reload changes nothing")
+
+
 if __name__ == "__main__":
     unittest.main()

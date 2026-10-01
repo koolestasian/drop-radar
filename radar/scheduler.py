@@ -128,6 +128,23 @@ class Scheduler:
             name: _parse((store.get_source_state(name) or {}).get("next_run")) or now for name in self.sources
         }
 
+    def reload(self, sources):
+        """Swap in a new source set while running (config edited through the API).
+        An unchanged source (same name and interval) keeps its object, so in-memory
+        state like Instagram's Apify cooldown survives; an added one is due now;
+        a dropped one whose fetch is in flight finishes and is then forgotten."""
+        names = [source.name for source in sources]
+        if len(names) != len(set(names)):
+            raise ValueError(f"duplicate source names: {sorted({n for n in names if names.count(n) > 1})}")
+        now = self.clock.now()
+        kept = {}
+        for source in sources:
+            old = self.sources.get(source.name)
+            kept[source.name] = old if old is not None and old.interval_s == source.interval_s else source
+        self.sources = kept
+        self.next_run = {name: self.next_run.get(name, now) for name in kept}
+        self.disabled = {name: why for name, why in self.disabled.items() if name in kept}
+
     # ---- running ----------------------------------------------------------
 
     def launch_due(self):
@@ -186,10 +203,9 @@ class Scheduler:
         except Exception as exc:
             self._failed(source, exc)
         else:
-            self._schedule(name, source.interval_s)
             self.store.save_source_state(
                 name, last_ok=self.clock.now(), fail_count=0, last_error=None,
-                next_run=self.next_run[name], **ctx.pending,
+                next_run=self._schedule(name, source.interval_s), **ctx.pending,
             )
             log.info("source %s: %d item(s)", name, len(items))
         finally:
@@ -208,13 +224,18 @@ class Scheduler:
             delay = BLOCKED_COOLDOWN_S
         else:
             delay = max(source.interval_s, min(source.interval_s * 2 ** fails, BACKOFF_CAP_S))
-        self._schedule(name, delay)
-        self.store.save_source_state(name, fail_count=fails, last_error=error[:500], next_run=self.next_run[name])
+        self.store.save_source_state(name, fail_count=fails, last_error=error[:500],
+                                     next_run=self._schedule(name, delay))
         log.warning("source %s failed (%d in a row): %s", name, fails, error)
 
     def _schedule(self, name, delay_s):
+        """Sets and returns next_run; None (and nothing set) for a source a reload
+        dropped while its fetch was in flight -- the one place both outcomes pass."""
+        if name not in self.sources:
+            return None
         spread = 1 + self.rng.uniform(-self.jitter, self.jitter) if self.jitter else 1
         self.next_run[name] = self.clock.now() + timedelta(seconds=delay_s * spread)
+        return self.next_run[name]
 
     def _store_items(self, source, items):
         for item in items:
@@ -223,9 +244,12 @@ class Scheduler:
     # ---- control and health ---------------------------------------------
 
     def enable(self, name):
-        """Re-enable a source disabled by an auth error and poll it now."""
+        """Re-enable a source disabled by an auth error and poll it now. False if no such source."""
         self.disabled.pop(name, None)
+        if name not in self.sources:
+            return False
         self.next_run[name] = self.clock.now()
+        return True
 
     def health(self):
         """Per source: disabled, running, next_run, last_ok, fail_count, last_error, items_24h."""
