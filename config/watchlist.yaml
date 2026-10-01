@@ -1,6 +1,62 @@
 # Sources to watch. Validated by radar.config.load_watchlist.
 companies:          # ats: greenhouse | lever | ashby | workable | smartrecruiters; tier: S|A|B|C
   - {name: Stripe, ats: greenhouse, slug: stripe, tier: S}
+  - {name: Airbnb, ats: greenhouse, slug: airbnb, tier: B}
+  - {name: Amca, ats: greenhouse, slug: amca, tier: B}
+  - {name: Anthropic, ats: greenhouse, slug: anthropic, tier: S}
+  - {name: Arc'teryx, ats: lever, slug: arcteryx.com, tier: B}
+  - {name: Asana, ats: greenhouse, slug: asana, tier: B}
+  - {name: Assured Guaranty, ats: greenhouse, slug: assuredguaranty, tier: B}
+  - {name: Astranis, ats: greenhouse, slug: astranis, tier: B}
+  - {name: Bedrock Robotics, ats: ashby, slug: bedrock-robotics, tier: B}
+  - {name: Bluestaq, ats: greenhouse, slug: bluestaq, tier: B}
+  - {name: Box, ats: greenhouse, slug: boxinc, tier: B}
+  - {name: Cerebras, ats: ashby, slug: cerebras, tier: B}
+  - {name: Cloudflare, ats: greenhouse, slug: cloudflare, tier: B}
+  - {name: Coinbase, ats: greenhouse, slug: coinbase, tier: B}
+  - {name: Cowboyspace, ats: ashby, slug: cowboyspace, tier: B}
+  - {name: Databricks, ats: greenhouse, slug: databricks, tier: S}
+  - {name: DoorDash, ats: greenhouse, slug: doordashusa, tier: B}
+  - {name: Dropbox, ats: greenhouse, slug: dropbox, tier: B}
+  - {name: Duolingo, ats: greenhouse, slug: duolingo, tier: B}
+  - {name: Enova, ats: greenhouse, slug: enova, tier: B}
+  - {name: Figma, ats: greenhouse, slug: figma, tier: B}
+  - {name: Financial Times, ats: greenhouse, slug: financialtimes33, tier: B}
+  - {name: Gemini, ats: greenhouse, slug: gemini, tier: B}
+  - {name: Genesis Molecular AI, ats: ashby, slug: genesis-molecular-ai, tier: B}
+  - {name: Geneva Trading, ats: greenhouse, slug: genevatrading, tier: B}
+  - {name: Gitai, ats: greenhouse, slug: gitai, tier: B}
+  - {name: Greenboard, ats: ashby, slug: greenboard, tier: B}
+  - {name: Headlands Technologies, ats: greenhouse, slug: headlandstechnologiesllc, tier: B}
+  - {name: Intuitive, ats: smartrecruiters, slug: Intuitive, tier: B}
+  - {name: Kitware, ats: lever, slug: kitware, tier: B}
+  - {name: Klaviyo, ats: greenhouse, slug: klaviyocampus, tier: B}
+  - {name: LinkedIn, ats: smartrecruiters, slug: LinkedIn3, tier: B}
+  - {name: Lyft, ats: greenhouse, slug: lyft, tier: B}
+  - {name: Mercury, ats: greenhouse, slug: mercury, tier: B}
+  - {name: Metox International, ats: greenhouse, slug: metoxinternationalinc, tier: B}
+  - {name: MongoDB, ats: greenhouse, slug: mongodb, tier: B}
+  - {name: Notion, ats: ashby, slug: notion, tier: B}
+  - {name: Optiver, ats: greenhouse, slug: optiverprivate, tier: B}
+  - {name: Palantir, ats: lever, slug: palantir, tier: S}
+  - {name: Perchwell, ats: ashby, slug: Perchwell, tier: B}
+  - {name: Perplexity, ats: ashby, slug: perplexity, tier: B}
+  - {name: Pinterest, ats: greenhouse, slug: pinterest, tier: B}
+  - {name: Plot, ats: ashby, slug: plot, tier: B}
+  - {name: QuEra Computing, ats: greenhouse, slug: queracomputinginc, tier: B}
+  - {name: Quora, ats: ashby, slug: quora, tier: B}
+  - {name: Ramp, ats: ashby, slug: ramp, tier: B}
+  - {name: Reddit, ats: greenhouse, slug: reddit, tier: B}
+  - {name: Robinhood, ats: greenhouse, slug: robinhood, tier: B}
+  - {name: Scale AI, ats: greenhouse, slug: scaleai, tier: S}
+  - {name: Snowflake, ats: ashby, slug: snowflake, tier: B}
+  - {name: Together AI, ats: greenhouse, slug: togetherai, tier: B}
+  - {name: Vercel, ats: greenhouse, slug: vercel, tier: B}
+  - {name: Voyager Technologies, ats: greenhouse, slug: voyagertechnologiesinc, tier: B}
+  - {name: Wabash Valley Power Alliance, ats: smartrecruiters, slug: WabashValleyPowerAlliance, tier: B}
+  - {name: Wise, ats: smartrecruiters, slug: Wise, tier: B}
+  - {name: Wurl, ats: greenhouse, slug: wurljobs, tier: B}
+  - {name: ZipRecruiter, ats: greenhouse, slug: ziprecruiter, tier: B}
 instagram:
   - {username: zero2sudo, interval_s: 120, priority: 1}
 feeds: []           # - {url: "https://example.com/feed.xml", kind: rss}   kind: rss|atom|json|html

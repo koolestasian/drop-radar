@@ -289,7 +289,14 @@ class StoreMigrationTests(unittest.TestCase):
 
 class RegistryTests(unittest.TestCase):
     def setUp(self):
+        # Real source modules (ats.*, instagram, ...) auto-register as they land and
+        # are imported by other test modules in the same process; this test wants a
+        # clean slate of only what it registers itself, regardless of import order.
         self.saved = dict(registry.FACTORIES)
+        registry.FACTORIES.clear()
+        patcher = patch.object(registry, "_import_source_modules", lambda: None)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.addCleanup(lambda: (registry.FACTORIES.clear(), registry.FACTORIES.update(self.saved)))
         # Hermetic: build_sources() auto-imports every real module under
         # radar/sources/ (e.g. T5's "instagram"), permanently registering real
