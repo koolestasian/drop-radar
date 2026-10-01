@@ -1338,8 +1338,8 @@ def ensure_workbook():
     if not TRACKER_PATH.exists():
         create_workbook(TRACKER_PATH)
 
-def workbook_records():
-    wb = load_workbook(TRACKER_PATH, read_only=True, data_only=False)
+def workbook_records(path=None):
+    wb = load_workbook(path or TRACKER_PATH, read_only=True, data_only=False)
     ws = wb["Opportunities"]
     headers = [cell.value for cell in ws[1]]
     records = [
@@ -1487,8 +1487,9 @@ def cleanup_records(records, today=None):
         "invalid_links_cleared": invalid_links_cleared,
     }
 
-def save_records(records):
-    wb = load_workbook(TRACKER_PATH)
+def save_records(records, path=None):
+    path = path or TRACKER_PATH
+    wb = load_workbook(path)
     ws = wb["Opportunities"]
     if ws.max_row > 1:
         ws.delete_rows(2, ws.max_row - 1)
@@ -1507,7 +1508,7 @@ def save_records(records):
     for index, width in enumerate(COLUMN_WIDTHS, start=1):
         ws.column_dimensions[get_column_letter(index)].width = width
     write_dashboard(wb, records)
-    wb.save(TRACKER_PATH)
+    wb.save(path)
 
 def migrate_workbook(manual_fields=None):
     """Clean, de-duplicate and re-derive every stored row.
@@ -1630,7 +1631,7 @@ def _live_table(rows, today):
         )
     return lines
 
-def write_live_view(records, now=None):
+def write_live_view(records, now=None, path=None):
     now = now or datetime.now(timezone.utc)
     today = now.date()
     rows = sorted(records, key=lambda row: str(row.get("First Seen", "") or ""), reverse=True)
@@ -1702,7 +1703,7 @@ def write_live_view(records, now=None):
         lines += ["", "</details>", ""]
     if not rows:
         lines += ["_Nothing tracked yet. New opportunities appear here after the next check._", ""]
-    LIVE_VIEW_PATH.write_text("\n".join(lines).rstrip() + "\n")
+    (path or LIVE_VIEW_PATH).write_text("\n".join(lines).rstrip() + "\n")
 
 def load_state():
     if not STATE_PATH.exists():

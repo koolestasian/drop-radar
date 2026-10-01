@@ -6,7 +6,7 @@ Status: `todo` | `doing` | `done` (with commit hash and date) | `deferred` (not 
 | Task | Status | Notes |
 |---|---|---|
 | T0 foundations | done (999b3ee, 2026-09-30) | Suite is 87 legacy + 11 new = 98 (spec said 88; baseline was already 87). Root shims alias legacy modules. |
-| T1 store | todo | |
+| T1 store | done (pending, 2026-09-30) | `radar/store/` (schema.sql, Store repo API: upsert_item, save_opportunity, get_opportunity, mark_seen, list_opportunities, record_alert, set_action, enrichment), `radar/store/migrate_legacy.py`, `radar/views.py` (a module, not a package: one file). Real workbook has 282 rows (spec said 279); migrated twice with identical IDs/counts. Committed LATEST.md came from an older writer, so byte-for-byte is checked against the current legacy writer on the same rows and `now`: identical on real data and in tests. enrichment_cache.json is absent on this branch and main; migration skips it. Legacy pipeline still writes the xlsx directly; switching it to the store is T6. |
 | T2 scheduler | todo | |
 | T3 ats-sources | todo | |
 | T4 community-sources | todo | |

@@ -22,7 +22,7 @@ class Settings:
     anthropic_api_key: str = ""
     ntfy_topic: str = ""
     google_service_account_json: str = ""
-    db_path: str = "radar.db"
+    db_path: str = "data/radar.db"
     config_dir: Path = CONFIG_DIR
 
 
@@ -34,7 +34,7 @@ def load_settings(env=None) -> Settings:
         anthropic_api_key=env.get("ANTHROPIC_API_KEY", ""),
         ntfy_topic=env.get("NTFY_TOPIC", ""),
         google_service_account_json=env.get("GOOGLE_SERVICE_ACCOUNT_JSON", ""),
-        db_path=env.get("RADAR_DB_PATH", "radar.db"),
+        db_path=env.get("RADAR_DB_PATH", "data/radar.db"),
         config_dir=Path(env.get("RADAR_CONFIG_DIR", "config")),
     )
 
