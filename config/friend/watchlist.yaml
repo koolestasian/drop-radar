@@ -1,0 +1,5 @@
+# friend's sources. Same format as config/watchlist.yaml; empty until filled in.
+# A company also on kevin's list is polled once, not twice.
+companies: []
+instagram: []
+repos: []

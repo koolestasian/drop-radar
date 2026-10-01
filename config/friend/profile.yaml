@@ -1,0 +1,5 @@
+# friend's filter. Same format as config/profile.yaml; fill in before relying on alerts.
+roles: []
+locations: []
+keywords: []
+exclude: []

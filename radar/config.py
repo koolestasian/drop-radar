@@ -84,6 +84,14 @@ class Profile:
     exclude: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class User:
+    """One person this process serves: their own watchlist and profile."""
+    id: str
+    watchlist: Watchlist
+    profile: Profile
+
+
 # ---- validation helpers -------------------------------------------------
 
 def _read_yaml(path: Path) -> dict:
@@ -208,3 +216,27 @@ def load_profile(path=None) -> Profile:
         keywords=_str_list(data, "keywords", path),
         exclude=_str_list(data, "exclude", path),
     )
+
+
+def load_users(path=None) -> tuple[User, ...]:
+    """Each user names their own watchlist/profile files, relative to users.yaml
+    (not a 'config/<id>/' convention: the first user's files predate this and
+    stay at the top of config/)."""
+    path = Path(path) if path else CONFIG_DIR / "users.yaml"
+    data = _read_yaml(path)
+    entries = _section(data, "users", path)
+    if not entries:
+        raise ConfigError(f"{path}: 'users' must list at least one user")
+    users = []
+    for i, raw in enumerate(entries):
+        where = f"users[{i}]"
+        e = _entry(raw, where, path)
+        users.append(User(
+            id=_require_str(e, "id", where, path),
+            watchlist=load_watchlist(path.parent / _require_str(e, "watchlist", where, path)),
+            profile=load_profile(path.parent / _require_str(e, "profile", where, path)),
+        ))
+    ids = [u.id for u in users]
+    if len(ids) != len(set(ids)):
+        raise ConfigError(f"{path}: duplicate user id(s): {sorted({i for i in ids if ids.count(i) > 1})}")
+    return tuple(users)

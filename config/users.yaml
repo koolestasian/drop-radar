@@ -1,0 +1,8 @@
+# Who this radar serves. Validated by radar.config.load_users.
+# Each user has their own watchlist (which sources to poll) and profile (what
+# to alert on); the scheduler polls the union once. Paths are relative to this
+# file. kevin's files predate multi-user support and stay at the top of
+# config/ rather than moving under config/kevin/.
+users:
+  - {id: kevin, watchlist: watchlist.yaml, profile: profile.yaml}
+  - {id: friend, watchlist: friend/watchlist.yaml, profile: friend/profile.yaml}

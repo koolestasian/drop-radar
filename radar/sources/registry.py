@@ -57,3 +57,29 @@ def build_sources(watchlist, settings=None):
     if skipped:
         log.warning("no source registered for: %s", ", ".join(sorted(skipped)))
     return sources, sorted(skipped)
+
+
+MAX_INSTAGRAM_ACCOUNTS = 5  # load_watchlist enforces this per file; the union needs it too
+
+
+def build_sources_for_users(users, settings=None):
+    """The Scheduler polls one de-duplicated union across every user's watchlist
+    -- two users both listing Stripe's Greenhouse board must poll it once, not
+    twice. Returns (sources, {user_id: frozenset(source_names)}, skipped kinds).
+    """
+    by_name, owned, skipped = {}, {}, set()
+    for user in users:
+        sources, s = build_sources(user.watchlist, settings)
+        skipped |= set(s)
+        owned[user.id] = frozenset(source.name for source in sources)
+        for source in sources:
+            existing = by_name.get(source.name)
+            if existing is None or source.interval_s < existing.interval_s:
+                by_name[source.name] = source
+    instagram_names = {name for name in by_name if name.startswith("instagram.")}
+    if len(instagram_names) > MAX_INSTAGRAM_ACCOUNTS:
+        raise ConfigError(
+            f"users.yaml watchlists together list {len(instagram_names)} instagram accounts "
+            f"(one shared IG_SESSIONID supports at most {MAX_INSTAGRAM_ACCOUNTS}): {sorted(instagram_names)}"
+        )
+    return list(by_name.values()), owned, sorted(skipped)
