@@ -2,6 +2,10 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.2.1 (2026-10-03)
+
+- No emoji anywhere live: push notifications no longer carry the briefcase tag (ntfy turned it into an emoji); text arrows in Settings and Sources are now drawn icons or plain words.
+
 ## 0.2.0 (2026-10-03)
 
 Web redesign, deployed to the live box 2026-10-02 20:43 UTC.

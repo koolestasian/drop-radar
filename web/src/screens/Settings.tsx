@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { api, type CompanyConfig, type Me, type ProfileConfig, type WatchlistConfig } from "../api/client";
-import { X } from "lucide-react";
+import { ArrowRight, ExternalLink, X } from "lucide-react";
 import { ErrorNote, ListSkeleton } from "../components/common";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -179,7 +179,7 @@ function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
       </form>
       <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">
         The slug is in the board's URL: boards.greenhouse.io/<b>stripe</b>, jobs.lever.co/<b>palantir</b>, or for Workday
-        https://<b>nvidia.wd5</b>.myworkdayjobs.com/<b>NVIDIAExternalCareerSite</b> → <b>nvidia.wd5/NVIDIAExternalCareerSite</b>.
+        https://<b>nvidia.wd5</b>.myworkdayjobs.com/<b>NVIDIAExternalCareerSite</b> <ArrowRight className="inline size-3.5" aria-label="becomes" /> <b>nvidia.wd5/NVIDIAExternalCareerSite</b>.
         {others.length > 0 && ` Also watching: ${others.join(", ")} (edit those in the YAML).`}
       </p>
       {save.isError && <ErrorNote error={save.error} />}
@@ -216,7 +216,7 @@ export function Settings({ onSignOut }: { onSignOut: () => void }) {
         {me.data?.alerts_enabled ? (
           <>
             <p className="text-sm text-muted-foreground">Delivery is configured. Subscribe in ntfy on your phone and allow notifications. Device delivery still needs a real notification check.</p>
-            {me.data.notification_url && <Button asChild variant="outline" className="self-start"><a href={me.data.notification_url} target="_blank" rel="noopener noreferrer">Open your private notification topic ↗</a></Button>}
+            {me.data.notification_url && <Button asChild variant="outline" className="self-start"><a href={me.data.notification_url} target="_blank" rel="noopener noreferrer">Open your private notification topic <ExternalLink className="size-4" aria-hidden /></a></Button>}
           </>
         ) : me.data ? (
           <p role="status" className="text-sm text-muted-foreground">Phone alerts are off for your account. The live feed works while open; phone delivery needs to be enabled on the server.</p>
