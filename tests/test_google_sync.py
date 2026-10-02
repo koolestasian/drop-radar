@@ -64,6 +64,18 @@ class GoogleSyncTests(unittest.TestCase):
         self.assertEqual(merged[0]["Notes"], "Keep this")
         self.assertEqual(existing.updated[1], ["one", "New title", "Yes", "Keep this"])
 
+    def test_fetch_manual_fields_pads_short_rows_and_skips_blank_ids(self):
+        sheet = FakeWorksheet([["Notes", "ID", "Actioned?"], ["n1", "one", "Yes"], ["", " ", "x"], ["", "two"]])
+        original = sync.open_spreadsheet
+        sync.open_spreadsheet = lambda *_: FakeSpreadsheet(sheet)
+        self.addCleanup(setattr, sync, "open_spreadsheet", original)
+        self.assertEqual(sync.fetch_manual_fields("{}", "sheet"), {
+            "one": {"Actioned?": "Yes", "Notes": "n1"},
+            "two": {"Actioned?": "", "Notes": ""},
+        })
+        sheet.values = [["ID", "Opportunity"], ["one", "x"]]
+        self.assertEqual(sync.fetch_manual_fields("{}", "sheet"), {})
+
 
 if __name__ == "__main__":
     unittest.main()

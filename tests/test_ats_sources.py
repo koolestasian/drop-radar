@@ -1,0 +1,528 @@
+import asyncio
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from radar.alerts import AlertDispatcher
+from radar.config import Company, Profile
+from radar.errors import SourceError
+from radar.models import utcnow
+from radar.pipeline import Pipeline
+from radar.scheduler import FetchContext, HostLimiter, Scheduler
+from radar.sources import registry
+from radar.sources.ashby import AshbySource
+from radar.sources.ats import matches_title
+from radar.sources.discover import mine_tracker_slugs
+from radar.sources.greenhouse import GreenhouseSource
+from radar.sources.lever import LeverSource
+from radar.sources.smartrecruiters import SmartRecruitersSource
+from radar.store import Store
+
+
+class FakeResponse:
+    def __init__(self, status_code=200, payload=None, text="not json", headers=None):
+        self.status_code = status_code
+        self._payload = payload
+        self.text = text
+        self.headers = headers or {}
+
+    def json(self):
+        if self._payload is None:
+            raise ValueError("no JSON body")
+        return self._payload
+
+
+class FakeHttp:
+    """Routes keyed by exact URL; records every URL `ctx.get` is asked for."""
+
+    def __init__(self, routes):
+        self.routes = routes
+        self.calls = []
+        self.headers = []  # request headers, one dict per call
+
+    async def get(self, url, **kwargs):
+        self.calls.append(url)
+        self.headers.append(kwargs.get("headers") or {})
+        if url not in self.routes:
+            raise AssertionError(f"unexpected URL requested: {url}")
+        result = self.routes[url]
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+
+class FakeClock:
+    def __init__(self):
+        self.t = utcnow()
+
+    def now(self):
+        return self.t
+
+    async def sleep(self, seconds):
+        await asyncio.sleep(0)
+
+
+def make_ctx(http, cursor=None, etag=None):
+    clock = FakeClock()
+    return FetchContext(
+        "test", http, clock, HostLimiter(clock, per_second=1000.0), asyncio.Semaphore(10), etag, cursor,
+    )
+
+
+def company(ats, slug="acme", tier="B"):
+    return Company(name="Acme", ats=ats, slug=slug, tier=tier)
+
+
+class AtsSourceContractMixin:
+    """Shared assertions run against each concrete ATS source.
+
+    Not a TestCase itself (no source_cls set) -- mixed into one per ATS below
+    so unittest discovery doesn't try to instantiate and run this directly.
+    """
+
+    source_cls = None  # set by subclass
+    ats = None
+
+    def url(self, slug="acme"):
+        return self.source_cls(company(self.ats, slug)).board_url()
+
+    async def test_first_poll_backfills_open_early_career_postings_marked_as_seed(self):
+        """So a new user's feed isn't empty on day one; the pipeline never alerts on a seed."""
+        http = FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()))})
+        source = self.source_cls(company(self.ats))
+        ctx = make_ctx(http)
+        items = await source.fetch(ctx)
+        self.assertEqual([i.external_id for i in items], [self.baseline_matching_id()])  # the senior one is filtered
+        self.assertTrue(all(i.raw == {"seed": True} for i in items))
+        self.assertEqual(http.calls, [self.url()])  # fetch went through ctx.get, one request
+        self.assertIn("cursor", ctx.pending)
+
+    async def test_second_poll_with_one_new_job_emits_exactly_one_item(self):
+        source = self.source_cls(company(self.ats))
+        seed_ctx = make_ctx(FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()))}))
+        await source.fetch(seed_ctx)
+
+        jobs = self.baseline_jobs() + [self.new_job()]
+        http = FakeHttp({self.url(): FakeResponse(payload=self.payload(jobs))})
+        ctx = make_ctx(http, cursor=seed_ctx.pending["cursor"])
+        items = await source.fetch(ctx)
+
+        self.assertEqual(len(items), 1)
+        item = items[0]
+        self.assertEqual(item.external_id, self.new_job_id())
+        self.assertEqual(item.source, f"ats.{self.ats}.acme")
+        self.assertTrue(matches_title(item.title))
+        self.assertIsNotNone(item.published_at)
+        self.assertIsNotNone(item.published_at.tzinfo)
+
+    async def test_removed_job_emits_closed_signal(self):
+        source = self.source_cls(company(self.ats))
+        seed_ctx = make_ctx(FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()))}))
+        await source.fetch(seed_ctx)
+
+        remaining = self.baseline_jobs()[1:]  # drop the first (matching) posting
+        http = FakeHttp({self.url(): FakeResponse(payload=self.payload(remaining))})
+        ctx = make_ctx(http, cursor=seed_ctx.pending["cursor"])
+        items = await source.fetch(ctx)
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0].external_id, self.baseline_matching_id())
+        self.assertEqual(items[0].raw, {"closed": True})
+        self.assertEqual(items[0].source, f"ats.{self.ats}.acme")
+
+    async def test_unchanged_board_304_emits_nothing_and_keeps_baseline(self):
+        """Polls send the last ETag; a 304 means nothing changed, so no body, no diff."""
+        source = self.source_cls(company(self.ats))
+        seed_ctx = make_ctx(FakeHttp({self.url(): FakeResponse(
+            payload=self.payload(self.baseline_jobs()), headers={"etag": 'W/"v1"'})}))
+        await source.fetch(seed_ctx)
+        self.assertEqual(seed_ctx.pending["etag"], 'W/"v1"')
+
+        http = FakeHttp({self.url(): FakeResponse(status_code=304)})
+        ctx = make_ctx(http, cursor=seed_ctx.pending["cursor"], etag=seed_ctx.pending["etag"])
+        self.assertEqual(await source.fetch(ctx), [])
+        self.assertEqual(http.headers, [{"If-None-Match": 'W/"v1"'}])
+        self.assertEqual(ctx.pending, {})  # cursor and etag stay as they were
+
+    async def test_etag_not_sent_before_a_baseline_exists(self):
+        """An ETag without a cursor (e.g. a reset baseline) must never 304 a board out of seeding."""
+        http = FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()))})
+        await self.source_cls(company(self.ats)).fetch(make_ctx(http, etag='W/"v1"'))
+        self.assertEqual(http.headers, [{}])
+
+    async def test_non_200_raises_schema_error(self):
+        http = FakeHttp({self.url(): FakeResponse(status_code=404, payload=None)})
+        with self.assertRaises(SourceError) as ctxmgr:
+            await self.source_cls(company(self.ats)).fetch(make_ctx(http))
+        self.assertEqual(ctxmgr.exception.kind, "schema")
+
+    async def test_unparseable_json_raises_schema_error(self):
+        http = FakeHttp({self.url(): FakeResponse(payload=None)})  # .json() raises
+        with self.assertRaises(SourceError) as ctxmgr:
+            await self.source_cls(company(self.ats)).fetch(make_ctx(http))
+        self.assertEqual(ctxmgr.exception.kind, "schema")
+
+    async def test_missing_expected_key_raises_schema_error(self):
+        http = FakeHttp({self.url(): FakeResponse(payload={"unexpected": "shape"})})
+        with self.assertRaises(SourceError) as ctxmgr:
+            await self.source_cls(company(self.ats)).fetch(make_ctx(http))
+        self.assertEqual(ctxmgr.exception.kind, "schema")
+
+    async def test_429_raises_blocked_error(self):
+        http = FakeHttp({self.url(): FakeResponse(status_code=429, payload={})})
+        with self.assertRaises(SourceError) as ctxmgr:
+            await self.source_cls(company(self.ats)).fetch(make_ctx(http))
+        self.assertEqual(ctxmgr.exception.kind, "blocked")
+
+    async def test_connection_error_raises_transient(self):
+        http = FakeHttp({self.url(): ConnectionError("boom")})
+        with self.assertRaises(SourceError) as ctxmgr:
+            await self.source_cls(company(self.ats)).fetch(make_ctx(http))
+        self.assertEqual(ctxmgr.exception.kind, "transient")
+
+    async def test_interval_from_tier(self):
+        self.assertEqual(self.source_cls(company(self.ats, tier="S")).interval_s, 120.0)
+        self.assertEqual(self.source_cls(company(self.ats, tier="A")).interval_s, 120.0)
+        self.assertEqual(self.source_cls(company(self.ats, tier="B")).interval_s, 300.0)
+        self.assertEqual(self.source_cls(company(self.ats, tier="C")).interval_s, 900.0)
+
+
+class GreenhouseTests(AtsSourceContractMixin, unittest.IsolatedAsyncioTestCase):
+    source_cls, ats = GreenhouseSource, "greenhouse"
+
+    def payload(self, jobs):
+        return {"jobs": jobs}
+
+    def baseline_jobs(self):
+        return [
+            {"id": 1, "title": "Software Engineering Intern, Summer 2027",
+             "updated_at": "2026-01-10T12:00:00Z", "absolute_url": "https://boards.greenhouse.io/acme/jobs/1",
+             "location": {"name": "Remote"}},
+            {"id": 2, "title": "Senior Staff Engineer", "updated_at": "2026-01-10T12:00:00Z",
+             "absolute_url": "https://boards.greenhouse.io/acme/jobs/2", "location": {"name": "NYC"}},
+        ]
+
+    def new_job(self):
+        return {"id": 3, "title": "New Grad Software Engineer 2027", "updated_at": "2026-02-01T00:00:00Z",
+                "absolute_url": "https://boards.greenhouse.io/acme/jobs/3", "location": {"name": "SF"}}
+
+    def new_job_id(self):
+        return "3"
+
+    def baseline_matching_id(self):
+        return "1"
+
+
+class LeverTests(AtsSourceContractMixin, unittest.IsolatedAsyncioTestCase):
+    source_cls, ats = LeverSource, "lever"
+
+    def payload(self, jobs):
+        return jobs  # Lever returns a JSON array directly
+
+    def baseline_jobs(self):
+        return [
+            {"id": "a1", "text": "Data Engineering Co-op", "createdAt": 1770000000000,
+             "categories": {"location": "Remote"}, "hostedUrl": "https://jobs.lever.co/acme/a1"},
+            {"id": "a2", "text": "Staff Engineer", "createdAt": 1770000000000,
+             "categories": {"location": "NYC"}, "hostedUrl": "https://jobs.lever.co/acme/a2"},
+        ]
+
+    def new_job(self):
+        return {"id": "a3", "text": "Early Career Research Fellowship", "createdAt": 1772000000000,
+                "categories": {"location": "Remote"}, "hostedUrl": "https://jobs.lever.co/acme/a3"}
+
+    def new_job_id(self):
+        return "a3"
+
+    def baseline_matching_id(self):
+        return "a1"
+
+
+class AshbyTests(AtsSourceContractMixin, unittest.IsolatedAsyncioTestCase):
+    source_cls, ats = AshbySource, "ashby"
+
+    def payload(self, jobs):
+        return {"jobs": jobs}
+
+    def baseline_jobs(self):
+        return [
+            {"id": "b1", "title": "Residency Program 2026", "publishedAt": "2026-01-15T00:00:00Z",
+             "isListed": True, "jobUrl": "https://jobs.ashbyhq.com/acme/b1", "location": "Remote"},
+            {"id": "b2", "title": "Principal Engineer", "publishedAt": "2026-01-15T00:00:00Z",
+             "isListed": True, "jobUrl": "https://jobs.ashbyhq.com/acme/b2", "location": "NYC"},
+            {"id": "b3", "title": "Unlisted Internship", "publishedAt": "2026-01-15T00:00:00Z",
+             "isListed": False, "jobUrl": "https://jobs.ashbyhq.com/acme/b3", "location": "NYC"},
+        ]
+
+    def new_job(self):
+        return {"id": "b4", "title": "Apprentice, Platform Team", "publishedAt": "2026-02-10T00:00:00Z",
+                "isListed": True, "jobUrl": "https://jobs.ashbyhq.com/acme/b4", "location": "Remote"}
+
+    def new_job_id(self):
+        return "b4"
+
+    def baseline_matching_id(self):
+        return "b1"
+
+    async def test_unlisted_job_is_never_tracked(self):
+        http = FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()))})
+        ctx = make_ctx(http)
+        await self.source_cls(company(self.ats)).fetch(ctx)
+        self.assertNotIn("b3", json.loads(ctx.pending["cursor"]))
+
+
+class SmartRecruitersTests(AtsSourceContractMixin, unittest.IsolatedAsyncioTestCase):
+    source_cls, ats = SmartRecruitersSource, "smartrecruiters"
+
+    async def test_unchanged_board_304_emits_nothing_and_keeps_baseline(self):
+        """Override the single-page ATS contract: even a stale ETag is ignored."""
+        http = FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()),
+                                                headers={"etag": '"v1"'})})
+        seed = make_ctx(http)
+        await self.source_cls(company(self.ats)).fetch(seed)
+        ctx = make_ctx(http, cursor=seed.pending["cursor"], etag='"v1"')
+        self.assertEqual(await self.source_cls(company(self.ats)).fetch(ctx), [])
+        self.assertEqual(http.headers, [{}, {}])
+
+    def payload(self, jobs):
+        return {"totalFound": len(jobs), "content": jobs}
+
+    def test_location_comes_from_the_listing(self):
+        jobs = [{"id": "a", "name": "Intern", "location": {"fullLocation": "Ho Chi Minh, , Vietnam"}},
+                {"id": "b", "name": "Intern", "location": {"city": "Austin", "region": "TX", "country": "us"}},
+                {"id": "c", "name": "Intern", "location": {"remote": True}},
+                {"id": "d", "name": "Intern"}]
+        postings, _ = self.source_cls(company(self.ats)).parse(self.payload(jobs))
+        self.assertEqual([postings[k][2] for k in "abcd"], ["Ho Chi Minh, Vietnam", "Austin, TX, us", "Remote", ""])
+
+    def baseline_jobs(self):
+        # "ref" is the real API's shape: its OWN self-link (api.smartrecruiters.com/...),
+        # confirmed live against real boards -- never a public job page. Fixtures use
+        # that real shape so a test trusting "ref" for url would actually fail.
+        return [
+            {"id": "c1", "name": "Fellowship: Applied Research", "releasedDate": "2026-01-20T00:00:00Z",
+             "ref": "https://api.smartrecruiters.com/v1/companies/acme/postings/c1"},
+            {"id": "c2", "name": "VP of Engineering", "releasedDate": "2026-01-20T00:00:00Z",
+             "ref": "https://api.smartrecruiters.com/v1/companies/acme/postings/c2"},
+        ]
+
+    def new_job(self):
+        return {"id": "c3", "name": "Intern - Summer 2026", "releasedDate": "2026-02-05T00:00:00Z",
+                "ref": "https://api.smartrecruiters.com/v1/companies/acme/postings/c3"}
+
+    def new_job_id(self):
+        return "c3"
+
+    def baseline_matching_id(self):
+        return "c1"
+
+    async def test_url_is_the_public_job_page_not_the_api_self_link(self):
+        source = self.source_cls(company(self.ats))
+        seed_ctx = make_ctx(FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()))}))
+        await source.fetch(seed_ctx)
+        jobs = self.baseline_jobs() + [self.new_job()]
+        ctx = make_ctx(FakeHttp({self.url(): FakeResponse(payload=self.payload(jobs))}), seed_ctx.pending["cursor"])
+        items = await source.fetch(ctx)
+        self.assertEqual(items[0].url, "https://jobs.smartrecruiters.com/acme/c3")
+
+    async def test_failed_later_page_does_not_advance_the_baseline(self):
+        source = self.source_cls(company(self.ats))
+        seed_ctx = make_ctx(FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()))}))
+        await source.fetch(seed_ctx)
+
+        # totalFound says there are more postings than this page returned, and the
+        # matching c1 posting isn't on this (truncated) page -- must NOT read as closed.
+        page = [self.baseline_jobs()[1]]
+        payload = {"totalFound": 50, "content": page}
+        http = FakeHttp({self.url(): FakeResponse(payload=payload)})
+        ctx = make_ctx(http, cursor=seed_ctx.pending["cursor"])
+        with self.assertRaises(SourceError):
+            await source.fetch(ctx)
+        self.assertNotIn("cursor", ctx.pending)
+
+    async def test_page_two_is_seeded_then_its_new_drop_and_real_close_are_detected(self):
+        source = self.source_cls(company(self.ats))
+        page_two = self.url() + "&offset=2"
+        seed_http = FakeHttp({
+            self.url(): FakeResponse(payload={"totalFound": 3, "content": self.baseline_jobs()}),
+            page_two: FakeResponse(payload={"totalFound": 3, "content": [self.new_job()]}),
+        })
+        seed = make_ctx(seed_http)
+        items = await source.fetch(seed)
+        self.assertEqual({i.external_id for i in items}, {"c1", "c3"})
+        self.assertTrue(all(i.raw.get("seed") for i in items))
+        next_http = FakeHttp({
+            self.url(): FakeResponse(payload={"totalFound": 3, "content": [self.baseline_jobs()[1], self.new_job()]}),
+            page_two: FakeResponse(payload={"totalFound": 3, "content": [{"id": "c4", "name": "SWE Intern"}]}),
+        })
+        ctx = make_ctx(next_http, seed.pending["cursor"], etag=seed.pending["etag"])
+        changes = await source.fetch(ctx)
+        self.assertEqual([(i.external_id, i.raw) for i in changes], [("c4", {}), ("c1", {"closed": True})])
+        self.assertTrue(all(not h for h in next_http.headers), "a page-one ETag cannot validate page two")
+
+    async def test_upgrading_a_page_one_baseline_backfills_the_expanded_scan_silently(self):
+        http = FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs() + [self.new_job()]))})
+        ctx = make_ctx(http, cursor=json.dumps({"c1": ["https://example.com/1", "Fellowship"]}), etag='"old"')
+        changes = await self.source_cls(company(self.ats)).fetch(ctx)
+        self.assertEqual([(i.external_id, i.raw) for i in changes], [("c3", {"seed": True})])
+        self.assertEqual(ctx.pending["etag"], SmartRecruitersSource.PAGINATED)
+
+    async def test_repeated_or_inconsistent_pages_fail_without_committing_a_cursor(self):
+        for payload in ({"totalFound": 3, "content": self.baseline_jobs()},
+                        {"totalFound": 4, "content": [self.new_job()]},
+                        {"totalFound": 3, "content": []}):
+            with self.subTest(payload=payload):
+                http = FakeHttp({
+                    self.url(): FakeResponse(payload={"totalFound": 3, "content": self.baseline_jobs()}),
+                    self.url() + "&offset=2": FakeResponse(payload=payload),
+                })
+                ctx = make_ctx(http)
+                with self.assertRaises(SourceError):
+                    await self.source_cls(company(self.ats)).fetch(ctx)
+                self.assertNotIn("cursor", ctx.pending)
+
+
+class EmptyListingGuardTests(unittest.IsolatedAsyncioTestCase):
+    async def test_empty_listing_after_non_empty_baseline_is_transient_not_closed_flood(self):
+        source = GreenhouseSource(company("greenhouse"))
+        url = source.board_url()
+        seed_jobs = [{"id": 1, "title": "Internship", "updated_at": "2026-01-01T00:00:00Z",
+                      "absolute_url": "https://boards.greenhouse.io/acme/jobs/1", "location": {}}]
+        seed_ctx = make_ctx(FakeHttp({url: FakeResponse(payload={"jobs": seed_jobs})}))
+        await source.fetch(seed_ctx)
+
+        http = FakeHttp({url: FakeResponse(payload={"jobs": []})})
+        ctx = make_ctx(http, cursor=seed_ctx.pending["cursor"])
+        with self.assertRaises(SourceError) as ctxmgr:
+            await source.fetch(ctx)
+        self.assertEqual(ctxmgr.exception.kind, "transient")
+
+
+class TitleFilterTests(unittest.TestCase):
+    def test_kept(self):
+        for title in (
+            "Software Engineering Intern, Summer 2027", "Data Science Interns", "Platform Internship",
+            "New Grad Software Engineer", "New Graduate - Backend", "Co-Op, Infrastructure",
+            "Early Career Analyst", "Research Fellowship", "Residency Program", "Apprentice Electrician",
+            "Backend Engineer (Class of 2026)",
+            # Business/finance and big-tech university titles that carry no "intern"/year
+            # (2026-10-01 audit: these were dropped before any profile saw them).
+            "Summer Analyst - Investment Banking", "Private Equity Summer Associate",
+            "Analyst Program - Global Markets", "Associate Consultant", "Off-Cycle Analyst, Equity Research",
+            "Software Engineer (University Grad)", "Student Researcher", "Campus Hire - Sales & Trading",
+            "Rotational Program Associate", "Leadership Development Program", "Entry Level Financial Analyst",
+            "Early Talent - Wealth Management", "Spring Insight Week", "Undergraduate Business Analyst",
+        ):
+            self.assertTrue(matches_title(title), title)
+
+    def test_dropped(self):
+        for title in (
+            "Senior Staff Engineer", "Internal Tools Engineer", "International Sales Director",
+            "VP of Engineering", "Principal Scientist",
+        ):
+            self.assertFalse(matches_title(title), title)
+
+
+class SlugMiningTests(unittest.TestCase):
+    """_slug_from_url has already broken twice on real tracker links (an embed
+    query-param form, and app3.greenhouse.io session links with no slug in the
+    path) -- pin the real cases down instead of only the happy path."""
+
+    def test_real_tracker_link_shapes(self):
+        records = [
+            {"Application / Registration Link":
+                "https://boards.greenhouse.io/embed/job_app?for=financialtimes33&token=123"},
+            {"Application / Registration Link": "https://app3.greenhouse.io/e/arnmvw"},  # session link, no slug
+            {"Application / Registration Link":
+                "https://job-boards.eu.greenhouse.io/financialtimes33/jobs/4986356101?gh_src=x"},
+            {"Application / Registration Link":
+                "https://jobs.lever.co/arcteryx.com/826dc4d8-f91e-4893-b8d6-56706194edfb"},
+            {"Application / Registration Link": "https://jobs.ashbyhq.com/acme/abc-123"},
+            {"Application / Registration Link": "https://jobs.smartrecruiters.com/Acme/744000152787099"},
+            {"Application / Registration Link":
+                "https://bah.wd1.myworkdayjobs.com/en-US/BAH_Jobs/job/McLean-VA/Intern_R0221234"},
+            {"Application / Registration Link":  # unlisted site: not a board anyone can poll
+                "https://globalhr.wd5.myworkdayjobs.com/en-US/PRIVATE_POSTING_NO_TMP/job/x_123"},
+            {"Application / Registration Link": "https://lu.ma/some-event"},  # not an ATS link
+            {"Application / Registration Link": ""},
+        ]
+        pairs = mine_tracker_slugs(records=records)
+        self.assertEqual(pairs, sorted({
+            ("ashby", "acme"),
+            ("greenhouse", "financialtimes33"),  # both the embed and the direct form
+            ("lever", "arcteryx.com"),
+            ("smartrecruiters", "Acme"),
+            ("workday", "bah.wd1/BAH_Jobs"),  # tenant.wdN/site, case kept, locale dropped
+        }))
+
+
+class RegistryTests(unittest.TestCase):
+    def test_all_four_kinds_registered(self):
+        registry._import_source_modules()
+        for ats, cls in (
+            ("greenhouse", GreenhouseSource), ("lever", LeverSource),
+            ("ashby", AshbySource), ("smartrecruiters", SmartRecruitersSource),
+        ):
+            factory = registry.FACTORIES[ats]
+            source = factory(company(ats, slug="acme"), settings=None)
+            self.assertIsInstance(source, cls)
+            self.assertEqual(source.name, f"ats.{ats}.acme")
+
+
+class SchedulerIntegrationTests(unittest.IsolatedAsyncioTestCase):
+    """End-to-end: the real Scheduler + Store drive seed-then-diff across two polls."""
+
+    async def test_backfill_is_silent_then_new_jobs_alert_and_removed_jobs_close(self):
+        store = Store(Path(tempfile.mkdtemp()) / "radar.db")
+        self.addCleanup(store.close)
+        source = GreenhouseSource(company("greenhouse", tier="B"))
+        url = source.board_url()
+        baseline = [{"id": 1, "title": "Senior Engineer", "updated_at": "2026-01-01T00:00:00Z",
+                     "absolute_url": "https://boards.greenhouse.io/acme/jobs/1", "location": {}},
+                    {"id": 3, "title": "SWE Intern, Summer 2027",
+                     "absolute_url": "https://boards.greenhouse.io/acme/jobs/3", "location": {}}]
+        grown = baseline + [{"id": 2, "title": "SWE Intern, Summer 2027", "updated_at": "2026-02-01T00:00:00Z",
+                              "absolute_url": "https://boards.greenhouse.io/acme/jobs/2", "location": {}}]
+        http = FakeHttp({url: FakeResponse(payload={"jobs": baseline})})
+        clock = FakeClock()
+        class Channel:
+            name = "test"
+
+            def __init__(self):
+                self.sent = []
+
+            def send(self, opp, reasons, latency):
+                self.sent.append(opp["id"])
+
+        channel = Channel()
+        pipeline = Pipeline(store, alerter=AlertDispatcher(store, profile=Profile(), channels=[channel]))
+        sched = Scheduler([source], store, sink=pipeline, http=http, clock=clock, jitter=0)
+
+        sched.launch_due()
+        await sched.drain()
+        [seed] = store.list_opportunities()
+        self.assertEqual(json.loads(store.get_opportunity(seed["id"])["items"][0]["raw"]), {"seed": True})
+        self.assertEqual(channel.sent, [])
+
+        http.routes[url] = FakeResponse(payload={"jobs": grown})
+        # A fresh scheduler uses the persisted cursor, preserving the silent baseline.
+        clock.t = sched.next_run[source.name]
+        sched = Scheduler([source], store, sink=pipeline, http=http, clock=clock, jitter=0)
+        sched.launch_due()
+        await sched.drain()
+        opportunities = store.list_opportunities()
+        self.assertEqual(len(opportunities), 2)
+        self.assertEqual(len(channel.sent), 1)
+        self.assertNotEqual(channel.sent[0], seed["id"])
+
+        http.routes[url] = FakeResponse(payload={"jobs": [j for j in grown if j["id"] != 3]})
+        clock.t = sched.next_run[source.name]
+        sched.launch_due()
+        await sched.drain()
+        self.assertEqual(store.get_opportunity(seed["id"])["status"], "Closed")
+        self.assertEqual(len(channel.sent), 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

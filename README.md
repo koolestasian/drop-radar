@@ -141,6 +141,12 @@ in on the web again, clear any checkpoint, and replace the secret.
 To force one scraper, set the repository variable `SCRAPER` to `native` or
 `apify` (default `auto`).
 
+**ToS risk is ongoing, not one-time.** Automated Instagram access stays against
+Instagram's terms for as long as the scraper runs, not just at setup; an
+account can be challenged or limited at any time, which is why Drop Radar caps
+`instagram:` in `config/watchlist.yaml` at 5 accounts (`load_watchlist` raises
+if you add a 6th) instead of scaling it like the ATS and feed sources.
+
 ### Apify: add APIFY_TOKEN
 
 1. Create/sign into an Apify account.

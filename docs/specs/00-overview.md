@@ -18,10 +18,13 @@ Measured by **drop latency** = alert_time - source_published_time.
   real-time engine. It stays as CI and a heartbeat fallback.
 
 ## Architecture
-    sources (plugins) -> Item -> pipeline (dedupe, enrich, score) -> store
+    sources (plugins) -> Item -> pipeline (dedupe, enrich, filter) -> store
                                         |                              |
-                                        +--> alerts (push, instant)    +--> API -> web app
-Runs as ONE always-on Python process (asyncio): scheduler + workers + API.
+                                        +--> alerts (push, instant)    +--> views (xlsx, LATEST.md, Google Sheet)
+Runs as ONE always-on Python process (asyncio): scheduler + pipeline + FastAPI,
+serving a React PWA. Users have their own watchlist/profile and application
+statuses/notes; shared sources are polled once. First polls backfill already-open
+ATS/list jobs silently; later matching postings trigger ntfy pushes and live drops.
 
 ## Package layout (created by T0)
     radar/
@@ -29,11 +32,9 @@ Runs as ONE always-on Python process (asyncio): scheduler + workers + API.
       models.py      Item, Opportunity dataclasses
       store/         SQLite (WAL) access, migrations
       sources/       one module per source, all implement Source
-      pipeline/      normalize, dedupe, enrich, score
+      pipeline/      normalize, dedupe, enrich, filter
       alerts/        channels + rules
-      api/           FastAPI app
-      scheduler.py   per-source adaptive polling
-    web/             React + Vite + TypeScript SPA (T9)
+      scheduler.py   per-source polling with backoff
     config/          watchlist.yaml, profile.yaml
     legacy: opportunity_monitor.py, job_pages.py, llm_extraction.py,
             instagram_scraper.py are MOVED into radar/, not rewritten.
@@ -42,7 +43,7 @@ Runs as ONE always-on Python process (asyncio): scheduler + workers + API.
 ```python
 @dataclass(frozen=True)
 class Item:                      # what a Source emits
-    source: str                  # "ats.greenhouse", "instagram.zero2sudo", ...
+    source: str                  # the emitting Source.name: "ats.greenhouse.stripe", "instagram.zero2sudo"
     external_id: str             # stable id within the source
     url: str                     # canonical link (apply link when known)
     title: str
@@ -59,6 +60,8 @@ class Source(Protocol):
     async def fetch(self, ctx: FetchContext) -> list[Item]: ...
     # Raises SourceError(kind="auth"|"blocked"|"transient"|"schema") so the
     # scheduler can back off correctly. Never returns partial results silently.
+    # HTTP goes through `await ctx.get(url)` (per-host rate limit + global request cap).
+    # fetch must not block the event loop: wrap sync code (requests, OCR) in asyncio.to_thread.
 ```
 Identity: `opportunity_id = sha256(canonical_url or company|title|location)[:20]`;
 an opportunity may have many items (one per source that saw it). The earliest
@@ -78,4 +81,5 @@ status, notes, updated_at)`, `enrichment(key, json)`.
 5. Update docs/ only for what you changed. Commit per task.
 
 ## Task graph
-T0 -> T1, T2 -> (T3, T4, T5 in parallel) -> T6 -> T7 -> T8 -> T9 -> T10 -> T11
+T0 -> T1, T2 -> (T3, T4, T5 in parallel) -> T6 -> T7 -> T8a multi-user -> T8b API -> T9 web -> T10 deploy
+Deferred: T11 hardening (see PROGRESS.md for when to add it).

@@ -3,3 +3,10 @@ __pycache__/
 .venv/
 venv/
 .env
+data/
+.claude/worktrees/
+web/node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+web/*.tsbuildinfo

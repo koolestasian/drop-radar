@@ -1,0 +1,128 @@
+# friend's sources (Berkeley Haas: business / finance). Same format as
+# config/watchlist.yaml. Every board below was verified live on 2026-10-01 with
+# early-career finance/business postings on it; a board also on kevin's list is
+# polled once, not twice.
+# Banks and asset managers mostly use Workday (ats: workday, slug tenant.wdN/site).
+# Still not covered: Morgan Stanley, Evercore, Moelis,
+# Centerview, McKinsey, Bain, BCG -- their own sites, or Workday tenants not yet
+# found/verified. Add a tenant only after `python -m radar.sources.discover --check`.
+companies:          # ats: greenhouse | lever | ashby | workable | smartrecruiters; tier: S|A|B|C
+  # investment banking / investing / hedge funds
+  - {name: William Blair, ats: greenhouse, slug: williamblair, tier: A}
+  - {name: Point72, ats: greenhouse, slug: point72, tier: A}
+  - {name: AQR Capital Management, ats: greenhouse, slug: aqr, tier: A}
+  - {name: Bridgewater Associates, ats: greenhouse, slug: bridgewater89, tier: A}
+  - {name: Schonfeld, ats: greenhouse, slug: schonfeld, tier: B}
+  - {name: Assured Guaranty, ats: greenhouse, slug: assuredguaranty, tier: B}
+  # Workday, verified live 2026-10-01
+  - {name: Blackstone, ats: workday, slug: blackstone.wd1/Blackstone_Campus_Careers, tier: A}
+  - {name: Citi, ats: workday, slug: citi.wd5/2, tier: A}
+  - {name: Wells Fargo, ats: workday, slug: wf.wd1/WellsFargoJobs, tier: A}
+  - {name: BlackRock, ats: workday, slug: blackrock.wd1/BlackRock_Professional, tier: B}
+  - {name: Fidelity, ats: workday, slug: fmr.wd1/FidelityCareers, tier: B}
+  - {name: Mastercard, ats: workday, slug: mastercard.wd1/CorporateCareers, tier: B}
+  - {name: Capital One, ats: workday, slug: capitalone.wd12/Capital_One, tier: B}
+  - {name: Salesforce, ats: workday, slug: salesforce.wd12/External_Career_Site, tier: B}
+  - {name: Adobe, ats: workday, slug: adobe.wd5/external_experienced, tier: B}
+  # trading
+  - {name: Jump Trading, ats: greenhouse, slug: jumptrading, tier: B}
+  - {name: IMC Trading, ats: greenhouse, slug: imc, tier: B}
+  - {name: Old Mission Capital, ats: greenhouse, slug: oldmissioncapital, tier: B}
+  - {name: Tower Research Capital, ats: greenhouse, slug: towerresearchcapital, tier: B}
+  - {name: Akuna Capital, ats: greenhouse, slug: akunacapital, tier: B}
+  - {name: DV Trading, ats: greenhouse, slug: dvtrading, tier: B}
+  - {name: Virtu Financial, ats: greenhouse, slug: virtu, tier: B}
+  - {name: Flow Traders, ats: greenhouse, slug: flowtraders, tier: B}
+  - {name: Belvedere Trading, ats: lever, slug: belvederetrading, tier: B}
+  - {name: Optiver, ats: greenhouse, slug: optiverprivate, tier: B}
+  - {name: Geneva Trading, ats: greenhouse, slug: genevatrading, tier: B}
+  # fintech (finance, risk, strategy, product roles)
+  - {name: Stripe, ats: greenhouse, slug: stripe, tier: A}
+  - {name: Robinhood, ats: greenhouse, slug: robinhood, tier: B}
+  - {name: Coinbase, ats: greenhouse, slug: coinbase, tier: B}
+  - {name: Carta, ats: greenhouse, slug: carta, tier: B}
+  - {name: Ramp, ats: ashby, slug: ramp, tier: B}
+  - {name: Gemini, ats: greenhouse, slug: gemini, tier: B}
+  - {name: Enova, ats: greenhouse, slug: enova, tier: B}
+  # added 2026-10-02: finance/trading boards mined from SimplifyJobs (shared with kevin's list, polled once)
+  - {name: "American Express", ats: oracle, slug: "egug.fa.us2/CX_1", tier: B}
+  - {name: "Navy Federal", ats: oracle, slug: "fa-etbx-saasfaprod1.fa.ocs/nfcu", tier: B}
+  - {name: "JP Morgan Chase", ats: oracle, slug: "jpmc.fa/CX_1001", tier: B}
+  - {name: "BNY", ats: oracle, slug: "eofe.fa.us2/CX_1001", tier: B}
+  - {name: "Citizens Financial Group", ats: oracle, slug: "hcgn.fa.us2/CX_1", tier: B}
+  - {name: "GM financial", ats: oracle, slug: "fa-exvu-saasfaprod1.fa.ocs/CX_1", tier: B}
+  - {name: "DTCC", ats: oracle, slug: "ebxr.fa.us2/CX_1", tier: B}
+  - {name: "Tradeweb", ats: oracle, slug: "ecnf.fa.us2/CX", tier: B}
+  - {name: "WTW", ats: oracle, slug: "eedu.fa.em3/CX_1003", tier: B}
+  - {name: "Lazard", ats: oracle, slug: "icbpjb.fa.ocs/LazardProfessionalCareers", tier: B}
+  - {name: "American Century Investments", ats: workday, slug: "americancentury.wd5/AmericanCenturyInvestments", tier: B}
+  - {name: "Baird", ats: workday, slug: "baird.wd1/careers", tier: B}
+  - {name: "LPL Financial Holdings", ats: workday, slug: "lplfinancial.wd1/university", tier: B}
+  - {name: "PNC Financial Services", ats: workday, slug: "pnc.wd5/External", tier: B}
+  - {name: "U.S. Bank", ats: workday, slug: "usbank.wd1/US_Bank_Careers", tier: B}
+  - {name: "Cambridge Investment Research", ats: workday, slug: "cir.wd108/CIR_External_Career_Site", tier: B}
+  - {name: "Commerce Bank", ats: workday, slug: "commercebank.wd1/CommerceJobs", tier: B}
+  - {name: "Fannie Mae", ats: workday, slug: "fanniemae.wd1/FannieMaeCareers", tier: B}
+  - {name: "Fifth Third Bank", ats: workday, slug: "fifththird.wd5/53careers", tier: B}
+  - {name: "Guardian Life", ats: workday, slug: "guardianlife.wd5/guardian-life-careers", tier: B}
+  - {name: "Invesco", ats: workday, slug: "invesco.wd1/IVZ", tier: B}
+  - {name: "Nationwide", ats: workday, slug: "nationwide.wd1/Nationwide_Career", tier: B}
+  - {name: "OneMain Financial", ats: workday, slug: "myhrhome.wd1/OneMainCareers", tier: B}
+  - {name: "State Street", ats: workday, slug: "statestreet.wd1/Global", tier: B}
+  - {name: "Visa", ats: workday, slug: "visa.wd5/Visa", tier: B}
+  - {name: "AllianceBernstein", ats: workday, slug: "abglobal.wd1/abcampuscareers", tier: B}
+  - {name: "AllianceBernstein", ats: workday, slug: "abglobal.wd1/alliancebernsteincareers", tier: B}
+  - {name: "Ameriprise Financial", ats: workday, slug: "ameriprise.wd5/Ameriprise", tier: B}
+  - {name: "Arrowstreet Capital", ats: workday, slug: "arrowstreetcapital.wd5/Campus_Careers", tier: B}
+  - {name: "CME Group", ats: workday, slug: "cmegroup.wd1/cme_careers", tier: B}
+  - {name: "Invesco", ats: workday, slug: "invesco.wd1/IVZearlycareers", tier: B}
+  - {name: "Jain Global", ats: workday, slug: "jainglobal.wd5/ExternalSite", tier: B}
+  - {name: "Kensho", ats: workday, slug: "spgi.wd5/Kensho_Careers", tier: B}
+  - {name: "MUFG", ats: workday, slug: "mufgub.wd3/mufg-careers", tier: B}
+  - {name: "Nasdaq", ats: workday, slug: "nasdaq.wd1/Global_External_Site", tier: B}
+  - {name: "Wellington Management", ats: workday, slug: "wellington.wd5/Campus", tier: B}
+  - {name: "Vanguard", ats: workday, slug: "vanguard.wd5/vanguard_external", tier: B}
+  - {name: "DRW", ats: greenhouse, slug: "drweng", tier: B}
+  - {name: "Barclays", ats: workday, slug: "barclays.wd3/External_Career_Site_Barclays", tier: B}
+  - {name: "PIMCO", ats: workday, slug: "pimco.wd1/pimco-careers", tier: B}
+  - {name: "Freddie Mac", ats: workday, slug: "freddiemac.wd5/External", tier: B}
+  - {name: "Fidelity Investments", ats: workday, slug: "fmr.wd1/targeted", tier: B}
+  - {name: "Jane Street", ats: greenhouse, slug: "janestreet", tier: B}
+  - {name: "Five Rings Capital", ats: greenhouse, slug: "fiveringsllc", tier: B}
+  - {name: "LSEG", ats: workday, slug: "lseg.wd3/Graduate_Careers", tier: B}
+  - {name: "Capital Group", ats: workday, slug: "capgroup.wd1/capitalgroupcareers", tier: B}
+  - {name: "OCC", ats: workday, slug: "theocc.wd5/careers", tier: B}
+  - {name: "MFS", ats: workday, slug: "mfs.wd1/MFS-Careers", tier: B}
+  - {name: "Chicago Trading Company", ats: greenhouse, slug: "ctccampusboard", tier: B}
+  - {name: "Maven Securities", ats: greenhouse, slug: "mavensecuritiesholdingltd", tier: B}
+  - {name: "Chicago Trading Company", ats: greenhouse, slug: "chicagotradingcampus", tier: B}
+  - {name: "AIG", ats: workday, slug: "aig.wd1/aig", tier: B}
+  - {name: "AIG", ats: workday, slug: "aig.wd1/early_careers", tier: B}
+  - {name: "USAA", ats: workday, slug: "usaa.wd1/USAAJOBSWD", tier: B}
+  - {name: "LSEG", ats: workday, slug: "lseg.wd3/Careers", tier: B}
+  - {name: "Voloridge", ats: greenhouse, slug: "voloridgeinvestmentmanagement", tier: B}
+  - {name: "G-Research", ats: workday, slug: "gresearch.wd103/G-Research", tier: B}
+  - {name: "Dimensional Fund Advisors", ats: workday, slug: "dimensional.wd5/dfa_careers", tier: B}
+  - {name: "Travelers", ats: workday, slug: "travelers.wd5/External", tier: B}
+  - {name: "The Federal Reserve System", ats: workday, slug: "rb.wd5/FRS", tier: B}
+  - {name: "TransMarket Group", ats: greenhouse, slug: "transmarketgroup", tier: B}
+  - {name: "Walleye Capital", ats: greenhouse, slug: "walleyecapital-external-students", tier: B}
+  - {name: "Seven Research", ats: greenhouse, slug: "sevenresearch", tier: B}
+  - {name: "Marshall Wace", ats: greenhouse, slug: "mwinternshipprogram", tier: B}
+  - {name: "BlackEdge Capital", ats: greenhouse, slug: "blackedgecapital", tier: B}
+  - {name: "Garda Capital Partners", ats: greenhouse, slug: "gardacp", tier: B}
+  - {name: "Audax Group", ats: greenhouse, slug: "audaxgroup", tier: B}
+  - {name: "Northwestern Mutual", ats: smartrecruiters, slug: "NorthwesternMutual", tier: B}
+  - {name: "Aquatic Capital Management", ats: greenhouse, slug: "aquaticcapitalmanagement", tier: B}
+  - {name: "The Voleon Group", ats: ashby, slug: "voleon", tier: B}
+  - {name: "Wintermute", ats: lever, slug: "wintermute-trading", tier: B}
+  - {name: "Man Group", ats: greenhouse, slug: "mangroup", tier: B}
+  - {name: "Radix Trading", ats: greenhouse, slug: "radixuniversity", tier: B}
+  - {name: "Viking Global", ats: greenhouse, slug: "vikingglobalinvestors", tier: B}
+  - {name: "Marshall Wace", ats: greenhouse, slug: "mw-tech-grad", tier: B}
+  - {name: Goldman Sachs, ats: oracle, slug: "hdpc.fa.us2/LateralHiring", tier: A}
+  - {name: Citadel, ats: sitemap, slug: "www.citadel.com/career-sitemap.xml", tier: A}
+  - {name: Citadel Securities, ats: sitemap, slug: "www.citadelsecurities.com/career-sitemap.xml", tier: A}
+  - {name: Two Sigma, ats: avature, slug: "careers.twosigma.com/careers/InternshipsAndEarlyCareers", tier: A}
+instagram: []
+repos: []

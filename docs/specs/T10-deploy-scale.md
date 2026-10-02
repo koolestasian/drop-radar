@@ -1,11 +1,12 @@
-# T10: Deploy and scale
-**Context:** 00-overview.md; Dockerfile-relevant files only (requirements.txt, radar/__main__.py).
-**Goal:** one command to an always-on server; clear path beyond one box.
+# T10: Deploy (always-on runner)
+**Context:** 00-overview.md; requirements.txt, radar/__main__.py.
+**Goal:** one command to an always-on server, replacing the hourly GitHub Actions job.
 **Deliver:**
-- `radar/__main__.py`: `python -m radar run` starts scheduler + API in one process; graceful shutdown; `--sources` filter for sharding.
-- Dockerfile (multi-stage: build web, slim Python + tesseract), `docker-compose.yml` with volume for `data/`, healthcheck on `/api/health`.
-- Deploy guides (pick one): Fly.io (`fly.toml`, volume), any $5 VPS (compose + Caddy for HTTPS), or home server/Raspberry Pi (home IP helps Instagram).
-- Backups: nightly SQLite `.backup` to `data/backups` + optional S3/Backblaze upload.
-- GitHub Actions demoted to: CI (tests, lint, build web), plus a cron heartbeat that opens an issue if `/api/health` is stale > 15 min.
-- Scale notes (`docs/scaling.md`): 1 box handles ~1000 boards at 5 min (~3 req/s); beyond that shard by `--sources`, move SQLite -> Postgres (repository API isolates SQL), add Redis only when running >1 worker; per-user watchlists = multi-tenant (user_id on opportunities' actions/alerts).
-**Accept:** `docker compose up` on a clean machine serves the app and polls fixture sources; health endpoint red when scheduler stalls; restore-from-backup test.
+- `radar/__main__.py`: `python -m radar run` starts the scheduler; graceful shutdown on SIGTERM.
+- `deploy/radar.service` (systemd) + `deploy/README.md`: a ~$5 VPS with a venv and `apt install tesseract-ocr`, secrets in an env file (mode 600).
+  Note in the README that a home server/Raspberry Pi with the same unit is better for Instagram (home IP).
+- Backups: nightly SQLite backup (stdlib `sqlite3` backup API) to `data/backups/`, keep 14.
+- Heartbeat: if `HEARTBEAT_URL` is set, GET it after each scheduler loop (dead-man switch such as healthchecks.io), so a dead box alerts you.
+- GitHub Actions demoted to CI (tests, pyflakes): remove the hourly schedule only once the runner has been live for a day.
+**Accept:** `python -m radar run` against fixture sources polls, persists and shuts down cleanly; restore-from-backup test.
+**Deferred:** Docker/compose, Fly.io, S3 uploads, Postgres/Redis, sharding, multi-tenant notes. Add when one box or one user is not enough.

@@ -1,0 +1,1455 @@
+{
+  "components": {
+    "schemas": {
+      "Action": {
+        "properties": {
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "status": {
+            "description": "this user's status; legacy imports may say 'actioned'",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "notes"
+        ],
+        "title": "Action",
+        "type": "object"
+      },
+      "ActionPatch": {
+        "properties": {
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "new",
+                  "saved",
+                  "applied",
+                  "interview",
+                  "offer",
+                  "rejected",
+                  "ignored"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "ActionPatch",
+        "type": "object"
+      },
+      "CompanyConfig": {
+        "properties": {
+          "ats": {
+            "description": "greenhouse | lever | ashby | smartrecruiters | workday",
+            "title": "Ats",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "description": "board slug; workday: tenant.wdN/site",
+            "title": "Slug",
+            "type": "string"
+          },
+          "tier": {
+            "default": "B",
+            "description": "S | A | B | C (S/A polled every 2 min)",
+            "title": "Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "ats",
+          "slug"
+        ],
+        "title": "CompanyConfig",
+        "type": "object"
+      },
+      "FeedConfig": {
+        "properties": {
+          "kind": {
+            "default": "rss",
+            "title": "Kind",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "FeedConfig",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "InstagramConfig": {
+        "properties": {
+          "interval_s": {
+            "default": 300.0,
+            "title": "Interval S",
+            "type": "number"
+          },
+          "priority": {
+            "default": 5,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "user_id": {
+            "default": "",
+            "description": "numeric id; skips the throttled profile lookup",
+            "title": "User Id",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ],
+        "title": "InstagramConfig",
+        "type": "object"
+      },
+      "InstagramRelay": {
+        "properties": {
+          "stories": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 1000,
+            "title": "Stories",
+            "type": "array"
+          },
+          "username": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "stories"
+        ],
+        "title": "InstagramRelay",
+        "type": "object"
+      },
+      "Match": {
+        "properties": {
+          "ok": {
+            "description": "would alert this user (the same rule the phone uses)",
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ok",
+          "reasons"
+        ],
+        "title": "Match",
+        "type": "object"
+      },
+      "Me": {
+        "properties": {
+          "alerts_enabled": {
+            "description": "a delivery channel is configured; device receipt is not verified",
+            "title": "Alerts Enabled",
+            "type": "boolean"
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "this user's private ntfy subscription URL; no API token",
+            "title": "Notification Url"
+          },
+          "sources": {
+            "title": "Sources",
+            "type": "integer"
+          },
+          "user": {
+            "title": "User",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user",
+          "sources",
+          "alerts_enabled",
+          "notification_url"
+        ],
+        "title": "Me",
+        "type": "object"
+      },
+      "Metrics": {
+        "properties": {
+          "items_per_day": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "last 7 days, items your sources saw first that day",
+            "title": "Items Per Day",
+            "type": "object"
+          },
+          "latency": {
+            "description": "drop latency per source, your sources only",
+            "items": {
+              "$ref": "#/components/schemas/SourceLatency"
+            },
+            "title": "Latency",
+            "type": "array"
+          },
+          "llm_daily_budget": {
+            "title": "Llm Daily Budget",
+            "type": "integer"
+          },
+          "llm_tokens_today": {
+            "description": "shared by every user",
+            "title": "Llm Tokens Today",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "latency",
+          "items_per_day",
+          "llm_tokens_today",
+          "llm_daily_budget"
+        ],
+        "title": "Metrics",
+        "type": "object"
+      },
+      "Opportunity": {
+        "properties": {
+          "action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Action"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "this user's status/notes; nobody else's"
+          },
+          "backfill": {
+            "description": "already open when your sources first looked (never alerted), not a live drop",
+            "title": "Backfill",
+            "type": "boolean"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "company": {
+            "title": "Company",
+            "type": "string"
+          },
+          "company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the company's web domain, for its logo; None until looked up, or when no confident match",
+            "title": "Company Domain"
+          },
+          "deadline": {
+            "title": "Deadline",
+            "type": "string"
+          },
+          "first_seen": {
+            "title": "First Seen",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "match": {
+            "$ref": "#/components/schemas/Match"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "role_track": {
+            "title": "Role Track",
+            "type": "string"
+          },
+          "season": {
+            "title": "Season",
+            "type": "string"
+          },
+          "sources": {
+            "description": "this user's sources that saw it",
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "description": "the posting itself: New, Closed, ...",
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "company",
+          "location",
+          "url",
+          "deadline",
+          "status",
+          "first_seen",
+          "published_at",
+          "category",
+          "role_track",
+          "season",
+          "sources",
+          "backfill",
+          "match",
+          "action"
+        ],
+        "title": "Opportunity",
+        "type": "object"
+      },
+      "Page": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Opportunity"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "Page",
+        "type": "object"
+      },
+      "ProfileConfig": {
+        "properties": {
+          "company_tiers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Company Tiers",
+            "type": "object"
+          },
+          "exclude": {
+            "default": [],
+            "description": "any of these in the title rules it out",
+            "items": {
+              "type": "string"
+            },
+            "title": "Exclude",
+            "type": "array"
+          },
+          "grad_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "target season year, e.g. 2027",
+            "title": "Grad Year"
+          },
+          "keywords": {
+            "default": [],
+            "description": "...and one of these (the level)",
+            "items": {
+              "type": "string"
+            },
+            "title": "Keywords",
+            "type": "array"
+          },
+          "locations": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "roles": {
+            "default": [],
+            "description": "the track: a title needs one of these...",
+            "items": {
+              "type": "string"
+            },
+            "title": "Roles",
+            "type": "array"
+          }
+        },
+        "title": "ProfileConfig",
+        "type": "object"
+      },
+      "RepoConfig": {
+        "properties": {
+          "name": {
+            "description": "owner/name",
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "default": "",
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "RepoConfig",
+        "type": "object"
+      },
+      "SourceHealth": {
+        "properties": {
+          "disabled": {
+            "title": "Disabled",
+            "type": "boolean"
+          },
+          "fail_count": {
+            "title": "Fail Count",
+            "type": "integer"
+          },
+          "items_24h": {
+            "title": "Items 24H",
+            "type": "integer"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "last_ok": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Ok"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "next_run": {
+            "title": "Next Run",
+            "type": "string"
+          },
+          "running": {
+            "title": "Running",
+            "type": "boolean"
+          },
+          "stale": {
+            "default": false,
+            "title": "Stale",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "disabled",
+          "running",
+          "next_run",
+          "last_ok",
+          "fail_count",
+          "last_error",
+          "items_24h"
+        ],
+        "title": "SourceHealth",
+        "type": "object"
+      },
+      "SourceLatency": {
+        "properties": {
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "p50": {
+            "title": "P50",
+            "type": "number"
+          },
+          "p95": {
+            "title": "P95",
+            "type": "number"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "n",
+          "p50",
+          "p95"
+        ],
+        "title": "SourceLatency",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WatchlistConfig": {
+        "properties": {
+          "companies": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CompanyConfig"
+            },
+            "title": "Companies",
+            "type": "array"
+          },
+          "feeds": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FeedConfig"
+            },
+            "title": "Feeds",
+            "type": "array"
+          },
+          "instagram": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/InstagramConfig"
+            },
+            "title": "Instagram",
+            "type": "array"
+          },
+          "repos": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RepoConfig"
+            },
+            "title": "Repos",
+            "type": "array"
+          }
+        },
+        "title": "WatchlistConfig",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Drop Radar",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/config/profile": {
+      "get": {
+        "operationId": "get_profile_api_config_profile_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileConfig"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Profile"
+      },
+      "put": {
+        "operationId": "put_profile_api_config_profile_put",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileConfig"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileConfig"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Profile"
+      }
+    },
+    "/api/config/watchlist": {
+      "get": {
+        "operationId": "get_watchlist_api_config_watchlist_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistConfig"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Watchlist"
+      },
+      "put": {
+        "operationId": "put_watchlist_api_config_watchlist_put",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistConfig"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistConfig"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Watchlist"
+      }
+    },
+    "/api/instagram/relay": {
+      "post": {
+        "operationId": "relay_instagram_api_instagram_relay_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstagramRelay"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Relay Instagram"
+      }
+    },
+    "/api/me": {
+      "get": {
+        "operationId": "me_api_me_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Me"
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "operationId": "metrics_api_metrics_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Metrics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Metrics"
+      }
+    },
+    "/api/opportunities": {
+      "get": {
+        "operationId": "list_opportunities_api_opportunities_get",
+        "parameters": [
+          {
+            "description": "matches: what would alert you; all: everything your sources found",
+            "in": "query",
+            "name": "include",
+            "required": false,
+            "schema": {
+              "default": "matches",
+              "description": "matches: what would alert you; all: everything your sources found",
+              "pattern": "^(matches|all)$",
+              "title": "Include",
+              "type": "string"
+            }
+          },
+          {
+            "description": "words that each start a word in the title or company",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "words that each start a word in the title or company",
+              "title": "Q"
+            }
+          },
+          {
+            "description": "words that each start a word in the location ('seattle', 'ny')",
+            "in": "query",
+            "name": "location",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "words that each start a word in the location ('seattle', 'ny')",
+              "title": "Location"
+            }
+          },
+          {
+            "description": "only postings whose location is confirmed US (blank and location-less 'Remote' are left out)",
+            "in": "query",
+            "name": "us_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "only postings whose location is confirmed US (blank and location-less 'Remote' are left out)",
+              "title": "Us Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "company",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "description": "your status; 'ignored' ones are hidden unless asked for",
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "your status; 'ignored' ones are hidden unless asked for",
+              "title": "Action"
+            }
+          },
+          {
+            "description": "the posting's own status (New, Open, Closed...); Closed/Expired/Not actionable are hidden unless asked for",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "the posting's own status (New, Open, Closed...); Closed/Expired/Not actionable are hidden unless asked for",
+              "title": "Status"
+            }
+          },
+          {
+            "description": "first seen at or after",
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first seen at or after",
+              "title": "Since"
+            }
+          },
+          {
+            "description": "deadline within this many days",
+            "in": "query",
+            "name": "closing_within",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "deadline within this many days",
+              "title": "Closing Within"
+            }
+          },
+          {
+            "description": "newest first by when it was posted (date-only postings count as that day; none at all falls back to found), by when your sources found it, or by company prestige (S > A > B > C tiers), newest posted within a tier",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "posted",
+              "description": "newest first by when it was posted (date-only postings count as that day; none at all falls back to found), by when your sources found it, or by company prestige (S > A > B > C tiers), newest posted within a tier",
+              "pattern": "^(posted|found|prestige)$",
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "description": "false: only new drops; true: only postings that were already open when your sources first looked",
+            "in": "query",
+            "name": "backfill",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "false: only new drops; true: only postings that were already open when your sources first looked",
+              "title": "Backfill"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Opportunities"
+      }
+    },
+    "/api/opportunities/{opp_id}": {
+      "get": {
+        "operationId": "get_opportunity_api_opportunities__opp_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "opp_id",
+            "required": true,
+            "schema": {
+              "title": "Opp Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Opportunity"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Opportunity"
+      },
+      "patch": {
+        "operationId": "update_opportunity_api_opportunities__opp_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "opp_id",
+            "required": true,
+            "schema": {
+              "title": "Opp Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Opportunity"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Opportunity"
+      }
+    },
+    "/api/sources/health": {
+      "get": {
+        "operationId": "sources_health_api_sources_health_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SourceHealth"
+                  },
+                  "title": "Response Sources Health Api Sources Health Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sources Health"
+      }
+    },
+    "/api/stream": {
+      "get": {
+        "operationId": "stream_api_stream_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {}
+            },
+            "description": "SSE: `opportunity` (a new one in your feed) and `action` (yours changed)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream"
+      }
+    },
+    "/healthz": {
+      "get": {
+        "description": "Liveness only -- no data, no auth.",
+        "operationId": "healthz_healthz_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Healthz"
+      }
+    }
+  }
+}

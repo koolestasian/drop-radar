@@ -1,0 +1,38 @@
+[Unit]
+Description=Drop Radar (scheduler + pipeline + API)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=radar
+Group=radar
+WorkingDirectory=/opt/radar/zero2sudo-opportunity-monitor
+EnvironmentFile=/opt/radar/radar.env
+# Tesseract's OpenMP threads spin against each other on a 2-vCPU VM: one Story
+# OCR took ~25s with the default and 4-7s with one thread (measured 2026-10-02).
+Environment=OMP_THREAD_LIMIT=1
+ExecStart=/opt/radar/zero2sudo-opportunity-monitor/.venv/bin/python -m radar serve --host 127.0.0.1 --port 8000
+# Load-bearing: a crashed scheduler task re-delivers SIGTERM to this same process
+# (radar/api/app.py's _log_crash) specifically so this fires -- systemd treats a
+# SIGTERM exit as clean, so Restart=on-failure would never restart after a crash.
+Restart=always
+RestartSec=5
+# After --graceful-timeout (default 10s) closes the open SSE connection(s), the
+# scheduler still drains any fetch already in flight (up to ~30s, httpx's default
+# request timeout) before the process actually exits. A SIGKILL mid-drain is safe
+# either way -- cursors save only after items are persisted, alerts are claimed
+# before sending -- but this margin is sized to avoid needing it.
+TimeoutStopSec=45
+
+# Hardening: the git checkout stays read-only (redeployed with `git pull`); only
+# /opt/radar/data (the db + backups) and /opt/radar/config (live-edited by the
+# API's PUT endpoints) need to be writable -- see README.md's "why config and
+# data live outside the repo" for why RADAR_CONFIG_DIR/RADAR_DB_PATH point there.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/radar/data /opt/radar/config
+
+[Install]
+WantedBy=multi-user.target
