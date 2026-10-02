@@ -160,6 +160,18 @@ class GithubRepoSourceTests(unittest.IsolatedAsyncioTestCase):
         items = await seed_then_refetch(source, make_table(rows), make_table(rows))
         self.assertEqual(items[0].company, "Waymo")
 
+    async def test_multi_location_cells_keep_a_separator_between_places(self):
+        # Simplify writes "</br>" between places (was glued: "Seattle, WAJessup, MD");
+        # "<br/>" is a start and an end tag at once and must still give one separator
+        source = github_repo.GithubRepoSource(repo())
+        rows = [
+            ("Amazon", "SDE Intern", "<details><summary>2 locations</summary>Seattle, WA</br>Jessup, MD</details>",
+             "https://amazon.example/1", "1d"),
+            ("Lyft", "SWE Intern", "SF<br/>NYC", "https://lyft.example/2", "1d"),
+        ]
+        items = await seed_then_refetch(source, make_table(rows), make_table(rows))
+        self.assertEqual({i.location for i in items}, {"2 locations | Seattle, WA | Jessup, MD", "SF | NYC"})
+
     async def test_continuation_row_inherits_company_above(self):
         source = github_repo.GithubRepoSource(repo())
         rows = [

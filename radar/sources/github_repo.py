@@ -231,6 +231,10 @@ class _TableParser(HTMLParser):
             self._depth = max(0, self._depth - 1)
         elif tag == "summary" and self._cell is not None:
             self._cell.append(" | ")  # e.g. "<summary>4 locations</summary>Tampa, FL<br>..."
+        elif tag == "br" and self._cell is not None and self._cell[-1:] != [" | "]:
+            # Simplify writes "</br>" between locations; without this "Seattle, WA</br>Jessup, MD"
+            # came out "Seattle, WAJessup, MD". The guard keeps "<br/>" (start + end) to one separator.
+            self._cell.append(" | ")
         elif tag in ("td", "th") and self._cell is not None:
             text = " ".join("".join(self._cell).split())
             if self._row is not None:

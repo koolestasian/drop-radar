@@ -28,6 +28,9 @@ class LocationTests(unittest.TestCase):
         ("Ho Chi Minh, , Vietnam", False), ("Mexicali, BAJA CALIFORNIA, Mexico", False),
         ("Darlington, County Durham, United Kingdom", False), ("Albuquerque, New Mexico", True),
         ("Durham, NC, United States", True), ("United States-Florida-Melbourne", True),
+        # US towns named like foreign cities; the foreign city alone stays foreign
+        ("Vienna, VA", True), ("Melbourne, FL", True), ("New London, CT", True), ("Warsaw, IN", True),
+        ("Pensacola, FL | Vienna, VA", True), ("Vienna", False), ("Brampton, Ontario, CA", False),
         ("In-Office", None), ("N/A", None), ("", None),
     ]
 

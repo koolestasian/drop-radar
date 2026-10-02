@@ -44,6 +44,14 @@ _US_CITIES = (
     "orlando|las vegas|sacramento|cleveland|cincinnati|indianapolis|new haven|plano|irving|fort worth|"
     "san antonio|omaha|boise|honolulu|cedar rapids|sea"
 )
+# US towns named like a foreign city in _NON_US ("Vienna, VA" is not Vienna, Austria).
+_US_NAMESAKES = (
+    "vienna, va|melbourne, fl|new london, ct|london, ky|london, oh|paris, tx|paris, ky|paris, tn|"
+    "athens, ga|athens, oh|athens, al|athens, tn|athens, tx|dublin, oh|dublin, ca|dublin, va|dublin, ga|"
+    "berlin, ct|berlin, nh|berlin, md|berlin, nj|berlin, wi|berlin, pa|warsaw, in|milan, tn|milan, mi|"
+    "amsterdam, ny|geneva, il|geneva, ny|geneva, oh|hamburg, ny|hamburg, pa|cairo, il|cairo, ga|lisbon, me|"
+    "ottawa, il|ottawa, ks|waterloo, ia|waterloo, ny|vancouver, wa|delhi, ny|toronto, oh"
+)
 _NON_US = (
     "canada|toronto|vancouver|montreal|ottawa|calgary|waterloo|kitchener|ontario|quebec|alberta|"
     "british columbia|united kingdom|uk|england|scotland|london|edinburgh|ireland|dublin|india|bengaluru|"
@@ -64,7 +72,7 @@ def _words(alternation):
     return re.compile(rf"(?<![a-z0-9])(?:{alternation})(?![a-z0-9])", re.I)
 
 
-_US_STRONG = _words(f"{_US_COUNTRY}|{_US_STATE_NAMES}|{_US_CITIES}")
+_US_STRONG = _words(f"{_US_COUNTRY}|{_US_STATE_NAMES}|{_US_CITIES}|{_US_NAMESAKES}")
 _NON_US_RE = _words(_NON_US)
 _NEW_MEXICO = re.compile(r"new mexico", re.I)  # a US state whose name contains a country
 _COUNTRY_RE = re.compile(
