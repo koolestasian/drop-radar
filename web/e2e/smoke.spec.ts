@@ -329,3 +329,20 @@ test("sign out is one tap from the account menu, on any screen", async ({ page }
   await expect(page.getByRole("button", { name: /^Account/ })).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.getItem("radar.token"))).toBeNull();
 });
+
+test("compact rows keep every action and are remembered", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  const card = page.getByRole("article", { name: /^Stripe/ });
+  const before = (await card.boundingBox())!.height;
+  await page.getByRole("button", { name: "Compact rows" }).click();
+  await expect(page.getByRole("button", { name: "Compact rows" })).toHaveAttribute("aria-pressed", "true");
+  expect((await card.boundingBox())!.height).toBeLessThan(before * 0.6);
+  await expect(card.getByRole("link", { name: /^Apply: Stripe/ })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Save" })).toBeVisible();
+  const width = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+  expect(width[0], "compact feed scrolls sideways").toBeLessThanOrEqual(width[1]);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Compact rows" })).toHaveAttribute("aria-pressed", "true");
+});
