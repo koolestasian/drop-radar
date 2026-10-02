@@ -1,6 +1,6 @@
 import { forwardRef, useState } from "react";
 import type { ActionStatus, Opportunity } from "../api/client";
-import { ago, deadline, sourceLabel, STATUS_LABEL } from "../format";
+import { ago, deadline, posted, shortLocation, sourceLabel, STATUS_LABEL } from "../format";
 import { Badge } from "./ui";
 
 const DEADLINE_TONE = { urgent: "red", soon: "amber", normal: "neutral", past: "neutral" } as const;
@@ -46,7 +46,7 @@ export const FeedRow = forwardRef<HTMLElement, Props>(function FeedRow({ opportu
     }
   }
 
-  const meta = [o.location || "Location not listed", o.sources.map(sourceLabel).join(", "), `found ${ago(o.first_seen)}`];
+  const meta = [shortLocation(o.location), o.sources.map(sourceLabel).join(", "), posted(o.published_at), `found ${ago(o.first_seen)}`].filter(Boolean);
   if (o.backfill) meta.push("already open");
 
   return (
@@ -81,7 +81,7 @@ export const FeedRow = forwardRef<HTMLElement, Props>(function FeedRow({ opportu
             <span className="shrink-0 text-xs text-zinc-500">No link yet</span>
           )}
         </div>
-        <p className="mt-1.5 font-mono text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">{meta.join(" · ")}</p>
+        <p title={o.location} className="mt-1.5 font-mono text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">{meta.join(" · ")}</p>
         <div className="mt-2 flex flex-wrap items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
           {due && <Badge tone={DEADLINE_TONE[due.tone]}>{due.label}</Badge>}
           {status !== "new" && status !== "saved" && status !== "ignored" && <Badge>{STATUS_LABEL[status] ?? status}</Badge>}

@@ -46,14 +46,15 @@ HIDDEN_BY_DEFAULT = "ignored"  # a user's own ignored opportunities leave their 
 WEB_DIST = Path(__file__).resolve().parents[2] / "web" / "dist"
 
 
-def _encode_cursor(opp):
-    return base64.urlsafe_b64encode(json.dumps([opp["first_seen"], opp["id"]]).encode()).decode()
+def _encode_cursor(key):
+    """key: (sort_key, id) of the last item on the page."""
+    return base64.urlsafe_b64encode(json.dumps(list(key)).encode()).decode()
 
 
 def _decode_cursor(cursor):
     try:
-        first_seen, opp_id = json.loads(base64.urlsafe_b64decode(cursor.encode()))
-        return str(first_seen), str(opp_id)
+        sort_key, opp_id = json.loads(base64.urlsafe_b64decode(cursor.encode()))
+        return str(sort_key), str(opp_id)
     except Exception:
         raise HTTPException(400, "bad cursor") from None
 
@@ -200,6 +201,9 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                                                       "Closed/Expired/Not actionable are hidden unless asked for"),
         since: datetime | None = Query(None, description="first seen at or after"),
         closing_within: int | None = Query(None, ge=0, description="deadline within this many days"),
+        sort: str = Query("posted", pattern="^(posted|found)$",
+                          description="newest first by when it was posted (date-only postings count as that "
+                                      "day; none at all falls back to found) or by when your sources found it"),
         backfill: bool | None = Query(None, description="false: only new drops; true: only postings that were "
                                                          "already open when your sources first looked"),
         cursor: str | None = None,
@@ -209,10 +213,10 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         # fine for two users and thousands of rows -- precompute per-user matches if it slows.
         after = _decode_cursor(cursor) if cursor else None
         today = now().date()
-        items, more = [], None
+        items, keys, more = [], [], None
         for row in store.list_opportunities(status=status, since=since, source_names=owned(user),
-                                              backfill=backfill):
-            if after and (row["first_seen"], row["id"]) >= after:
+                                              backfill=backfill, sort=sort):
+            if after and (row["sort_key"], row["id"]) >= after:
                 continue
             opp = store.get_opportunity(row["id"], user_id=user.id)
             mine = opp.get("action") or {}
@@ -238,10 +242,11 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             if include == "matches" and not out.match.ok:
                 continue
             if len(items) == limit:
-                more = items[-1]
+                more = keys[-1]
                 break
             items.append(out)
-        next_cursor = _encode_cursor({"first_seen": more.first_seen, "id": more.id}) if more else None
+            keys.append((row["sort_key"], row["id"]))
+        next_cursor = _encode_cursor(more) if more else None
         return Page(items=items, next_cursor=next_cursor)
 
     @app.get("/api/opportunities/{opp_id}", response_model=Opportunity)

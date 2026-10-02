@@ -28,10 +28,12 @@ function opp(id: string, company: string, title: string, extra: Partial<Opp> = {
 async function mockApi(page: Page) {
   const state: Opp[] = [
     opp("o1", "Stripe", "Software Engineer, Intern (Summer 2027)", { deadline: localDateDaysFromNow(2) }),
-    opp("o2", "NVIDIA", "Systems Software Engineer - New College Grad 2026", { sources: ["ats.workday.nvidia.wd5/NVIDIAExternalCareerSite"] }),
+    opp("o2", "NVIDIA", "Systems Software Engineer - New College Grad 2026", { sources: ["ats.workday.nvidia.wd5/NVIDIAExternalCareerSite"],
+      published_at: `${new Date().toISOString().slice(0, 10)}T00:00:00+00:00` }), // Workday gives a date only
     opp("o3", "Airbnb", "Software Engineer, New Grad", { sources: ["github_repo.SimplifyJobs/New-Grad-Positions"], backfill: true }),
   ];
   const fresh = opp("o9", "Ramp", "Software Engineer Intern - Summer 2027", { first_seen: new Date().toISOString() });
+  let published = false; // the streamed drop is on the server once a test says so
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
@@ -49,9 +51,10 @@ async function mockApi(page: Page) {
       });
     if (path === "/api/opportunities") {
       const action = url.searchParams.get("action");
+      const all = published && !state.includes(fresh) ? [fresh, ...state] : state;
       const items = action
-        ? state.filter((o) => (o.action?.status ?? "new") === action)
-        : state.filter((o) => o.action?.status !== "ignored");
+        ? all.filter((o) => (o.action?.status ?? "new") === action)
+        : all.filter((o) => o.action?.status !== "ignored");
       const backfill = url.searchParams.get("backfill");
       return json(route, { items: backfill ? items.filter((o) => String(o.backfill) === backfill) : items, next_cursor: null });
     }
@@ -76,10 +79,11 @@ async function mockApi(page: Page) {
       return json(route, { companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe", tier: "S" }], instagram: [], feeds: [], repos: [] });
     return json(route, { detail: "not found" }, 404);
   });
+  return { publish: () => { published = true; } };
 }
 
 test("sign in, catch a live drop, save it, move it along the board", async ({ page }, info) => {
-  await mockApi(page);
+  const mock = await mockApi(page);
   await page.goto("/");
   await page.getByLabel("Your access token").fill("wrong-token-0123456789xx");
   await page.getByRole("button", { name: "Sign in" }).click();
@@ -90,16 +94,22 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   await expect(page.getByRole("article")).toHaveCount(2);
   await expect(page.getByRole("heading", { name: "2 new roles" })).toBeVisible();
   await expect(page.getByText("due in 2d")).toBeVisible();
+  // posted (by the employer) and found (by us) are two different clocks
+  await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("posted 1h ago · found 1h ago");
+  await expect(page.getByRole("article", { name: /^NVIDIA/ })).toContainText("posted today · found 1h ago");
   await expect(page.getByRole("region", { name: "Internships" }).getByRole("article")).toContainText("Stripe");
   await expect(page.getByRole("region", { name: "New grad" }).getByRole("article")).toContainText("NVIDIA");
   await page.screenshot({ path: `test-results/feed-${info.project.name}.png`, fullPage: true });
+
+  mock.publish();
+  await page.getByRole("button", { name: /1 new drop/ }).click();
+  await expect(page.getByRole("article").first()).toContainText("Ramp");
+  await expect(page.getByRole("button", { name: /new drop/ })).toHaveCount(0);
+
   await page.getByRole("button", { name: "Already open" }).click();
   await expect(page.getByRole("article")).toHaveCount(1);
   await expect(page.getByRole("article")).toContainText("already open");
   await page.getByRole("button", { name: "New", exact: true }).click();
-
-  await page.getByRole("button", { name: /1 new drop/ }).click();
-  await expect(page.getByRole("article").first()).toContainText("Ramp");
 
   await page.getByRole("article").first().getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("article").first().getByRole("button", { name: "Saved" })).toBeVisible();
@@ -182,7 +192,7 @@ test("share copies only the public apply link and reports clipboard errors", asy
     }, configurable: true });
   }, TOKEN);
   await page.goto("/");
-  const card = page.getByRole("article").first();
+  const card = page.getByRole("article", { name: /^Stripe/ });
   await card.getByRole("button", { name: "Share", exact: true }).click();
   await expect(card.getByRole("status")).toHaveText("Link copied");
   expect(await page.locator("html").getAttribute("data-copied")).toBe("https://example.com/o1");

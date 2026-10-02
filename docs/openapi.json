@@ -1112,6 +1112,19 @@
             }
           },
           {
+            "description": "newest first by when it was posted (date-only postings count as that day; none at all falls back to found) or by when your sources found it",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "posted",
+              "description": "newest first by when it was posted (date-only postings count as that day; none at all falls back to found) or by when your sources found it",
+              "pattern": "^(posted|found)$",
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
             "description": "false: only new drops; true: only postings that were already open when your sources first looked",
             "in": "query",
             "name": "backfill",

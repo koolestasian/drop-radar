@@ -76,3 +76,16 @@ export function shortLocation(location: string): string {
   const first = location.split(" | ")[0].replace(/(.), (United States of America|United States|USA)$/i, "$1").trim();
   return first.length > 48 ? `${first.slice(0, 46)}…` : first || "Location not listed";
 }
+
+/** When the employer posted it, as distinct from when we found it. Date-only postings
+ * (stored as midnight UTC) read "posted today" / "posted Sep 5", never "posted 8h ago". */
+export function posted(iso: string | null | undefined, now = Date.now()): string | null {
+  if (!iso) return null;
+  if (!/T00:00:00(\.0+)?(\+00:00|Z)$/.test(iso)) return `posted ${ago(iso, now)}`;
+  const day = iso.slice(0, 10);
+  const today = new Date(now).toISOString().slice(0, 10);
+  const yesterday = new Date(now - DAY).toISOString().slice(0, 10);
+  if (day === today) return "posted today";
+  if (day === yesterday) return "posted yesterday";
+  return `posted ${new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })}`;
+}

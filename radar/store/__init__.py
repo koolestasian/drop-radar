@@ -33,6 +33,19 @@ MIGRATIONS = (
 )
 
 
+# Stored timestamps carry mixed offsets ("-04:00", "+00:00"), so compare them as UTC.
+_FOUND = "strftime('%Y-%m-%dT%H:%M:%f', first_seen)"
+SORT_KEYS = {
+    "found": _FOUND,
+    # Date-only postings are stored as midnight UTC; they count as late that day as the
+    # sighting allows, so "posted Oct 2" doesn't sink below "posted Oct 2, 01:29".
+    # No posting date at all falls back to when it was found.
+    "posted": f"""CASE WHEN published_at IS NULL THEN {_FOUND}
+        WHEN published_at LIKE '%T00:00:00+00:00' THEN min({_FOUND}, date(published_at) || 'T23:59:59.999')
+        ELSE strftime('%Y-%m-%dT%H:%M:%f', published_at) END""",
+}
+
+
 def _iso(value):
     return value.isoformat() if isinstance(value, datetime) else value
 
@@ -181,8 +194,9 @@ class Store:
         return opp
 
     def list_opportunities(self, status=None, company=None, since=None, limit=None, source_names=None,
-                           backfill=None):
-        """Newest first (ties by id, so a cursor can page through). `since` filters on
+                           backfill=None, sort="found"):
+        """Newest first by `sort_key` (ties by id, so a cursor can page through): when we first
+        saw it ("found") or when it was posted ("posted", see SORT_KEYS). `since` filters on
         first_seen; `source_names` keeps opportunities at least one of those sources saw.
         `backfill` (needs `source_names`): False keeps only what one of them saw as a new
         drop, True only what all of them saw already open on a first poll (raw.seed)."""
@@ -201,8 +215,8 @@ class Store:
                              "i.opportunity_id = opportunities.id AND coalesce(json_extract(i.raw, '$.seed'), 0) = 0 "
                              f"AND i.source IN ({', '.join('?' * len(names)) or 'NULL'}))")
                 params.extend(names)
-        sql = "SELECT * FROM opportunities" + (" WHERE " + " AND ".join(where) if where else "")
-        sql += " ORDER BY first_seen DESC, id DESC"
+        sql = f"SELECT *, {SORT_KEYS[sort]} AS sort_key FROM opportunities" + (" WHERE " + " AND ".join(where) if where else "")
+        sql += " ORDER BY sort_key DESC, id DESC"
         if limit is not None:
             sql += " LIMIT ?"
             params.append(int(limit))

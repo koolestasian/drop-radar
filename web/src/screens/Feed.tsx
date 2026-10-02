@@ -1,9 +1,4 @@
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-  type InfiniteData,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   api,
@@ -18,9 +13,11 @@ import { ago } from "../format";
 import { useSetStatus } from "../hooks";
 
 type View = "new" | "open" | "all";
+type Sort = "posted" | "found";
 type Filters = {
   q: string;
   view: View;
+  sort: Sort;
   closingSoon: boolean;
   ignored: boolean;
 };
@@ -68,12 +65,12 @@ export function Feed({
   const [filters, setFilters] = useState<Filters>({
     q: "",
     view: "new",
+    sort: "posted",
     closingSoon: false,
     ignored: false,
   });
   const q = useDebounced(filters.q);
   const active = useMemo(() => ({ ...filters, q }), [filters, q]);
-  const qc = useQueryClient();
   const setStatus = useSetStatus();
   const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me") });
   const [selected, setSelected] = useState(0);
@@ -89,6 +86,7 @@ export function Feed({
         `/api/opportunities${query({
           include: active.view === "all" ? "all" : "matches",
           backfill: active.view === "all" ? undefined : active.view === "open",
+          sort: active.sort,
           q: active.q,
           closing_within: active.closingSoon ? 14 : undefined,
           action: active.ignored ? "ignored" : undefined,
@@ -117,20 +115,13 @@ export function Feed({
     !active.closingSoon &&
     !active.ignored;
 
-  function showIncoming() {
-    qc.setQueryData<InfiniteData<Page>>(feedKey(active), (data) =>
-      data
-        ? {
-            ...data,
-            pages: [
-              { ...data.pages[0], items: [...unseen, ...data.pages[0].items] },
-              ...data.pages.slice(1),
-            ],
-          }
-        : data,
-    );
-    setFresh(new Set(unseen.map((o) => o.id)));
+  // Refetch rather than prepend: a drop goes where its posting date puts it,
+  // on top only if it is the newest.
+  async function showIncoming() {
+    const ids = unseen.map((o) => o.id);
     clearIncoming();
+    await feed.refetch();
+    setFresh(new Set(ids));
     setSelected(0);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -224,7 +215,7 @@ export function Feed({
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           {active.view === "new" &&
-            "Roles that match your profile, posted since the radar started watching. Newest first."}
+            "Roles that match your profile, found since the radar started watching."}
           {active.view === "open" &&
             "Matching roles that were already up when the radar first looked. Still worth a pass."}
           {active.view === "all" &&
@@ -267,6 +258,17 @@ export function Feed({
           >
             Ignored
           </button>
+          <select
+            aria-label="Sort"
+            value={filters.sort}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, sort: e.target.value as Sort }))
+            }
+            className="min-h-8 shrink-0 rounded-full border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+          >
+            <option value="posted">Newest posted</option>
+            <option value="found">Newest found</option>
+          </select>
         </div>
         <input
           ref={search}

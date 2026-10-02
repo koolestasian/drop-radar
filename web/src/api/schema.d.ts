@@ -743,6 +743,8 @@ export interface operations {
                 since?: string | null;
                 /** @description deadline within this many days */
                 closing_within?: number | null;
+                /** @description newest first by when it was posted (date-only postings count as that day; none at all falls back to found) or by when your sources found it */
+                sort?: string;
                 /** @description false: only new drops; true: only postings that were already open when your sources first looked */
                 backfill?: boolean | null;
                 cursor?: string | null;

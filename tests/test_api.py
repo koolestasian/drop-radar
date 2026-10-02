@@ -278,6 +278,33 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(seen, [self.ids[e] for e in ("tax", "ng", "swe")])
 
 
+    async def test_sort_by_posted_or_found_pages_in_utc_order(self):
+        ny = timezone(timedelta(hours=-4))
+        rows = {  # eid: (found, posted)
+            "timed": (T0 + timedelta(hours=10.5), (T0 + timedelta(hours=9)).astimezone(ny)),  # 21:00Z, stored -04:00
+            "dateonly": (T0 + timedelta(hours=10), datetime(2026, 9, 20, tzinfo=timezone.utc)),  # "posted Sep 20"
+            "undated": (T0 + timedelta(hours=5), None),
+            "old": (T0 + timedelta(hours=11), T0 - timedelta(hours=48)),
+        }
+        for eid, (found, posted) in rows.items():
+            self.ids[eid], _ = self.store.upsert_item(Item(
+                source="ats.greenhouse.airbnb", external_id=eid, url=f"https://x.example/{eid}",
+                title=f"Software Engineer Intern Sortcheck {eid}", seen_at=found, published_at=posted))
+
+        async def walk(sort):
+            seen, cursor = [], None
+            while True:
+                params = {"include": "all", "q": "Sortcheck", "sort": sort, "limit": 1, **({"cursor": cursor} if cursor else {})}
+                page = (await self.get("/api/opportunities", KEVIN, **params)).json()
+                seen += [o["id"] for o in page["items"]]
+                if not (cursor := page["next_cursor"]):
+                    return seen
+
+        # date-only counts as late that day as its sighting allows (22:00), above 21:00Z
+        self.assertEqual(await walk("posted"), [self.ids[e] for e in ("dateonly", "timed", "undated", "old")])
+        self.assertEqual(await walk("found"), [self.ids[e] for e in ("old", "timed", "dateonly", "undated")])
+
+
 class FeedAndAlertsAgreeTests(unittest.IsolatedAsyncioTestCase):
     """Every opportunity the phone is alerted on is in that user's feed."""
 

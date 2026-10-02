@@ -1,5 +1,5 @@
 import type { ActionStatus, Opportunity } from "../api/client";
-import { ago, deadline, sourceLabel, STATUS_LABEL } from "../format";
+import { ago, deadline, posted, shortLocation, sourceLabel, STATUS_LABEL } from "../format";
 import { Badge } from "./ui";
 
 const DEADLINE_TONE = { urgent: "red", soon: "amber", normal: "neutral", past: "neutral" } as const;
@@ -26,7 +26,7 @@ export function OpportunityCard({ opportunity: o, onStatus }: { opportunity: Opp
         {due && <Badge tone={DEADLINE_TONE[due.tone]}>{due.label}</Badge>}
       </div>
       <p className="mt-1.5 font-mono text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-        {[o.location || "Location not listed", o.sources.map(sourceLabel).join(", "), `found ${ago(o.first_seen)}`].join(" · ")}
+        {[shortLocation(o.location), o.sources.map(sourceLabel).join(", "), posted(o.published_at), `found ${ago(o.first_seen)}`].filter(Boolean).join(" · ")}
       </p>
       <div className="mt-3 flex items-center gap-2">
         {o.url ? (
