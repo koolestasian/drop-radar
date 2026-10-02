@@ -92,7 +92,7 @@ T11 remains deferred; this task addresses concrete review findings.
 
 ## Results
 
-Implementation complete; final live relay validation remains in progress.
+Implementation complete and live (2026-10-02, ~10:00 UTC).
 
 - 385 offline tests pass on Python 3.14 and on an isolated Python 3.12 environment.
   Pyflakes and diff checks pass. OpenAPI and generated frontend types match.
@@ -101,17 +101,25 @@ Implementation complete; final live relay validation remains in progress.
   topic is enabled and visible only through their authenticated Settings page.
   Owner's separately generated topic is staged, mode 600, for the full-day cutover.
   The legacy push gate remains unchanged. No subscription or phone receipt is verified.
-- A residential probe returned 39 Stories. Relay endpoint accepted authentication;
-  complete Story ingestion was interrupted by repeated service restarts from
-  another session (in addition to this task's deliberate deployment restart).
-  The empty synthetic health probe was undone so it cannot imply a successful poll.
-  The LaunchAgent is prepared at `~/Library/LaunchAgents/com.dropradar.instagram-relay.plist`,
-  but is not activated. Logs belong in `~/Library/Logs/DropRadar/`.
-- The final per-Story ingestion, retry ordering and recipient-specific metrics changes are validated
-  locally and await a coordinated final redeploy. Pause the other deployer, rsync
-  this committed version, restart once, run the relay to completion, inspect the
-  stored Stories/source health, then bootstrap the prepared LaunchAgent. Set
-  RunAtLoad true when activating; keep the 300s interval and no overlapping runs.
+- Relay live. Earlier attempts were interrupted by restarts. After one coordinated
+  redeploy, a manual run stored all 39 Stories as silent backfill in 2m21s (no
+  alerts, `last_ok` set, `fail_count` 0). Then the LaunchAgent
+  (`~/Library/LaunchAgents/com.dropradar.instagram-relay.plist`, RunAtLoad, 300s,
+  logs in `~/Library/Logs/DropRadar/`) took over; its runs return `new: 0`.
+- Found on the live run and fixed (3f9b864, 1be39b3):
+  - Tesseract's default OpenMP threads made one Story's OCR take ~25s on the
+    2-vCPU VM. With one thread it takes 4-7s; `radar.service` now sets
+    `OMP_THREAD_LIMIT=1`.
+  - The relay's 240s timeout could not fit a first backfill, and its retries
+    would have stacked handlers on the server. It now waits up to 2400s, with SSH
+    keepalives so a run the Mac sleeps through fails in ~90s.
+  - After a restart, every stored Story was re-OCRed before the already-stored
+    check. The check now runs first.
+  - Story titles came out as Instagram's "Visit Link" sticker label or its alt
+    text. They now use the legacy tracker's title rule (link slug, else the best
+    opportunity line, else category/role/season), which improved all 39 live titles.
+    The 39 already-stored Stories keep their old titles: a one-off retitle was
+    blocked by the permission classifier and is left for the user.
 - One server-side Python 3.12 test hit its 10s process-start deadline while the VM
   was busy; the same full suite passes in the isolated 3.12 environment. Do not
   run the full test suite alongside first-backfill OCR on this small production VM.
@@ -122,9 +130,9 @@ bounded SSE queues, US-city heuristics (no trigger), hardcoded source-title term
 partial-window baselines, Instagram fallback cooldown, and its unbounded OCR cache.
 No new shortcut marker was introduced. SmartRecruiters' first-page shortcut was removed.
 
-Remaining risks: availability depends on the Mac staying awake; insider Stories
-are still not a live verified pipeline until the relay completes; neither device
-is subscribed/verified here. Polling intervals and rate-limited sources preclude
+Remaining risks: Story availability depends on the Mac being awake and online
+(Sources flags the relay stale after two missed intervals); no new Story has yet
+gone end to end to a push; neither device is subscribed/verified here. Polling intervals and rate-limited sources preclude
 guaranteeing "first for every drop." Claim-before-send prevents ordinary concurrent
 duplicates, but a crash after remote push acceptance and before sent_at is saved
 can still cause a retry duplicate; exactly-once transport is not proven.

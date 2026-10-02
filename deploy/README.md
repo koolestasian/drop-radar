@@ -225,7 +225,8 @@ Where reality differed from the steps above, on a `VM.Standard.E2.1.Micro`
   `rsync -az --delete --rsync-path="sudo -u radar rsync" --exclude .venv
   --exclude .git --exclude /data --exclude web/node_modules ./
   <host>:/opt/radar/zero2sudo-opportunity-monitor/`, then
-  `sudo systemctl restart radar`.
+  `sudo systemctl restart radar`. If `deploy/radar.service` changed, copy it
+  to `/etc/systemd/system/` and `sudo systemctl daemon-reload` first.
 - **`/opt/radar` is the `radar` user's home folder (mode 750)**, so `cd`
   into it as `ubuntu` fails. Run setup as `sudo -u radar bash -c "..."`.
 - **HTTPS without a domain:** `<ip-with-dashes>.nip.io` in the `Caddyfile`
@@ -252,7 +253,10 @@ Python/script paths, and logs under `~/Library/Logs/DropRadar/`. Launchd does no
 overlap a still-running instance. The Mac must be awake and online; Sources marks
 the poll overdue after two intervals plus a minute without a successful relay.
 First successful relay backfills existing Stories silently; subsequent new Stories
-use the existing pipeline and alert history. The feed reconciles every 30s because
+use the existing pipeline and alert history. The VM OCRs each new Story (4-7s with
+the unit's `OMP_THREAD_LIMIT=1`, ~25s without), so a first backfill of ~40 takes
+minutes; the relay waits up to 40 min, and SSH keepalives fail a request the Mac
+slept through in ~90s. An already-stored Story is skipped before OCR, even after a restart. The feed reconciles every 30s because
 seeds emit no SSE event. Removing the LaunchAgent and `IG_RELAY_ENABLED` restores
 VM polling. Keep this at the watchlist's 300s interval until real rate-limit data
 supports a shorter interval.

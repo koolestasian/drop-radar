@@ -7,17 +7,17 @@ Plan and contracts: `docs/specs/`.
 
 ## Session handoff (2026-10-02)
 
-- **Codex product review (T12, 2026-10-02):** see `docs/specs/T12-first-to-act.md`.
-  Implemented pagination, per-source live events, concurrent user delivery, feed
-  reconciliation, private subscription setup, sharing, recipient-only timing stats,
-  and a residential Instagram relay. 385 offline tests pass on 3.12/3.14, 12 browser
-  checks pass. Core deployed; latest per-Story ingestion/retry/stats changes await final
-  redeploy. Another session repeatedly restarted `radar` during the live relay:
-  coordinate deployments before retrying. Mac probe got 39 Stories; relay not yet
-  verified end to end. LaunchAgent prepared, inactive. `IG_RELAY_ENABLED=1` on the VM
-  skips its blocked native polling; owner's topic is staged in `/opt/radar/alert-cutover.env`,
-  friend's separate topic is enabled (subscribe in their Settings). No device receipt
-  verified. Legacy pushes remain on pending the full-day cutover. T11 stays deferred.
+- **T12 first to act: done 2026-10-02** (see `docs/specs/T12-first-to-act.md`).
+  Pagination, per-source live events, concurrent user delivery, feed reconciliation, private
+  subscription setup, sharing, recipient-only timing stats and the residential Instagram relay
+  are live. The relay runs on the Mac as the LaunchAgent `com.dropradar.instagram-relay` (every
+  300s while the Mac is awake; logs in `~/Library/Logs/DropRadar/`). Its first run backfilled 39
+  Stories silently. The VM OCRs each new Story in 4-7s, using `OMP_THREAD_LIMIT=1` from
+  `radar.service` (~25s without). New Stories get the legacy title rule. **Pending the user:** the
+  39 backfilled Stories still carry "Visit Link"/alt-text titles, because a one-off retitle of the
+  live DB was blocked by the permission classifier. The owner's topic is staged in
+  `/opt/radar/alert-cutover.env`; the friend's separate topic is enabled (they subscribe in their
+  Settings). No device receipt verified. Legacy pushes stay on until the full-day cutover. T11 stays deferred.
 
 - Branch: `claude/trim-drop-radar-plan`. T0-T10 are all `done`; only T11
   (hardening) remains, explicitly `deferred` until the service has run live
@@ -47,7 +47,7 @@ Plan and contracts: `docs/specs/`.
   `ats.WindowedSource`), Instagram `user_id` (skips `web_profile_info`). All deployed.
 - **Instagram:** `IG_SESSIONID` is set on the box, but its native poll got 429 (06:25 UTC, checked again
   07:44: 7 failures, never a success), so `IG_RELAY_ENABLED=1` now skips it. Stories arrive only through
-  the Mac relay (`deploy/instagram-relay.py` -> `/api/instagram/relay`), which is not running yet.
+  the Mac relay (`deploy/instagram-relay.py` -> `/api/instagram/relay`), live since 2026-10-02 ~09:50 UTC.
 - **Feed/data pass (Claude, 2026-10-02, commits `6c25d4d..e34d6bf`, all deployed; the box matches `e34d6bf`):**
   digest-style feed after boardsweep.io (New / All matches tabs, separate All jobs page), posted-vs-found
   dates, sorts (newest posted default, newest found, prestige by company tier), search + Location box +
@@ -135,7 +135,7 @@ Exceptions:
 ## Current state (update when it changes)
 - Live pipeline: `radar/legacy/` (`opportunity_monitor.py`, `job_pages.py`, `llm_extraction.py`,
   `instagram_scraper.py`, `google_sheets_sync.py`; root files are import shims), workflow `.github/workflows/hourly.yml`.
-- 393 backend tests passing on Python 3.14; the preceding 326-test suite was also verified on Python 3.12, which `.github/workflows/ci.yml` now runs on every push/PR (a 3.12+3.14 matrix), split out from the hourly production workflow. Sources live: `radar/sources/` (ats.py + greenhouse/lever/ashby/smartrecruiters/workday, github_repo, instagram; registry.py auto-discovers them). SQLite store in `radar/store/` (DB at `data/radar.db`, gitignored);
+- 395 backend tests passing on Python 3.14; the preceding 326-test suite was also verified on Python 3.12, which `.github/workflows/ci.yml` now runs on every push/PR (a 3.12+3.14 matrix), split out from the hourly production workflow. Sources live: `radar/sources/` (ats.py + greenhouse/lever/ashby/smartrecruiters/workday, github_repo, instagram; registry.py auto-discovers them). SQLite store in `radar/store/` (DB at `data/radar.db`, gitignored);
   import the tracker with `python -m radar.store.migrate_legacy`; `radar.views.write_views` regenerates xlsx + LATEST.md. `radar/pipeline/` (normalize, dedupe, enrich, filter) is the Scheduler's `sink`: cross-source URL dedupe, LLM enrichment gated by a daily token budget, `matches_profile` against `config/profile.yaml`. `radar/alerts/` (`AlertDispatcher`, `NtfyChannel`) pushes instantly for zero2sudo items and anything matching the profile, claim-before-send idempotent, retried with in-memory backoff on every sink tick; `python -m radar stats` prints drop-latency p50/p95 per source. Multi-user (T8a): `config/users.yaml` lists users (first = owner) and each one's own watchlist/profile; the scheduler polls the union once; `actions` are per `(opportunity_id, user_id)`; `MultiUserAlertDispatcher` alerts a user only on their own sources' items. Profiles match role (track) AND keyword (level), whole words; `is_us_location` handles US locations; a trailing country name decides first ("Ho Chi Minh, , Vietnam" is not Chicago). SmartRecruiters listings carry location (blank before 2026-10-02, which let every foreign posting match). Verify any new board with `python -m radar.sources.discover --check` before adding it. ATS polls are conditional (ETag/304, all four ATS verified), so an unchanged board costs no download; the watchlists cover ~600 boards and career sites (incl. `oracle`, `eightfold`, `amazon`, `google`, `apple`, `avature`, `sitemap`, `workable` sources; search-based ones subclass `ats.WindowedSource`), mined 2026-10-02 from SimplifyJobs' active listings (`discover._slug_from_url` also parses Workday links), because Simplify lists a posting a median ~3h after the board does. `python -m radar serve` (alias `run`) runs scheduler + pipeline + the API (`radar/api/`: per-user feed, status/notes, config edits with hot reload, SSE stream; `docs/openapi.json` from `python -m radar openapi`) in one process. Tracker data lives in `Zero2Sudo_Opportunity_Tracker.xlsx`,
   `monitor_state.json`, `enrichment_cache.json` (committed by the workflow).
 
