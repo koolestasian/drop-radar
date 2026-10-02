@@ -150,6 +150,7 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
 
   function openRole(o: Opportunity) {
     setActiveId(o.id);
+    if (!wide) (document.activeElement as HTMLElement | null)?.blur(); // the drawer hides the page; focus must not stay behind it
     if (!wide) setSheet(true);
   }
 
@@ -287,6 +288,7 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
                 onChange={(e) => set("q", e.target.value)}
                 placeholder="Search role or company"
                 aria-label="Search role or company"
+                name="q"
                 className="h-11 rounded-full bg-card pl-10 text-base sm:h-10 sm:text-sm"
               />
             </div>
