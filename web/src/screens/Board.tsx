@@ -72,7 +72,7 @@ export function Board() {
               onDrop={drop(column.status)}
               aria-label={`${column.label} column`}
               className={`w-[85%] max-w-sm shrink-0 snap-start rounded-2xl p-2 sm:w-80 lg:w-auto ${
-                over === column.status ? "bg-indigo-50 dark:bg-indigo-950/40" : "bg-zinc-100/70 dark:bg-zinc-900/50"
+                over === column.status ? "bg-zinc-200/80 dark:bg-zinc-800/60" : "bg-zinc-100/70 dark:bg-zinc-900/50"
               }`}
             >
               <h2 className="flex items-center justify-between px-2 py-1 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
@@ -84,8 +84,6 @@ export function Board() {
                   <li key={o.id}>
                     <OpportunityCard
                       opportunity={o}
-                      compact
-                      draggable
                       onStatus={(status) => setStatus.mutate({ id: o.id, status })}
                     />
                     <Notes opportunity={o} />

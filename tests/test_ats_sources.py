@@ -288,6 +288,14 @@ class SmartRecruitersTests(AtsSourceContractMixin, unittest.IsolatedAsyncioTestC
     def payload(self, jobs):
         return {"totalFound": len(jobs), "content": jobs}
 
+    def test_location_comes_from_the_listing(self):
+        jobs = [{"id": "a", "name": "Intern", "location": {"fullLocation": "Ho Chi Minh, , Vietnam"}},
+                {"id": "b", "name": "Intern", "location": {"city": "Austin", "region": "TX", "country": "us"}},
+                {"id": "c", "name": "Intern", "location": {"remote": True}},
+                {"id": "d", "name": "Intern"}]
+        postings, _ = self.source_cls(company(self.ats)).parse(self.payload(jobs))
+        self.assertEqual([postings[k][2] for k in "abcd"], ["Ho Chi Minh, Vietnam", "Austin, TX, us", "Remote", ""])
+
     def baseline_jobs(self):
         # "ref" is the real API's shape: its OWN self-link (api.smartrecruiters.com/...),
         # confirmed live against real boards -- never a public job page. Fixtures use

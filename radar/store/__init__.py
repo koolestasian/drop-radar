@@ -180,9 +180,12 @@ class Store:
             opp["action"] = dict(action) if action else None
         return opp
 
-    def list_opportunities(self, status=None, company=None, since=None, limit=None, source_names=None):
+    def list_opportunities(self, status=None, company=None, since=None, limit=None, source_names=None,
+                           backfill=None):
         """Newest first (ties by id, so a cursor can page through). `since` filters on
-        first_seen; `source_names` keeps opportunities at least one of those sources saw."""
+        first_seen; `source_names` keeps opportunities at least one of those sources saw.
+        `backfill` (needs `source_names`): False keeps only what one of them saw as a new
+        drop, True only what all of them saw already open on a first poll (raw.seed)."""
         where, params = [], []
         for clause, value in (("status = ?", status), ("company = ?", company), ("first_seen >= ?", _iso(since))):
             if value is not None:
@@ -193,6 +196,11 @@ class Store:
             where.append("EXISTS (SELECT 1 FROM items i WHERE i.opportunity_id = opportunities.id "
                          f"AND i.source IN ({', '.join('?' * len(names)) or 'NULL'}))")
             params.extend(names)
+            if backfill is not None:
+                where.append(("NOT " if backfill else "") + "EXISTS (SELECT 1 FROM items i WHERE "
+                             "i.opportunity_id = opportunities.id AND coalesce(json_extract(i.raw, '$.seed'), 0) = 0 "
+                             f"AND i.source IN ({', '.join('?' * len(names)) or 'NULL'}))")
+                params.extend(names)
         sql = "SELECT * FROM opportunities" + (" WHERE " + " AND ".join(where) if where else "")
         sql += " ORDER BY first_seen DESC, id DESC"
         if limit is not None:

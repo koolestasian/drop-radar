@@ -84,9 +84,9 @@ export function App() {
           key={r.id}
           href={`#/${r.id}`}
           aria-current={route === r.id ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 text-xs font-medium sm:flex-row sm:gap-1.5 sm:text-sm ${
+          className={`flex flex-1 flex-col items-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-medium sm:flex-row sm:gap-1.5 sm:text-sm ${
             route === r.id
-              ? "text-indigo-600 sm:bg-indigo-50 dark:text-indigo-300 sm:dark:bg-indigo-950/60"
+              ? "text-zinc-950 sm:bg-zinc-950 sm:text-white dark:text-white sm:dark:bg-white sm:dark:text-zinc-950"
               : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           }`}
         >
@@ -95,7 +95,7 @@ export function App() {
           </span>
           {r.label}
           {r.id === "feed" && incoming.length > 0 && route !== "feed" && (
-            <span className="rounded-full bg-indigo-600 px-1.5 text-[10px] text-white">{incoming.length}</span>
+            <span className="rounded-full bg-zinc-950 px-1.5 text-[10px] text-white">{incoming.length}</span>
           )}
         </a>
       ))}
@@ -106,7 +106,7 @@ export function App() {
     <div className="min-h-dvh pb-20 sm:pb-8">
       <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/85 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/85">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
-          <a href="#/feed" className="flex items-center gap-2 font-semibold">
+          <a href="#/feed" className="flex items-center gap-2 text-lg font-black tracking-tight">
             <img src="/icon.svg" alt="" className="size-7" />
             Drop Radar
           </a>
@@ -118,9 +118,9 @@ export function App() {
           <span className="hidden text-sm text-zinc-500 lg:inline">{me.data?.user}</span>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-5">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
         {me.data?.alerts_enabled === false && route !== "settings" && (
-          <p role="status" className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          <p role="status" className="mx-auto mb-5 max-w-3xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/60 dark:text-amber-200">
             Phone alerts are off. <a href="#/settings" className="underline">Check notification setup</a>; live updates reach this page while it is open.
           </p>
         )}

@@ -1112,6 +1112,24 @@
             }
           },
           {
+            "description": "false: only new drops; true: only postings that were already open when your sources first looked",
+            "in": "query",
+            "name": "backfill",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "false: only new drops; true: only postings that were already open when your sources first looked",
+              "title": "Backfill"
+            }
+          },
+          {
             "in": "query",
             "name": "cursor",
             "required": false,

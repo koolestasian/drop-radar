@@ -80,7 +80,7 @@ export function Sources() {
               <ul className="mt-3 flex h-24 items-end gap-2" aria-label="Items per day">
                 {days.map(([day, n]) => (
                   <li key={day} className="flex flex-1 flex-col items-center gap-1" title={`${day}: ${n}`}>
-                    <span className="w-full rounded-t bg-indigo-500/80" style={{ height: `${(n / peak) * 72}px` }} />
+                    <span className="w-full rounded-t bg-zinc-900/80 dark:bg-zinc-100/80" style={{ height: `${(n / peak) * 72}px` }} />
                     <span className="text-[10px] text-zinc-500">{day.slice(5)}</span>
                   </li>
                 ))}

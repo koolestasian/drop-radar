@@ -16,10 +16,10 @@
 
 @keyframes flash {
   from {
-    box-shadow: 0 0 0 3px rgb(99 102 241 / 0.55);
+    box-shadow: 0 0 0 3px rgb(16 185 129 / 0.45);
   }
   to {
-    box-shadow: 0 0 0 0 rgb(99 102 241 / 0);
+    box-shadow: 0 0 0 0 rgb(16 185 129 / 0);
   }
 }
 

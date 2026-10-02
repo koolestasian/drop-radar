@@ -204,7 +204,7 @@ export function Settings({ onSignOut }: { onSignOut: () => void }) {
         {me.data?.alerts_enabled ? (
           <>
             <p className="text-sm text-zinc-500">Delivery is configured. Subscribe in ntfy on your phone and allow notifications. Device delivery still needs a real notification check.</p>
-            {me.data.notification_url && <a href={me.data.notification_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 underline dark:text-indigo-300">Open your private notification topic ↗</a>}
+            {me.data.notification_url && <a href={me.data.notification_url} target="_blank" rel="noopener noreferrer" className="text-sm text-zinc-950 underline dark:text-white">Open your private notification topic ↗</a>}
           </>
         ) : me.data ? (
           <p role="status" className="text-sm text-amber-700 dark:text-amber-300">Phone alerts are off for your account. The live feed works while open; phone delivery needs to be enabled on the server.</p>

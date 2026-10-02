@@ -84,7 +84,7 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: "Applied Intuition", ats: ashby, slug: "applied", tier: B}
   - {name: "SingleStore", ats: greenhouse, slug: "singlestore", tier: B}
   - {name: "The Nuclear Company", ats: greenhouse, slug: "thenuclearcompany", tier: B}
-  - {name: "Robert Bosch Venture Capital", ats: smartrecruiters, slug: "BoschGroup", tier: B}
+  - {name: "Bosch", ats: smartrecruiters, slug: "BoschGroup", tier: B}
   - {name: "Chicago Trading Company", ats: greenhouse, slug: "ctccampusboard", tier: B}
   - {name: "Chicago Trading Company", ats: greenhouse, slug: "chicagotradingcampus", tier: B}
   - {name: "Cybernetic Labs", ats: ashby, slug: "netic", tier: B}
@@ -96,7 +96,7 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: "Collaborative Robotics", ats: ashby, slug: "cobot", tier: B}
   - {name: "Domino's", ats: smartrecruiters, slug: "Dominos", tier: B}
   - {name: "Dyna Robotics", ats: ashby, slug: "dyna-robotics", tier: B}
-  - {name: "General Dynamics UK", ats: smartrecruiters, slug: "GDMSI", tier: B}
+  - {name: "General Dynamics Mission Systems", ats: smartrecruiters, slug: "GDMSI", tier: B}
   - {name: "Geotab", ats: greenhouse, slug: "internshiplist2000", tier: B}
   - {name: "Kodiak Robotics", ats: greenhouse, slug: "kodiak", tier: B}
   - {name: "Lawrence Livermore National Laboratory (LLNL)", ats: smartrecruiters, slug: "LLNL", tier: B}
@@ -149,7 +149,7 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: "Composio", ats: ashby, slug: "composio", tier: B}
   - {name: "Ellipsis Labs", ats: ashby, slug: "ellipsislabs", tier: B}
   - {name: "Eulerity", ats: greenhouse, slug: "eulerity", tier: B}
-  - {name: "Felix Magazine", ats: smartrecruiters, slug: "LuxeMediaLLC", tier: B}
+  - {name: "Luxe Media", ats: smartrecruiters, slug: "LuxeMediaLLC", tier: B}
   - {name: "Field AI", ats: lever, slug: "field-ai", tier: B}
   - {name: "Fospha", ats: greenhouse, slug: "fosphamarketing", tier: B}
   - {name: "Gritt Robotics Inc", ats: ashby, slug: "gritt", tier: B}
@@ -254,7 +254,7 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: "Penta Group", ats: lever, slug: "pentagrp", tier: B}
   - {name: "Pylon", ats: ashby, slug: "pylon-labs", tier: B}
   - {name: "Quadrillion", ats: ashby, slug: "quadrillion-labs", tier: B}
-  - {name: "QualityAI", ats: smartrecruiters, slug: "QANALYSTSLLC2", tier: B}
+  - {name: "Q Analysts", ats: smartrecruiters, slug: "QANALYSTSLLC2", tier: B}
   - {name: "Quantcast", ats: ashby, slug: "quantcast", tier: B}
   - {name: "Qumulo", ats: ashby, slug: "qumulo", tier: B}
   - {name: "Radix Trading", ats: greenhouse, slug: "radixuniversity", tier: A}

@@ -55,7 +55,8 @@ _NON_US = (
     "athens|turkey|istanbul|israel|tel aviv|uae|dubai|abu dhabi|qatar|doha|saudi|riyadh|japan|tokyo|"
     "korea|seoul|china|beijing|shanghai|shenzhen|hong kong|taiwan|taipei|australia|sydney|melbourne|"
     "new zealand|auckland|philippines|manila|vietnam|indonesia|jakarta|malaysia|kuala lumpur|thailand|"
-    "bangkok|south africa|cape town|nigeria|lagos|kenya|nairobi|egypt|cairo|emea|apac|latam|europe|ch|can"
+    "bangkok|south africa|cape town|nigeria|lagos|kenya|nairobi|egypt|cairo|emea|apac|latam|europe|ch|can|"
+    "costa rica|liechtenstein"
 )
 
 
@@ -66,12 +67,30 @@ def _words(alternation):
 _US_STRONG = _words(f"{_US_COUNTRY}|{_US_STATE_NAMES}|{_US_CITIES}")
 _NON_US_RE = _words(_NON_US)
 _NEW_MEXICO = re.compile(r"new mexico", re.I)  # a US state whose name contains a country
+_COUNTRY_RE = re.compile(
+    r"canada|united kingdom|uk|england|scotland|ireland|india|singapore|mexico|brazil|argentina|colombia|"
+    r"romania|spain|germany|france|netherlands|belgium|switzerland|italy|poland|czech republic|czechia|"
+    r"portugal|sweden|denmark|norway|finland|austria|serbia|greece|turkey|t[uü]rkiye|israel|uae|"
+    r"united arab emirates|qatar|saudi arabia|japan|south korea|korea|china|hong kong|taiwan|australia|"
+    r"new zealand|philippines|vietnam|viet nam|indonesia|malaysia|thailand|south africa|nigeria|kenya|egypt|"
+    r"costa rica|liechtenstein|hungary|ukraine|lithuania|latvia|estonia|bulgaria|croatia|slovakia|slovenia|"
+    r"luxembourg|chile|peru|uruguay|ecuador|guatemala|panama|dominican republic|pakistan|bangladesh|sri lanka|morocco",
+    re.I)
+_MULTI = re.compile(r"[;|/\n]| or | and |\d+ locations", re.I)
 
 
 def is_us_location(location: str) -> bool | None:
     """True if the location names somewhere in the US (any of several), False if
     it only names somewhere else, None if it says neither ("In-Office", "N/A")."""
     loc = location or ""
+    # A trailing country name decides first: "Ho Chi Minh, , Vietnam" names no US place,
+    # but "chi" (Chicago's abbreviation) would otherwise read as one.
+    # Only for one place: "New York, NY; London, UK" is still a US job.
+    last = "" if _MULTI.search(loc) or "," not in loc else _NEW_MEXICO.sub("", loc.rsplit(",", 1)[-1]).strip()
+    if last and re.fullmatch(_US_COUNTRY, last, re.I):
+        return True
+    if last and _COUNTRY_RE.fullmatch(last):
+        return False
     if _US_STRONG.search(loc):
         return True
     if _NON_US_RE.search(_NEW_MEXICO.sub("", loc)):

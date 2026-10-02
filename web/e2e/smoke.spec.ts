@@ -52,7 +52,8 @@ async function mockApi(page: Page) {
       const items = action
         ? state.filter((o) => (o.action?.status ?? "new") === action)
         : state.filter((o) => o.action?.status !== "ignored");
-      return json(route, { items, next_cursor: null });
+      const backfill = url.searchParams.get("backfill");
+      return json(route, { items: backfill ? items.filter((o) => String(o.backfill) === backfill) : items, next_cursor: null });
     }
     const m = path.match(/^\/api\/opportunities\/(.+)$/);
     if (m && req.method() === "PATCH") {
@@ -86,11 +87,16 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   await page.getByLabel("Your access token").fill(TOKEN);
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page.getByRole("article")).toHaveCount(3);
+  await expect(page.getByRole("article")).toHaveCount(2);
+  await expect(page.getByRole("heading", { name: "2 new roles" })).toBeVisible();
   await expect(page.getByText("due in 2d")).toBeVisible();
-  await expect(page.getByRole("article").nth(2)).toContainText("already open");
-  await expect(page.getByRole("article").nth(2)).not.toContainText("after posted");
+  await expect(page.getByRole("region", { name: "Internships" }).getByRole("article")).toContainText("Stripe");
+  await expect(page.getByRole("region", { name: "New grad" }).getByRole("article")).toContainText("NVIDIA");
   await page.screenshot({ path: `test-results/feed-${info.project.name}.png`, fullPage: true });
+  await page.getByRole("button", { name: "Already open" }).click();
+  await expect(page.getByRole("article")).toHaveCount(1);
+  await expect(page.getByRole("article")).toContainText("already open");
+  await page.getByRole("button", { name: "New", exact: true }).click();
 
   await page.getByRole("button", { name: /1 new drop/ }).click();
   await expect(page.getByRole("article").first()).toContainText("Ramp");
@@ -125,36 +131,35 @@ test("dark mode renders", async ({ page }, info) => {
   await page.goto("/");
   await page.evaluate((t) => localStorage.setItem("radar.token", t), TOKEN);
   await page.reload();
-  await expect(page.getByRole("article")).toHaveCount(3);
+  await expect(page.getByRole("article")).toHaveCount(2);
   await page.screenshot({ path: `test-results/feed-dark-${info.project.name}.png`, fullPage: true });
 });
 
-test("an empty feed picks up the first backfill without a live-drop event", async ({ page }) => {
+test("an empty New feed points at what was already open, without a live-drop button", async ({ page }) => {
   await mockApi(page);
-  let ready = false;
   await page.route("**/api/opportunities?*", (route) => route.fulfill({
     contentType: "application/json",
-    body: JSON.stringify({ items: ready ? [opp("old", "Stripe", "Software Engineer Intern", { backfill: true })] : [],
-      next_cursor: null }),
+    body: JSON.stringify({ items: new URL(route.request().url()).searchParams.get("backfill") === "true"
+      ? [opp("old", "Stripe", "Software Engineer Intern", { backfill: true })] : [], next_cursor: null }),
   }));
   await page.route("**/api/stream", (route) => route.fulfill({ contentType: "text/event-stream", body: "retry: 5000\n\n" }));
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
   await page.goto("/");
-  await expect(page.getByText("No matches yet")).toBeVisible();
-  ready = true;
-  await expect(page.getByRole("article")).toHaveCount(1, { timeout: 8000 });
+  await expect(page.getByText("No new roles yet")).toBeVisible();
+  await page.getByRole("button", { name: "See what's already open" }).click();
+  await expect(page.getByRole("article")).toHaveCount(1);
   await expect(page.getByRole("article")).toContainText("already open");
   await expect(page.getByRole("button", { name: /new drop/ })).toHaveCount(0);
 });
 
-test("a populated feed reconciles silent backfill and shows disabled phone alerts", async ({ page }) => {
+test("a populated feed reconciles missed drops and shows disabled phone alerts", async ({ page }) => {
   await mockApi(page);
   await page.clock.install();
   let ready = false;
   await page.route("**/api/opportunities?*", (route) => route.fulfill({
     contentType: "application/json",
     body: JSON.stringify({ items: [opp("first", "Stripe", "SWE Intern"),
-      ...(ready ? [opp("later", "Airbnb", "Software Engineer Intern", { backfill: true })] : [])], next_cursor: null }),
+      ...(ready ? [opp("later", "Airbnb", "Software Engineer Intern")] : [])], next_cursor: null }),
   }));
   await page.route("**/api/stream", (route) => route.abort());
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
@@ -196,4 +201,12 @@ test("settings offers only the signed-in users notification subscription", async
   await page.goto("/#/settings");
   await expect(page.getByRole("link", { name: /Open your private notification topic/ })).toHaveAttribute("href", "https://ntfy.sh/private-test-k");
   await expect(page.getByText(/Device delivery still needs/)).toBeVisible();
+});
+
+test("a #token= link signs the device in and leaves the address bar", async ({ page }) => {
+  await mockApi(page);
+  await page.goto(`/#token=${TOKEN}`);
+  await expect(page.getByRole("article")).toHaveCount(2);
+  expect(page.url()).not.toContain(TOKEN);
+  expect(await page.evaluate(() => localStorage.getItem("radar.token"))).toBe(TOKEN);
 });

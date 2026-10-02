@@ -65,9 +65,17 @@ class SmartRecruitersSource(AtsSource):
             title = job.get("name") or ""
             url = f"https://jobs.smartrecruiters.com/{self.company.slug}/{eid}"
             published_at = parse_date(job.get("releasedDate"))
-            postings[eid] = (title, url, "", published_at)
+            postings[eid] = (title, url, _location(job.get("location")), published_at)
         complete = int(data.get("totalFound") or 0) <= len(content)
         return postings, complete
+
+
+def _location(loc) -> str:
+    """"Nürnberg, BY, Germany" from fullLocation (or city/region/country), blanks dropped."""
+    loc = loc if isinstance(loc, dict) else {}
+    full = loc.get("fullLocation") or ", ".join(str(loc.get(k) or "") for k in ("city", "region", "country"))
+    text = ", ".join(p.strip() for p in str(full).split(",") if p.strip())
+    return f"{text} (Remote)" if loc.get("remote") and text else ("Remote" if loc.get("remote") else text)
 
 
 @register("smartrecruiters")

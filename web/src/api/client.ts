@@ -41,6 +41,14 @@ export const token = {
   },
 };
 
+// One-tap sign-in: opening a link ending in #token=<secret> signs this device in. The fragment
+// never reaches the server, and it is wiped from the address bar straight away.
+const linked = new URLSearchParams(location.hash.slice(1)).get("token");
+if (linked) {
+  token.set(linked);
+  history.replaceState(null, "", location.pathname + location.search);
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,

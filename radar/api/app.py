@@ -200,6 +200,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                                                       "Closed/Expired/Not actionable are hidden unless asked for"),
         since: datetime | None = Query(None, description="first seen at or after"),
         closing_within: int | None = Query(None, ge=0, description="deadline within this many days"),
+        backfill: bool | None = Query(None, description="false: only new drops; true: only postings that were "
+                                                         "already open when your sources first looked"),
         cursor: str | None = None,
         limit: int = Query(50, ge=1, le=200),
     ):
@@ -208,7 +210,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         after = _decode_cursor(cursor) if cursor else None
         today = now().date()
         items, more = [], None
-        for row in store.list_opportunities(status=status, since=since, source_names=owned(user)):
+        for row in store.list_opportunities(status=status, since=since, source_names=owned(user),
+                                              backfill=backfill):
             if after and (row["first_seen"], row["id"]) >= after:
                 continue
             opp = store.get_opportunity(row["id"], user_id=user.id)

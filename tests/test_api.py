@@ -252,6 +252,20 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         out = (await self.get(f"/api/opportunities/{opp_id}", KEVIN)).json()
         self.assertFalse(out["backfill"], "one live sighting among my own sources makes it a drop")
 
+    async def test_backfill_filter_agrees_with_each_users_flag(self):
+        url = "https://x.example/shared"
+        opp_id, _ = self.store.upsert_item(Item(
+            source="ats.greenhouse.airbnb", external_id="shared", url=url,
+            title="Software Engineer Intern", raw={"seed": True}, seen_at=T0))
+        self.store.upsert_item(Item(source="ats.greenhouse.point72", external_id="shared", url=url,
+                                   title="Software Engineer Intern", seen_at=T0))
+        for token, seeded in ((KEVIN, True), (FRIEND, False)):
+            for backfill in ("true", "false"):
+                with self.subTest(token=token, backfill=backfill):
+                    page = (await self.get("/api/opportunities", token, include="all", backfill=backfill)).json()
+                    self.assertEqual(opp_id in {o["id"] for o in page["items"]}, (backfill == "true") == seeded)
+                    self.assertTrue(all(o["backfill"] == (backfill == "true") for o in page["items"]))
+
     async def test_cursor_pagination_walks_newest_first_without_repeats(self):
         seen, cursor = [], None
         while True:

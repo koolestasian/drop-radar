@@ -24,6 +24,10 @@ class LocationTests(unittest.TestCase):
         ("London", False), ("Toronto, ON, CA", False), ("Toronto, CAN", False), ("IN - Bengaluru", False),
         ("Mexico City, Mexico", False), ("DE-Berlin-Trion Building", False), ("Zurich, CH", False),
         ("Remote-Canada", False), ("Sao Paulo - Brazil", False),
+        # a trailing country wins over a city abbreviation inside a foreign name ("chi")
+        ("Ho Chi Minh, , Vietnam", False), ("Mexicali, BAJA CALIFORNIA, Mexico", False),
+        ("Darlington, County Durham, United Kingdom", False), ("Albuquerque, New Mexico", True),
+        ("Durham, NC, United States", True), ("United States-Florida-Melbourne", True),
         ("In-Office", None), ("N/A", None), ("", None),
     ]
 
