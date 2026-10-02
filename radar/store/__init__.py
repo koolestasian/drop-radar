@@ -197,12 +197,13 @@ class Store:
         return opp
 
     def list_opportunities(self, status=None, company=None, since=None, limit=None, source_names=None,
-                           backfill=None, sort="found"):
+                           backfill=None, sort="found", ranks=None):
         """Newest first by `sort_key` (ties by id, so a cursor can page through): when we first
         saw it ("found") or when it was posted ("posted", see SORT_KEYS). `since` filters on
         first_seen; `source_names` keeps opportunities at least one of those sources saw.
         `backfill` (needs `source_names`): False keeps only what one of them saw as a new
-        drop, True only what all of them saw already open on a first poll (raw.seed)."""
+        drop, True only what all of them saw already open on a first poll (raw.seed).
+        sort="prestige": `ranks` ({lowercased company: 0-3}, default 1) first, then newest posted."""
         where, params = [], []
         for clause, value in (("status = ?", status), ("company = ?", company), ("first_seen >= ?", _iso(since))):
             if value is not None:
@@ -218,7 +219,14 @@ class Store:
                              "i.opportunity_id = opportunities.id AND coalesce(json_extract(i.raw, '$.seed'), 0) = 0 "
                              f"AND i.source IN ({', '.join('?' * len(names)) or 'NULL'}))")
                 params.extend(names)
-        sql = f"SELECT *, {SORT_KEYS[sort]} AS sort_key FROM opportunities" + (" WHERE " + " AND ".join(where) if where else "")
+        key, key_params = SORT_KEYS["posted" if sort == "prestige" else sort], []
+        if sort == "prestige":
+            ranks = ranks or {}
+            case = ("CASE lower(company) " + " ".join("WHEN ? THEN ?" for _ in ranks) + " ELSE 1 END") if ranks else "1"
+            key = f"({case}) || '|' || ({key})"
+            key_params = [x for name, rank in ranks.items() for x in (name, rank)]
+        params = key_params + params
+        sql = f"SELECT *, {key} AS sort_key FROM opportunities" + (" WHERE " + " AND ".join(where) if where else "")
         sql += " ORDER BY sort_key DESC, id DESC"
         if limit is not None:
             sql += " LIMIT ?"

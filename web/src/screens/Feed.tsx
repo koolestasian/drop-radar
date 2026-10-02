@@ -13,11 +13,12 @@ import { ago } from "../format";
 import { useSetStatus } from "../hooks";
 
 type View = "new" | "open" | "all";
-type Sort = "posted" | "found";
+type Sort = "posted" | "found" | "prestige";
 type Filters = {
   q: string;
   view: View;
   sort: Sort;
+  usOnly: boolean;
   closingSoon: boolean;
   ignored: boolean;
 };
@@ -66,6 +67,7 @@ export function Feed({
     q: "",
     view: "new",
     sort: "posted",
+    usOnly: false,
     closingSoon: false,
     ignored: false,
   });
@@ -87,6 +89,7 @@ export function Feed({
           include: active.view === "all" ? "all" : "matches",
           backfill: active.view === "all" ? undefined : active.view === "open",
           sort: active.sort,
+          us_only: active.usOnly || undefined,
           q: active.q,
           closing_within: active.closingSoon ? 14 : undefined,
           action: active.ignored ? "ignored" : undefined,
@@ -244,6 +247,14 @@ export function Feed({
           </div>
           <button
             type="button"
+            aria-pressed={filters.usOnly}
+            onClick={() => setFilters((f) => ({ ...f, usOnly: !f.usOnly }))}
+            className={`${pill(filters.usOnly)} shrink-0`}
+          >
+            US only
+          </button>
+          <button
+            type="button"
             aria-pressed={filters.closingSoon}
             onClick={() => toggle("closingSoon")}
             className={`${pill(filters.closingSoon)} shrink-0`}
@@ -268,6 +279,7 @@ export function Feed({
           >
             <option value="posted">Newest posted</option>
             <option value="found">Newest found</option>
+            <option value="prestige">Most prestigious</option>
           </select>
         </div>
         <input
@@ -275,8 +287,8 @@ export function Feed({
           type="search"
           value={filters.q}
           onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-          placeholder="Search title or company  ( / )"
-          aria-label="Search title or company"
+          placeholder="Search title, company or city  ( / )"
+          aria-label="Search title, company or location"
           className="min-h-10 w-full min-w-0 rounded-full border border-zinc-200 bg-white px-4 text-sm sm:ml-auto sm:w-64 dark:border-zinc-800 dark:bg-zinc-900"
         />
       </div>

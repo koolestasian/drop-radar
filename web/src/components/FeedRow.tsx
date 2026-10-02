@@ -1,21 +1,9 @@
 import { forwardRef, useState } from "react";
 import type { ActionStatus, Opportunity } from "../api/client";
 import { ago, deadline, posted, shortLocation, sourceLabel, STATUS_LABEL } from "../format";
-import { Badge } from "./ui";
+import { Badge, CompanyLogo } from "./ui";
 
 const DEADLINE_TONE = { urgent: "red", soon: "amber", normal: "neutral", past: "neutral" } as const;
-const MONOGRAM = ["bg-zinc-900", "bg-sky-700", "bg-emerald-700", "bg-amber-700", "bg-rose-700", "bg-violet-700", "bg-teal-700"];
-
-function Monogram({ name }: { name: string }) {
-  let h = 0;
-  for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return (
-    <span aria-hidden className={`grid size-8 shrink-0 place-items-center rounded-lg text-sm font-bold text-white ${MONOGRAM[h % MONOGRAM.length]}`}>
-      {(name.trim()[0] ?? "?").toUpperCase()}
-    </span>
-  );
-}
-
 const action = "rounded-md px-1.5 py-0.5 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100";
 
 type Props = {
@@ -60,7 +48,7 @@ export const FeedRow = forwardRef<HTMLElement, Props>(function FeedRow({ opportu
         fresh ? "animate-[flash_1.6s_ease-out]" : ""
       }`}
     >
-      <Monogram name={o.company || "?"} />
+      <CompanyLogo name={o.company || "?"} domain={o.company_domain} />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

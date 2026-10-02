@@ -329,6 +329,11 @@ export interface components {
             category: string;
             /** Company */
             company: string;
+            /**
+             * Company Domain
+             * @description the company's web domain, for its logo; None until looked up, or when no confident match
+             */
+            company_domain?: string | null;
             /** Deadline */
             deadline: string;
             /** First Seen */
@@ -731,8 +736,10 @@ export interface operations {
             query?: {
                 /** @description matches: what would alert you; all: everything your sources found */
                 include?: string;
-                /** @description substring of title or company */
+                /** @description words that each start a word in the title, company or location */
                 q?: string | null;
+                /** @description only postings whose location is confirmed US (blank and location-less 'Remote' are left out) */
+                us_only?: boolean;
                 company?: string | null;
                 source?: string | null;
                 /** @description your status; 'ignored' ones are hidden unless asked for */
@@ -743,7 +750,7 @@ export interface operations {
                 since?: string | null;
                 /** @description deadline within this many days */
                 closing_within?: number | null;
-                /** @description newest first by when it was posted (date-only postings count as that day; none at all falls back to found) or by when your sources found it */
+                /** @description newest first by when it was posted (date-only postings count as that day; none at all falls back to found), by when your sources found it, or by company prestige (S > A > B > C tiers), newest posted within a tier */
                 sort?: string;
                 /** @description false: only new drops; true: only postings that were already open when your sources first looked */
                 backfill?: boolean | null;

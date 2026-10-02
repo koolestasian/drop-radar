@@ -33,6 +33,8 @@ class Opportunity(BaseModel):
     backfill: bool = Field(description="already open when your sources first looked (never alerted), not a live drop")
     match: Match
     action: Action | None = Field(description="this user's status/notes; nobody else's")
+    company_domain: str | None = Field(None, description="the company's web domain, for its logo; "
+                                                          "None until looked up, or when no confident match")
 
 
 class Page(BaseModel):

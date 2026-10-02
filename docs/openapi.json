@@ -296,6 +296,18 @@
             "title": "Company",
             "type": "string"
           },
+          "company_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the company's web domain, for its logo; None until looked up, or when no confident match",
+            "title": "Company Domain"
+          },
           "deadline": {
             "title": "Deadline",
             "type": "string"
@@ -988,7 +1000,7 @@
             }
           },
           {
-            "description": "substring of title or company",
+            "description": "words that each start a word in the title, company or location",
             "in": "query",
             "name": "q",
             "required": false,
@@ -1001,8 +1013,20 @@
                   "type": "null"
                 }
               ],
-              "description": "substring of title or company",
+              "description": "words that each start a word in the title, company or location",
               "title": "Q"
+            }
+          },
+          {
+            "description": "only postings whose location is confirmed US (blank and location-less 'Remote' are left out)",
+            "in": "query",
+            "name": "us_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "only postings whose location is confirmed US (blank and location-less 'Remote' are left out)",
+              "title": "Us Only",
+              "type": "boolean"
             }
           },
           {
@@ -1112,14 +1136,14 @@
             }
           },
           {
-            "description": "newest first by when it was posted (date-only postings count as that day; none at all falls back to found) or by when your sources found it",
+            "description": "newest first by when it was posted (date-only postings count as that day; none at all falls back to found), by when your sources found it, or by company prestige (S > A > B > C tiers), newest posted within a tier",
             "in": "query",
             "name": "sort",
             "required": false,
             "schema": {
               "default": "posted",
-              "description": "newest first by when it was posted (date-only postings count as that day; none at all falls back to found) or by when your sources found it",
-              "pattern": "^(posted|found)$",
+              "description": "newest first by when it was posted (date-only postings count as that day; none at all falls back to found), by when your sources found it, or by company prestige (S > A > B > C tiers), newest posted within a tier",
+              "pattern": "^(posted|found|prestige)$",
               "title": "Sort",
               "type": "string"
             }

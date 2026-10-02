@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 type Variant = "primary" | "ghost" | "danger" | "quiet";
 
@@ -69,5 +69,29 @@ export function ErrorNote({ error, retry }: { error: unknown; retry?: () => void
         </Button>
       )}
     </div>
+  );
+}
+
+const MONOGRAM = ["bg-zinc-900", "bg-sky-700", "bg-emerald-700", "bg-amber-700", "bg-rose-700", "bg-violet-700", "bg-teal-700"];
+
+/** The company's icon (by its looked-up domain), or a lettered tile when there is none or it fails to load. */
+export function CompanyLogo({ name, domain }: { name: string; domain?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  if (domain && !failed)
+    return (
+      <img
+        src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`}
+        alt=""
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className="size-8 shrink-0 rounded-lg border border-zinc-200 bg-white object-contain p-0.5 dark:border-zinc-700"
+      />
+    );
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return (
+    <span aria-hidden className={`grid size-8 shrink-0 place-items-center rounded-lg text-sm font-bold text-white ${MONOGRAM[h % MONOGRAM.length]}`}>
+      {(name.trim()[0] ?? "?").toUpperCase()}
+    </span>
   );
 }

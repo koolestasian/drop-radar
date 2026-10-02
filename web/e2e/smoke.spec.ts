@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 const TOKEN = "test-token-kevin-0123456789";
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
 
 /** `format.ts`'s deadline() parses "YYYY-MM-DD" as a *local* midnight and diffs
  * against local "today". Date.now() + Nd then .toISOString() is UTC, so near a
@@ -27,7 +28,7 @@ function opp(id: string, company: string, title: string, extra: Partial<Opp> = {
 
 async function mockApi(page: Page) {
   const state: Opp[] = [
-    opp("o1", "Stripe", "Software Engineer, Intern (Summer 2027)", { deadline: localDateDaysFromNow(2) }),
+    opp("o1", "Stripe", "Software Engineer, Intern (Summer 2027)", { deadline: localDateDaysFromNow(2), company_domain: "stripe.com" }),
     opp("o2", "NVIDIA", "Systems Software Engineer - New College Grad 2026", { sources: ["ats.workday.nvidia.wd5/NVIDIAExternalCareerSite"],
       published_at: `${new Date().toISOString().slice(0, 10)}T00:00:00+00:00` }), // Workday gives a date only
     opp("o3", "Airbnb", "Software Engineer, New Grad", { sources: ["github_repo.SimplifyJobs/New-Grad-Positions"], backfill: true }),
@@ -37,6 +38,8 @@ async function mockApi(page: Page) {
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
+  // logos come from Google's favicon service; tests stay offline
+  await page.route("**/s2/favicons**", (route) => route.fulfill({ contentType: "image/png", body: PNG }));
   await page.route("**/api/**", async (route) => {
     const req = route.request();
     if (req.headers()["authorization"] !== `Bearer ${TOKEN}`) return json(route, { detail: "missing or invalid bearer token" }, 401);
@@ -142,6 +145,8 @@ test("dark mode renders", async ({ page }, info) => {
   await page.evaluate((t) => localStorage.setItem("radar.token", t), TOKEN);
   await page.reload();
   await expect(page.getByRole("article")).toHaveCount(2);
+  await expect(page.getByRole("article", { name: /^Stripe/ }).locator("img")).toHaveAttribute("src", /domain=stripe\.com/);
+  await expect(page.getByRole("article", { name: /^NVIDIA/ }).locator("img")).toHaveCount(0); // no domain: letter tile
   await page.screenshot({ path: `test-results/feed-dark-${info.project.name}.png`, fullPage: true });
 });
 
@@ -219,4 +224,23 @@ test("a #token= link signs the device in and leaves the address bar", async ({ p
   await expect(page.getByRole("article")).toHaveCount(2);
   expect(page.url()).not.toContain(TOKEN);
   expect(await page.evaluate(() => localStorage.getItem("radar.token"))).toBe(TOKEN);
+});
+
+test("a logo that fails to load becomes a letter; US only, search and sort reach the server", async ({ page }) => {
+  await mockApi(page);
+  await page.route("**/s2/favicons**", (route) => route.fulfill({ status: 404, body: "" })); // registered last, wins
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  const asked: URL[] = [];
+  page.on("request", (r) => { if (r.url().includes("/api/opportunities?")) asked.push(new URL(r.url())); });
+  await page.goto("/");
+  const stripe = page.getByRole("article", { name: /^Stripe/ });
+  await expect(stripe.locator("img")).toHaveCount(0);
+  await expect(stripe.getByText("S", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "US only" }).click();
+  await expect.poll(() => asked.some((u) => u.searchParams.get("us_only") === "true")).toBe(true);
+  await page.getByLabel("Search title, company or location").fill("intern san francisco");
+  await expect.poll(() => asked.some((u) => u.searchParams.get("q") === "intern san francisco")).toBe(true);
+  await page.getByLabel("Sort").selectOption("prestige");
+  await expect.poll(() => asked.some((u) => u.searchParams.get("sort") === "prestige")).toBe(true);
 });

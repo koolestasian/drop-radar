@@ -1,6 +1,6 @@
 import type { ActionStatus, Opportunity } from "../api/client";
 import { ago, deadline, posted, shortLocation, sourceLabel, STATUS_LABEL } from "../format";
-import { Badge } from "./ui";
+import { Badge, CompanyLogo } from "./ui";
 
 const DEADLINE_TONE = { urgent: "red", soon: "amber", normal: "neutral", past: "neutral" } as const;
 const STATUSES: ActionStatus[] = ["new", "saved", "applied", "interview", "offer", "rejected", "ignored"];
@@ -18,8 +18,9 @@ export function OpportunityCard({ opportunity: o, onStatus }: { opportunity: Opp
       onDragStart={(e) => e.dataTransfer.setData("text/opportunity-id", o.id)}
       className="cursor-grab rounded-xl border border-zinc-200 bg-white p-3 shadow-sm active:cursor-grabbing dark:border-zinc-800 dark:bg-zinc-900"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex items-start gap-3">
+        <CompanyLogo name={o.company || "?"} domain={o.company_domain} />
+        <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-medium text-zinc-600 dark:text-zinc-400">{o.company || "Unknown company"}</p>
           <h3 className="font-semibold leading-snug text-zinc-950 [overflow-wrap:anywhere] dark:text-zinc-50">{title}</h3>
         </div>

@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import json
 import tempfile
 import time
@@ -307,6 +308,32 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
                          [self.ids[e] for e in ("dateonly", "timed", "undated", "old", "undated-backfill")])
         self.assertEqual(await walk("found"),
                          [self.ids[e] for e in ("undated-backfill", "old", "timed", "dateonly", "undated")])
+
+
+    async def test_search_terms_cover_location_and_us_only_needs_a_confirmed_us_place(self):
+        for eid, location in (("sv", "Sunnyvale, CA"), ("to", "Toronto, ON, Canada"), ("blank", "")):
+            self.ids[eid], _ = self.store.upsert_item(Item(
+                source="ats.greenhouse.airbnb", external_id=eid, url=f"https://x.example/{eid}",
+                title="Software Engineer Intern", company="Airbnb", location=location, seen_at=T0))
+        # every word must start a word somewhere: "ny" is New York's NY, not Sunnyvale's "nny"
+        self.assertEqual(await self.ids_of(KEVIN, include="all", q="intern ny"), self.names("swe", "tax"))
+        self.assertEqual(await self.ids_of(KEVIN, include="all", q="airbnb toronto"), self.names("to"))
+        self.assertEqual(await self.ids_of(KEVIN, include="all", us_only="true"), self.names("swe", "tax", "ng", "sv"))
+
+    async def test_prestige_sorts_by_tier_then_newest_posted_across_pages(self):
+        users = directory().users
+        users["kevin"] = dataclasses.replace(users["kevin"], profile=dataclasses.replace(
+            PROFILES["kevin"], company_tiers={"Airbnb": "S", "Stripe": "C"}))
+        app = create_app(self.store, SimpleNamespace(users=users, owned=OWNED, scheduler=None), tokens=TOKENS)
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
+            seen, cursor = [], None
+            while True:
+                params = {"include": "all", "sort": "prestige", "limit": 1, **({"cursor": cursor} if cursor else {})}
+                page = (await client.get("/api/opportunities", headers=auth(KEVIN), params=params)).json()
+                seen += [o["id"] for o in page["items"]]
+                if not (cursor := page["next_cursor"]):
+                    break
+        self.assertEqual(seen, [self.ids[e] for e in ("ng", "tax", "swe")])
 
 
 class FeedAndAlertsAgreeTests(unittest.IsolatedAsyncioTestCase):

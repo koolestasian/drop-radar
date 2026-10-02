@@ -20,6 +20,7 @@ import hmac
 import json
 import logging
 import os
+import re
 import signal
 import tempfile
 from pathlib import Path
@@ -37,11 +38,15 @@ from radar.api.models import (Action, ActionPatch, InstagramRelay, Match, Me, Me
                               SourceHealth, SourceLatency, WatchlistConfig)
 from radar.config import User, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
+from radar.logos import LogoResolver
 from radar.models import utcnow
+from radar.pipeline.filter import is_us_location
+from radar.pipeline.normalize import canonical_company
 from radar.pipeline.enrich import DEFAULT_DAILY_TOKEN_BUDGET
 from radar.stats import latency_by_source
 
 log = logging.getLogger(__name__)
+TIER_RANK = {"S": 3, "A": 2, "B": 1, "C": 0}
 HIDDEN_BY_DEFAULT = "ignored"  # a user's own ignored opportunities leave their feed unless asked for
 WEB_DIST = Path(__file__).resolve().parents[2] / "web" / "dist"
 
@@ -69,6 +74,19 @@ def _deadline(value):
 EDITED_HEADER = "# Edited through the API (radar.api); validated by radar.config. Hand-written comments are not kept.\n"
 
 
+def _has_terms(text, terms):
+    """Every term starts a word somewhere: "ny" finds "New York, NY", not "Sunnyvale"."""
+    return all(re.search(rf"(?<![a-z0-9]){re.escape(t)}", text, re.I) for t in terms)
+
+
+def _ranks(user):
+    """Prestige per company for this user: watchlist tiers, overridden by profile.company_tiers.
+    B (the default rank) is left out unless an override says so."""
+    tiers = {canonical_company(c.name).lower(): c.tier for c in user.watchlist.companies if c.tier != "B"}
+    tiers.update({canonical_company(n).lower(): t for n, t in user.profile.company_tiers.items()})
+    return {name: TIER_RANK[t] for name, t in tiers.items()}
+
+
 def _atomic_write(path, text):
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -84,6 +102,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     # A crashed scheduler must take the process down with it, or systemd's Restart=always
     # never fires -- uvicorn would otherwise keep serving a process that stopped polling.
     crash_exit = crash_exit or (lambda: os.kill(os.getpid(), signal.SIGTERM))
+    logos = LogoResolver(store)
 
     def _log_crash(task):
         if task.cancelled() or task.exception() is None:
@@ -93,16 +112,17 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
 
     @asynccontextmanager
     async def lifespan(app):
-        stop, task = asyncio.Event(), None
+        stop, task, logo_task = asyncio.Event(), None, None
         if getattr(runtime, "scheduler", None) is not None:
             task = asyncio.create_task(runtime.scheduler.run(stop))
             task.add_done_callback(_log_crash)
+            logo_task = asyncio.create_task(logos.run(stop))  # production only: tests stay offline
         try:
             yield
         finally:
             if task is not None:
                 stop.set()  # Scheduler.run drains in-flight fetches before returning
-                await asyncio.gather(task, return_exceptions=True)
+                await asyncio.gather(task, logo_task, return_exceptions=True)
 
     app = FastAPI(title="Drop Radar", lifespan=lifespan)
     app.state.store, app.state.runtime = store, runtime
@@ -138,6 +158,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             backfill=bool(seen_by_me) and all(json.loads(i["raw"] or "{}").get("seed") for i in seen_by_me),
             match=Match(ok=ok, reasons=reasons),
             action=Action(status=action["status"], notes=action["notes"]) if action else None,
+            company_domain=logos.domain(opp["company"]),
         )
 
     def visible_opportunity(opp_id, user):
@@ -193,7 +214,9 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         user: User = Depends(current_user),
         include: str = Query("matches", pattern="^(matches|all)$",
                              description="matches: what would alert you; all: everything your sources found"),
-        q: str | None = Query(None, description="substring of title or company"),
+        q: str | None = Query(None, description="words that each start a word in the title, company or location"),
+        us_only: bool = Query(False, description="only postings whose location is confirmed US (blank and "
+                                                  "location-less 'Remote' are left out)"),
         company: str | None = None,
         source: str | None = None,
         action: str | None = Query(None, description="your status; 'ignored' ones are hidden unless asked for"),
@@ -201,9 +224,10 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                                                       "Closed/Expired/Not actionable are hidden unless asked for"),
         since: datetime | None = Query(None, description="first seen at or after"),
         closing_within: int | None = Query(None, ge=0, description="deadline within this many days"),
-        sort: str = Query("posted", pattern="^(posted|found)$",
+        sort: str = Query("posted", pattern="^(posted|found|prestige)$",
                           description="newest first by when it was posted (date-only postings count as that "
-                                      "day; none at all falls back to found) or by when your sources found it"),
+                                      "day; none at all falls back to found), by when your sources found it, "
+                                      "or by company prestige (S > A > B > C tiers), newest posted within a tier"),
         backfill: bool | None = Query(None, description="false: only new drops; true: only postings that were "
                                                          "already open when your sources first looked"),
         cursor: str | None = None,
@@ -214,9 +238,17 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         after = _decode_cursor(cursor) if cursor else None
         today = now().date()
         items, keys, more = [], [], None
+        terms = (q or "").split()
         for row in store.list_opportunities(status=status, since=since, source_names=owned(user),
-                                              backfill=backfill, sort=sort):
+                                              backfill=backfill, sort=sort, ranks=_ranks(user)):
             if after and (row["sort_key"], row["id"]) >= after:
+                continue
+            # filters the row alone can answer run before the per-row fetch below
+            if terms and not _has_terms(f"{row['title']} {row['company']} {row['location']}", terms):
+                continue
+            if company and company.lower() not in row["company"].lower():
+                continue
+            if us_only and is_us_location(row["location"]) is not True:
                 continue
             opp = store.get_opportunity(row["id"], user_id=user.id)
             mine = opp.get("action") or {}
@@ -225,10 +257,6 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             if action is None and mine.get("status") == HIDDEN_BY_DEFAULT:
                 continue
             if action is None and status is None and opp["status"] in DEAD_STATUSES:
-                continue
-            if q and q.lower() not in f"{opp['title']} {opp['company']}".lower():
-                continue
-            if company and company.lower() not in opp["company"].lower():
                 continue
             if source and source not in {i["source"] for i in opp["items"]}:
                 continue
