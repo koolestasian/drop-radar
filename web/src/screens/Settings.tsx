@@ -193,7 +193,7 @@ function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
   );
 }
 
-export function Settings({ onSignOut }: { onSignOut: () => void }) {
+export function Settings() {
   const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me") });
   const profile = useQuery({ queryKey: ["config", "profile"], queryFn: () => api<ProfileConfig>("/api/config/profile") });
   const watchlist = useQuery({ queryKey: ["config", "watchlist"], queryFn: () => api<WatchlistConfig>("/api/config/watchlist") });
@@ -233,11 +233,6 @@ export function Settings({ onSignOut }: { onSignOut: () => void }) {
         )}
       </section>
 
-      <section aria-labelledby="account-title" className="flex flex-col gap-2">
-        <h2 id="account-title" className={h2}>Account</h2>
-        <p className="text-sm text-muted-foreground">{me.data ? `Signed in as ${me.data.user}, watching ${me.data.sources} sources.` : " "}</p>
-        <Button variant="destructive" size="lg" className="self-start" onClick={onSignOut}>Sign out on this device</Button>
-      </section>
     </div>
   );
 }

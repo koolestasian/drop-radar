@@ -1,12 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { Activity, BellOff, Inbox, KanbanSquare, List, Settings as SettingsIcon, type LucideIcon } from "lucide-react";
+import { Activity, BellOff, CircleUser, Inbox, KanbanSquare, List, LogOut, Settings as SettingsIcon, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import { api, setUnauthorizedHandler, token, type Me, type Opportunity } from "./api/client";
 import { openStream, type StreamStatus } from "./api/stream";
 import { patchCachedOpportunity } from "./hooks";
 import { Feed } from "./screens/Feed";
 import { Login } from "./screens/Login";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { Welcome } from "./components/Welcome";
 import { ListSkeleton } from "./components/common";
 
@@ -116,7 +118,24 @@ export function App() {
               </a>
             ))}
           </nav>
-          <span className="hidden text-sm text-muted-foreground lg:inline">{me.data?.user}</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-10 gap-1.5 px-2.5 max-sm:ml-auto pointer-coarse:h-11" aria-label={`Account${me.data ? `: ${me.data.user}` : ""}`}>
+                <CircleUser aria-hidden className="size-5" />
+                <span className="hidden text-sm lg:inline">{me.data?.user}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-48">
+              {me.data && <DropdownMenuLabel className="font-normal text-muted-foreground">Signed in as {me.data.user}</DropdownMenuLabel>}
+              <DropdownMenuItem asChild>
+                <a href="#/settings"><SettingsIcon aria-hidden /> Settings</a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onSelect={signOut}>
+                <LogOut aria-hidden /> Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
@@ -134,7 +153,7 @@ export function App() {
         <Suspense fallback={<ListSkeleton rows={3} />}>
           {route === "board" && <Board />}
           {route === "sources" && <Sources />}
-          {route === "settings" && <Settings onSignOut={signOut} />}
+          {route === "settings" && <Settings />}
         </Suspense>
       </main>
       <nav
