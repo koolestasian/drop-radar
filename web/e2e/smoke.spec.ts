@@ -27,12 +27,13 @@ function opp(id: string, company: string, title: string, extra: Partial<Opp> = {
   };
 }
 
-async function mockApi(page: Page) {
+async function mockApi(page: Page, more: Opp[] = []) {
   const state: Opp[] = [
     opp("o1", "Stripe", "Software Engineer, Intern (Summer 2027)", { deadline: localDateDaysFromNow(2), company_domain: "stripe.com" }),
     opp("o2", "NVIDIA", "Systems Software Engineer - New College Grad 2026", { sources: ["ats.workday.nvidia.wd5/NVIDIAExternalCareerSite"],
       published_at: `${new Date().toISOString().slice(0, 10)}T00:00:00+00:00` }), // Workday gives a date only
     opp("o3", "Airbnb", "Software Engineer, New Grad", { sources: ["github_repo.SimplifyJobs/New-Grad-Positions"], backfill: true }),
+    ...more,
   ];
   const fresh = opp("o9", "Ramp", "Software Engineer Intern - Summer 2027", { first_seen: new Date().toISOString() });
   let published = false; // the streamed drop is on the server once a test says so
@@ -252,4 +253,24 @@ test("a logo that fails to load becomes a letter; filters and sort reach the ser
   await expect(page.getByRole("heading", { level: 1 })).toContainText("jobs");
   await expect(page.getByRole("button", { name: "All matches" })).toHaveCount(0); // no profile tabs here
   await expect.poll(() => asked.some((u) => u.searchParams.get("include") === "all" && !u.searchParams.has("backfill"))).toBe(true);
+});
+
+test("the same role posted in several places is one row; track chips narrow the feed", async ({ page }, info) => {
+  await mockApi(page, [
+    opp("n1", "Nokia", "AI R&D Engineer Co-op", { location: "Murray Hill, NJ" }),
+    opp("n2", "Nokia", "AI R&D Engineer Co-op", { location: "Dallas, TX" }),
+    opp("n3", "Nokia", "AI R&D Engineer Co-op", { location: "Sunnyvale, CA" }),
+    opp("q1", "Jane Street", "Quantitative Trader Intern", { location: "New York, NY" }),
+  ]);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  await page.screenshot({ path: `test-results/grouped-${info.project.name}.png`, fullPage: true });
+  await expect(page.getByRole("article")).toHaveCount(4); // Stripe, NVIDIA, Nokia once, Jane Street
+  await page.getByRole("button", { name: "+2 more postings of this role" }).click();
+  await expect(page.getByRole("article")).toHaveCount(6);
+  await expect(page.getByRole("article", { name: /^Nokia/ }).nth(2)).toContainText("Sunnyvale, CA");
+
+  await page.getByRole("group", { name: "Track" }).getByRole("button", { name: /^Quant/ }).click();
+  await expect(page.getByRole("article")).toHaveCount(1);
+  await expect(page.getByRole("article")).toContainText("Jane Street");
 });

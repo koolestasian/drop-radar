@@ -10,7 +10,15 @@ import { useSetStatus } from "../hooks";
 type Screen = "feed" | "jobs";
 type View = "new" | "matches";
 type Sort = "posted" | "found" | "prestige";
-type Filters = { q: string; location: string; view: View; sort: Sort; usOnly: boolean; closingSoon: boolean; ignored: boolean };
+type Filters = {
+  q: string;
+  location: string;
+  view: View;
+  sort: Sort;
+  usOnly: boolean;
+  closingSoon: boolean;
+  ignored: boolean;
+};
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "new", label: "New" },
@@ -30,6 +38,22 @@ function group(o: Opportunity): (typeof GROUPS)[number] {
   return "Other roles";
 }
 
+// Track chips: the stored role_track is blank on most rows (no LLM on the box), so the title decides first.
+const TRACKS: [string, RegExp][] = [
+  ["Quant", /\b(quant|trading|trader)\b/i],
+  ["AI / ML / Data", /\b(machine learning|ml|ai|data (scien|eng|analy)\w*|research scientist|nlp|llm)\b/i],
+  ["Hardware", /\b(hardware|electrical|embedded|firmware|silicon|asic|fpga|mechanical)\b/i],
+  ["Security", /\b(security|cyber|risk)\b/i],
+  ["Product", /\b(product|program) (manag|design)/i],
+  ["Design", /\b(design|ux|ui)\b/i],
+  ["Software", /\b(software|swe|developer|engineer|backend|frontend|full[- ]?stack|devops|sre|platform)\b/i],
+];
+const twinKey = (o: Opportunity) => `${o.company}|${o.title}`.toLowerCase();
+function track(o: Opportunity): string {
+  const text = `${o.title} ${o.role_track}`;
+  return TRACKS.find(([, re]) => re.test(text))?.[0] ?? "Other";
+}
+
 function useDebounced<T>(value: T, ms = 250) {
   const [v, setV] = useState(value);
   useEffect(() => {
@@ -44,13 +68,23 @@ export function feedKey(screen: Screen, f: Filters) {
 }
 
 export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} }: { screen?: Screen; incoming?: Opportunity[]; clearIncoming?: () => void }) {
-  const [filters, setFilters] = useState<Filters>({ q: "", location: "", view: "new", sort: "posted", usOnly: false, closingSoon: false, ignored: false });
+  const [filters, setFilters] = useState<Filters>({
+    q: "",
+    location: "",
+    view: "new",
+    sort: "posted",
+    usOnly: false,
+    closingSoon: false,
+    ignored: false,
+  });
   const q = useDebounced(filters.q);
   const location = useDebounced(filters.location);
   const active = useMemo(() => ({ ...filters, q, location }), [filters, q, location]);
   const setStatus = useSetStatus();
   const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me") });
   const [selected, setSelected] = useState(0);
+  const [trackFilter, setTrackFilter] = useState("");
+  const [open, setOpen] = useState<Set<string>>(new Set());
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const search = useRef<HTMLInputElement>(null);
   const rows = useRef<(HTMLElement | null)[]>([]);
@@ -79,8 +113,23 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
   });
 
   const loaded = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);
+  const trackCounts = useMemo(() => {
+    const c = new Map<string, number>();
+    for (const o of loaded) c.set(track(o), (c.get(track(o)) ?? 0) + 1);
+    return [...c].sort((a, b) => b[1] - a[1]);
+  }, [loaded]);
+  const shown = useMemo(() => (trackFilter ? loaded.filter((o) => track(o) === trackFilter) : loaded), [loaded, trackFilter]);
+  // The same role posted in several places is one row with the extra locations behind it.
+  const twins = useMemo(() => {
+    const m = new Map<string, Opportunity[]>();
+    for (const o of shown) m.set(twinKey(o), [...(m.get(twinKey(o)) ?? []), o]);
+    return m;
+  }, [shown]);
   // Grouped display order; j/k walk it top to bottom.
-  const items = useMemo(() => GROUPS.flatMap((g) => loaded.filter((o) => group(o) === g)), [loaded]);
+  const items = useMemo(() => {
+    const seen = new Set<string>();
+    return GROUPS.flatMap((g) => shown.filter((o) => group(o) === g)).filter((o) => !seen.has(twinKey(o)) && seen.add(twinKey(o)));
+  }, [shown]);
   const unseen = incoming.filter((o) => !loaded.some((i) => i.id === o.id));
   const plainFeed = screen === "feed" && active.view === "new" && !active.q && !active.location && !active.usOnly && !active.closingSoon && !active.ignored;
 
@@ -103,7 +152,10 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
       const move = (i: number) => {
         const next = Math.max(0, Math.min(items.length - 1, i));
         setSelected(next);
-        rows.current[next]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        rows.current[next]?.scrollIntoView({
+          block: "nearest",
+          behavior: "smooth",
+        });
       };
       if (e.key === "j") move(selected + 1);
       else if (e.key === "k") move(selected - 1);
@@ -111,8 +163,16 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
         e.preventDefault();
         search.current?.focus();
       } else if (!current) return;
-      else if (e.key === "s") setStatus.mutate({ id: current.id, status: current.action?.status === "saved" ? "new" : "saved" });
-      else if (e.key === "i") setStatus.mutate({ id: current.id, status: current.action?.status === "ignored" ? "new" : "ignored" });
+      else if (e.key === "s")
+        setStatus.mutate({
+          id: current.id,
+          status: current.action?.status === "saved" ? "new" : "saved",
+        });
+      else if (e.key === "i")
+        setStatus.mutate({
+          id: current.id,
+          status: current.action?.status === "ignored" ? "new" : "ignored",
+        });
       else if (e.key === "a") setStatus.mutate({ id: current.id, status: "applied" });
       else if ((e.key === "o" || e.key === "Enter") && current.url) window.open(current.url, "_blank", "noopener");
     };
@@ -188,7 +248,11 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
         </div>
         <div className="-mx-4 flex items-center gap-1 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           {screen === "feed" && (
-            <div role="group" aria-label="Show" className="flex shrink-0 rounded-full border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900">
+            <div
+              role="group"
+              aria-label="Show"
+              className="flex shrink-0 rounded-full border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900"
+            >
               {VIEWS.map((v) => (
                 <button key={v.id} type="button" aria-pressed={filters.view === v.id} onClick={() => set("view", v.id)} className={pill(filters.view === v.id)}>
                   {v.label}
@@ -199,7 +263,12 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
           <button type="button" aria-pressed={filters.usOnly} onClick={() => set("usOnly", !filters.usOnly)} className={pill(filters.usOnly)}>
             US only
           </button>
-          <button type="button" aria-pressed={filters.closingSoon} onClick={() => set("closingSoon", !filters.closingSoon)} className={pill(filters.closingSoon)}>
+          <button
+            type="button"
+            aria-pressed={filters.closingSoon}
+            onClick={() => set("closingSoon", !filters.closingSoon)}
+            className={pill(filters.closingSoon)}
+          >
             Closing soon
           </button>
           <button type="button" aria-pressed={filters.ignored} onClick={() => set("ignored", !filters.ignored)} className={pill(filters.ignored)}>
@@ -207,6 +276,22 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
           </button>
         </div>
       </div>
+
+      {trackCounts.length > 1 && (
+        <div role="group" aria-label="Track" className="-mx-4 flex gap-1 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          {[["", loaded.length] as [string, number], ...trackCounts].map(([t, n]) => (
+            <button
+              key={t}
+              type="button"
+              aria-pressed={trackFilter === t}
+              onClick={() => setTrackFilter(t)}
+              className={`${pill(trackFilter === t)} border border-zinc-200 dark:border-zinc-800`}
+            >
+              {t || "All"} <span className="font-mono text-xs opacity-60">{n}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {unseen.length > 0 && plainFeed && (
         <div className="sticky top-16 z-10 flex justify-center">
@@ -247,18 +332,49 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
                 <ol className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   {inGroup.map((o) => {
                     const i = index++;
+                    const more = (twins.get(twinKey(o)) ?? []).slice(1);
+                    const row = (r: Opportunity, n?: number) => (
+                      <FeedRow
+                        ref={
+                          n === undefined
+                            ? (el) => {
+                                rows.current[i] = el;
+                              }
+                            : undefined
+                        }
+                        opportunity={r}
+                        selected={n === undefined && i === selected}
+                        fresh={fresh.has(r.id)}
+                        onSelect={() => n === undefined && setSelected(i)}
+                        onStatus={(status) => setStatus.mutate({ id: r.id, status })}
+                      />
+                    );
                     return (
                       <li key={o.id}>
-                        <FeedRow
-                          ref={(el) => {
-                            rows.current[i] = el;
-                          }}
-                          opportunity={o}
-                          selected={i === selected}
-                          fresh={fresh.has(o.id)}
-                          onSelect={() => setSelected(i)}
-                          onStatus={(status) => setStatus.mutate({ id: o.id, status })}
-                        />
+                        {row(o)}
+                        {more.length > 0 && (
+                          <button
+                            type="button"
+                            aria-expanded={open.has(o.id)}
+                            onClick={() =>
+                              setOpen((s) => {
+                                const n = new Set(s);
+                                if (!n.delete(o.id)) n.add(o.id);
+                                return n;
+                              })
+                            }
+                            className="mb-3 ml-16 text-xs font-medium text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                          >
+                            {open.has(o.id) ? "Hide" : `+${more.length} more posting${more.length === 1 ? "" : "s"} of this role`}
+                          </button>
+                        )}
+                        {open.has(o.id) && (
+                          <ol className="divide-y divide-zinc-100 border-t border-zinc-100 dark:divide-zinc-800 dark:border-zinc-800">
+                            {more.map((r) => (
+                              <li key={r.id}>{row(r, 0)}</li>
+                            ))}
+                          </ol>
+                        )}
                       </li>
                     );
                   })}
