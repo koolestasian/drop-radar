@@ -7,6 +7,7 @@ import { ErrorNote, ListSkeleton } from "../components/common";
 import { RoleCard } from "../components/RoleCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -156,7 +157,10 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (e.metaKey || e.ctrlKey || e.altKey || target.closest("input, textarea, select, [role=dialog]")) return;
-      const index = Math.max(0, items.findIndex((o) => o.id === current?.id));
+      const index = Math.max(
+        0,
+        items.findIndex((o) => o.id === current?.id),
+      );
       const move = (i: number) => {
         const next = items[Math.max(0, Math.min(items.length - 1, i))];
         if (!next) return;
@@ -194,7 +198,7 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
         ? "Roles that match your profile, found since the radar started watching."
         : "Every role that matches your profile, new or not.";
   const newest = loaded.reduce<string | null>((m, o) => (!m || o.first_seen > m ? o.first_seen : m), null);
-  const chip = "pointer-coarse:h-10 rounded-full px-3.5";
+  const chip = "pointer-coarse:h-11 rounded-full px-3.5";
   const detail = current && (
     <Detail
       key={current.id}
@@ -202,6 +206,61 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
       onStatus={(status) => setStatus.mutate({ id: current.id, status })}
       onNotes={(notes) => setStatus.mutate({ id: current.id, notes })}
     />
+  );
+
+  const filterBody = (
+    <div className="flex flex-col gap-5 pt-2">
+      <div className="flex flex-col gap-2">
+        <label htmlFor="location" className="text-sm font-semibold">
+          Location
+        </label>
+        <Input
+          id="location"
+          type="search"
+          value={filters.location}
+          onChange={(e) => set("location", e.target.value)}
+          placeholder="City, state or country"
+          className="h-11 text-base sm:h-10 sm:text-sm"
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <span id="sort-label" className="text-sm font-semibold">
+          Sort by
+        </span>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          aria-labelledby="sort-label"
+          value={filters.sort}
+          onValueChange={(v) => v && set("sort", v as Sort)}
+          className="flex w-full flex-col"
+        >
+          {SORTS.map((s) => (
+            <ToggleGroupItem key={s.id} value={s.id} className="w-full justify-start pointer-coarse:h-11">
+              {s.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </div>
+      {(
+        [
+          ["usOnly", "US only", "Hide roles outside the United States."],
+          ["closingSoon", "Closing soon", "Deadline within 14 days."],
+          ["ignored", "Ignored", "Show the roles you ignored instead."],
+        ] as const
+      ).map(([key, label, hint]) => (
+        <div key={key} className="flex items-center justify-between gap-4">
+          <label htmlFor={key} className="flex flex-col">
+            <span className="text-sm font-semibold">{label}</span>
+            <span className="text-sm text-muted-foreground">{hint}</span>
+          </label>
+          <Switch id={key} checked={filters[key]} onCheckedChange={(v) => set(key, v)} />
+        </div>
+      ))}
+      <Button size="lg" onClick={() => setFilterSheet(false)}>
+        Show results
+      </Button>
+    </div>
   );
 
   return (
@@ -260,7 +319,7 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
               aria-label="Track"
               value={trackFilter}
               onValueChange={(v) => setTrackFilter(v)}
-              className="-mx-4 flex-nowrap justify-start gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
+              className="-mx-4 w-auto max-w-none flex-nowrap justify-start gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:w-full sm:flex-wrap sm:px-0"
             >
               {[["", loaded.length] as [string, number], ...trackCounts].map(([t, n]) => (
                 <ToggleGroupItem key={t} value={t} aria-label={`${t || "All"} (${n})`} className={`${chip} shrink-0`}>
@@ -384,76 +443,42 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
         </aside>
       )}
 
-      <Sheet open={sheet && !wide} onOpenChange={setSheet}>
-        <SheetContent side="bottom" className="max-h-[88dvh] overflow-y-auto rounded-t-2xl px-4 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <SheetHeader className="sr-only">
-            <SheetTitle>{current?.title || "Role details"}</SheetTitle>
-            <SheetDescription>Details, status and notes for this role.</SheetDescription>
-          </SheetHeader>
-          {detail}
-        </SheetContent>
-      </Sheet>
-
-      <Sheet open={filterSheet} onOpenChange={setFilterSheet}>
-        <SheetContent side={wide ? "right" : "bottom"} className="gap-0 overflow-y-auto px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:max-w-sm">
-          <SheetHeader className="px-0">
-            <SheetTitle>Filters</SheetTitle>
-            <SheetDescription>Narrow what the feed shows. Your profile still decides what matches.</SheetDescription>
-          </SheetHeader>
-          <div className="flex flex-col gap-5 pt-2">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="location" className="text-sm font-semibold">
-                Location
-              </label>
-              <Input
-                id="location"
-                type="search"
-                value={filters.location}
-                onChange={(e) => set("location", e.target.value)}
-                placeholder="City, state or country"
-                className="h-11 text-base sm:h-10 sm:text-sm"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <span id="sort-label" className="text-sm font-semibold">
-                Sort by
-              </span>
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                aria-labelledby="sort-label"
-                value={filters.sort}
-                onValueChange={(v) => v && set("sort", v as Sort)}
-                className="flex w-full flex-col"
-              >
-                {SORTS.map((s) => (
-                  <ToggleGroupItem key={s.id} value={s.id} className="w-full justify-start pointer-coarse:h-11">
-                    {s.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-            {(
-              [
-                ["usOnly", "US only", "Hide roles outside the United States."],
-                ["closingSoon", "Closing soon", "Deadline within 14 days."],
-                ["ignored", "Ignored", "Show the roles you ignored instead."],
-              ] as const
-            ).map(([key, label, hint]) => (
-              <div key={key} className="flex items-center justify-between gap-4">
-                <label htmlFor={key} className="flex flex-col">
-                  <span className="text-sm font-semibold">{label}</span>
-                  <span className="text-sm text-muted-foreground">{hint}</span>
-                </label>
-                <Switch id={key} checked={filters[key]} onCheckedChange={(v) => set(key, v)} />
-              </div>
-            ))}
-            <Button size="lg" onClick={() => setFilterSheet(false)}>
-              Show results
-            </Button>
+      <Drawer open={sheet && !wide} onOpenChange={setSheet}>
+        <DrawerContent className="max-h-[88dvh]">
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>{current?.title || "Role details"}</DrawerTitle>
+            <DrawerDescription>Details, status and notes for this role.</DrawerDescription>
+          </DrawerHeader>
+          <div className="flex justify-end px-3 pt-1">
+            <DrawerClose asChild>
+              <Button variant="ghost">Close</Button>
+            </DrawerClose>
           </div>
-        </SheetContent>
-      </Sheet>
+          <div className="overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">{detail}</div>
+        </DrawerContent>
+      </Drawer>
+
+      {wide ? (
+        <Sheet open={filterSheet} onOpenChange={setFilterSheet}>
+          <SheetContent side="right" className="gap-0 overflow-y-auto px-5 sm:max-w-sm">
+            <SheetHeader className="px-0">
+              <SheetTitle>Filters</SheetTitle>
+              <SheetDescription>Narrow what the feed shows. Your profile still decides what matches.</SheetDescription>
+            </SheetHeader>
+            {filterBody}
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Drawer open={filterSheet} onOpenChange={setFilterSheet}>
+          <DrawerContent className="max-h-[88dvh]">
+            <DrawerHeader>
+              <DrawerTitle>Filters</DrawerTitle>
+              <DrawerDescription>Narrow what the feed shows. Your profile still decides what matches.</DrawerDescription>
+            </DrawerHeader>
+            <div className="overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">{filterBody}</div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </div>
   );
 }

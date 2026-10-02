@@ -102,11 +102,6 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   // posted (by the employer) and found (by us) are two different clocks
   await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("San Francisco, CA · posted 1h ago");
   await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("found 1h ago");
-  // the card stays short; the detail view names where it was seen and why it matched
-  await page.getByRole("article", { name: /^Stripe/ }).getByRole("button", { name: /Software Engineer, Intern/ }).click();
-  await expect(page.getByText("Seen on").locator("xpath=following-sibling::dd")).toHaveText("Greenhouse");
-  await expect(page.getByText("role: 'software engineer'")).toBeVisible();
-  await page.keyboard.press("Escape"); // closes the phone sheet; harmless beside the desktop pane
   await expect(page.getByRole("article", { name: /^NVIDIA/ })).toContainText("posted <1d ago"); // date only: whole days
   await expect(page.getByRole("region", { name: "Internships" }).getByRole("article")).toContainText("Stripe");
   await expect(page.getByRole("region", { name: "New grad" }).getByRole("article")).toContainText("NVIDIA");
@@ -124,6 +119,11 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
 
   await page.getByRole("article").first().getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("article").first().getByRole("button", { name: "Saved" })).toBeVisible();
+  // the card stays short; the detail view names where it was seen and why it matched
+  await page.getByRole("article", { name: /^Stripe/ }).getByRole("button", { name: /Software Engineer, Intern/ }).click();
+  await expect(page.getByText("Seen on").locator("xpath=following-sibling::dd")).toHaveText("Greenhouse");
+  await expect(page.getByText("role: 'software engineer'")).toBeVisible();
+  await page.keyboard.press("Escape"); // closes the phone sheet; harmless beside the desktop pane
 
   await page.getByRole("link", { name: /Board/ }).last().click();
   const saved = page.getByLabel("Saved column");
@@ -268,13 +268,18 @@ test("the same role posted in several places is one row; track chips narrow the 
     opp("n2", "Nokia", "AI R&D Engineer Co-op", { location: "Dallas, TX" }),
     opp("n3", "Nokia", "AI R&D Engineer Co-op", { location: "Sunnyvale, CA" }),
     opp("q1", "Jane Street", "Quantitative Trader Intern", { location: "New York, NY" }),
+    opp("h1", "Apple", "Hardware Engineering Intern", { location: "Cupertino, CA" }),
+    opp("d1", "Figma", "Product Design Intern", { location: "San Francisco, CA" }),
   ]);
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
   await page.goto("/");
   await page.screenshot({ path: `test-results/grouped-${info.project.name}.png`, fullPage: true });
-  await expect(page.getByRole("article")).toHaveCount(4); // Stripe, NVIDIA, Nokia once, Jane Street
+  await expect(page.getByRole("article")).toHaveCount(6); // Stripe, NVIDIA, Nokia once, Jane Street, Apple, Figma
+  // a long row of track chips scrolls inside itself; it must not widen the page
+  const width = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+  expect(width[0], "feed scrolls sideways").toBeLessThanOrEqual(width[1]);
   await page.getByRole("button", { name: "+2 more postings of this role" }).click();
-  await expect(page.getByRole("article")).toHaveCount(6);
+  await expect(page.getByRole("article")).toHaveCount(8);
   await expect(page.getByRole("article", { name: /^Nokia/ }).nth(2)).toContainText("Sunnyvale, CA");
 
   await page.getByRole("radiogroup", { name: "Track" }).getByRole("radio", { name: /^Quant/ }).click();

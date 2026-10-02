@@ -1,15 +1,18 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Activity, BellOff, Inbox, KanbanSquare, List, Settings as SettingsIcon, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import { api, setUnauthorizedHandler, token, type Me, type Opportunity } from "./api/client";
 import { openStream, type StreamStatus } from "./api/stream";
 import { patchCachedOpportunity } from "./hooks";
-import { Board } from "./screens/Board";
 import { Feed } from "./screens/Feed";
 import { Login } from "./screens/Login";
-import { Settings } from "./screens/Settings";
-import { Sources } from "./screens/Sources";
+import { ListSkeleton } from "./components/common";
+
+// Screens you don't open first load on demand, so the feed's first paint ships less code.
+const Board = lazy(() => import("./screens/Board").then((m) => ({ default: m.Board })));
+const Settings = lazy(() => import("./screens/Settings").then((m) => ({ default: m.Settings })));
+const Sources = lazy(() => import("./screens/Sources").then((m) => ({ default: m.Sources })));
 
 const ROUTES: { id: string; label: string; icon: LucideIcon }[] = [
   { id: "feed", label: "Feed", icon: Inbox },
@@ -126,9 +129,11 @@ export function App() {
         )}
         {route === "feed" && <Feed incoming={incoming} clearIncoming={() => setIncoming([])} />}
         {route === "jobs" && <Feed key="jobs" screen="jobs" />}
-        {route === "board" && <Board />}
-        {route === "sources" && <Sources />}
-        {route === "settings" && <Settings onSignOut={signOut} />}
+        <Suspense fallback={<ListSkeleton rows={3} />}>
+          {route === "board" && <Board />}
+          {route === "sources" && <Sources />}
+          {route === "settings" && <Settings onSignOut={signOut} />}
+        </Suspense>
       </main>
       <nav
         aria-label="Main"
