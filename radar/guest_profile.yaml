@@ -1,0 +1,16 @@
+# What a visitor who is not logged in sees as "the feed": early-career roles across tech and business.
+# Same format and matching rules as config/profile.yaml (one role AND one keyword). Shipped with the code
+# (not under the config dir) so it is the same everywhere; no season or location is assumed.
+roles: [software engineer, software developer, software development, swe, sde, backend, frontend, full stack,
+        mobile engineer, machine learning, ml engineer, ai engineer, data engineer, data scientist, data analyst,
+        infrastructure engineer, platform engineer, site reliability, security engineer, research engineer,
+        quantitative, quant, trading, trader,
+        investment banking, private equity, venture capital, investment, markets, equity research,
+        research analyst, asset management, wealth management, hedge fund, corporate finance, finance,
+        financial, fp&a, m&a, credit, risk, treasury, consulting, consultant, strategy, business analyst,
+        business operations, corporate development, product manager, product management, marketing, operations]
+keywords: [intern, internship, co-op, new grad, grad, graduate, university, undergraduate, early career, entry level,
+           junior, campus, summer, summer analyst, summer associate, rotational, development program, fellowship,
+           apprentice, off-cycle]
+exclude: [senior, sr, staff, principal, director, vice president, vp, managing director, head of, lead, high school,
+          phd]

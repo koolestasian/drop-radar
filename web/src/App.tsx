@@ -24,11 +24,12 @@ const ROUTES: { id: string; label: string; icon: LucideIcon }[] = [
   { id: "sources", label: "Sources", icon: Activity },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
-type Route = "feed" | "jobs" | "board" | "sources" | "settings";
+type Route = "feed" | "jobs" | "board" | "sources" | "settings" | "login";
+const GUEST_ROUTES: Route[] = ["feed", "jobs"]; // what a visitor who is not signed in can open
 
 function currentRoute(): Route {
   const id = window.location.hash.replace(/^#\/?/, "");
-  return (ROUTES.find((r) => r.id === id)?.id ?? "feed") as Route;
+  return (id === "login" ? "login" : ROUTES.find((r) => r.id === id)?.id ?? "feed") as Route;
 }
 
 const STATUS_DOT: Record<StreamStatus, { color: string; label: string }> = {
@@ -73,19 +74,31 @@ export function App() {
     });
   }, [signedIn, qc]);
 
-  const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me"), enabled: signedIn, refetchInterval: 60_000 });
+  useEffect(() => {
+    if (signedIn && route === "login") window.location.hash = "#/feed";
+  }, [signedIn, route]);
 
-  if (!signedIn)
+  const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me"), refetchInterval: 60_000 });
+
+  const guest = !signedIn;
+  if (guest && !GUEST_ROUTES.includes(route))
     return (
       <Login
+        gated={route !== "login"}
+        onGuest={() => {
+          window.location.hash = "#/feed";
+        }}
         onSignedIn={(m) => {
+          qc.clear();
           qc.setQueryData(["me"], m);
           setSignedIn(true);
+          window.location.hash = "#/feed";
         }}
       />
     );
+  const routes = guest ? ROUTES.filter((r) => GUEST_ROUTES.includes(r.id as Route)) : ROUTES;
 
-  const dot = STATUS_DOT[stream];
+  const dot = guest ? { color: "bg-muted-foreground", label: "Guest view" } : STATUS_DOT[stream];
   const badge = (r: { id: string }) =>
     r.id === "feed" && incoming.length > 0 && route !== "feed" ? (
       <span className="stamp rounded-full bg-primary px-1.5 text-primary-foreground">{incoming.length}</span>
@@ -105,7 +118,7 @@ export function App() {
             {dot.label}
           </span>
           <nav aria-label="Main" className="ml-auto hidden gap-1 sm:flex">
-            {ROUTES.map((r) => (
+            {routes.map((r) => (
               <a
                 key={r.id}
                 href={`#/${r.id}`}
@@ -118,6 +131,11 @@ export function App() {
               </a>
             ))}
           </nav>
+          {guest ? (
+            <Button asChild className="h-10 px-4 max-sm:ml-auto pointer-coarse:h-11">
+              <a href="#/login">Sign in</a>
+            </Button>
+          ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-10 gap-1.5 px-2.5 max-sm:ml-auto pointer-coarse:h-11" aria-label={`Account${me.data ? `: ${me.data.user}` : ""}`}>
@@ -136,10 +154,16 @@ export function App() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
-        {me.data?.alerts_enabled === false && route !== "settings" && (
+        {guest && (
+          <p role="status" className="mb-5 rounded-xl border border-border bg-muted px-4 py-3 text-sm">
+            You are browsing as a guest. <a href="#/login" className="font-medium underline">Sign in</a> for your own feed, saved roles and phone alerts.
+          </p>
+        )}
+        {!guest && me.data?.alerts_enabled === false && route !== "settings" && (
           <p role="status" className="mb-5 flex items-start gap-2 rounded-xl border border-border bg-muted px-4 py-3 text-sm">
             <BellOff aria-hidden className="mt-0.5 size-4 shrink-0" />
             <span>
@@ -147,9 +171,9 @@ export function App() {
             </span>
           </p>
         )}
-        {me.data && <Welcome key={me.data.user} user={me.data.user} sources={me.data.sources} />}
-        {route === "feed" && <Feed incoming={incoming} clearIncoming={() => setIncoming([])} />}
-        {route === "jobs" && <Feed key="jobs" screen="jobs" />}
+        {me.data && <Welcome key={me.data.user} user={me.data.user} sources={me.data.sources} guest={guest} />}
+        {route === "feed" && <Feed guest={guest} incoming={incoming} clearIncoming={() => setIncoming([])} />}
+        {route === "jobs" && <Feed key="jobs" guest={guest} screen="jobs" />}
         <Suspense fallback={<ListSkeleton rows={3} />}>
           {route === "board" && <Board />}
           {route === "sources" && <Sources />}
@@ -160,7 +184,7 @@ export function App() {
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-20 flex border-t border-border bg-background/95 px-1 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden"
       >
-        {ROUTES.map((r) => (
+        {routes.map((r) => (
           <a
             key={r.id}
             href={`#/${r.id}`}

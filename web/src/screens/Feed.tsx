@@ -50,10 +50,12 @@ const TRACKS: [string, RegExp][] = [
   ["Quant", /\b(quant|trading|trader)\b/i],
   ["AI / ML / Data", /\b(machine learning|ml|ai|data (scien|eng|analy)\w*|research scientist|nlp|llm)\b/i],
   ["Hardware", /\b(hardware|electrical|embedded|firmware|silicon|asic|fpga|mechanical)\b/i],
-  ["Security", /\b(security|cyber|risk)\b/i],
+  ["Security", /\b(security|cyber|infosec)\b/i],
   ["Product", /\b(product|program) (manag|design)/i],
   ["Design", /\b(design|ux|ui)\b/i],
   ["Software", /\b(software|swe|developer|engineer|backend|frontend|full[- ]?stack|devops|sre|platform)\b/i],
+  ["Finance", /\b(invest\w*|banking|banker|bank|finance|financial|equity|asset|wealth|fp&a|m&a|treasury|credit|risk|accounting|accountant|audit|tax|actuarial)\b/i],
+  ["Business", /\b(consult\w*|strategy|business (analyst|operations|development|intelligence)|operations|marketing|sales|supply chain|logistics|hr|human resources|underwriting|insurance|project manag\w*)\b/i],
 ];
 const twinKey = (o: Opportunity) => `${o.company}|${o.title}`.toLowerCase();
 function track(o: Opportunity): string {
@@ -74,7 +76,7 @@ export function feedKey(screen: Screen, f: Filters) {
   return ["opportunities", screen, f] as const;
 }
 
-export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} }: { screen?: Screen; incoming?: Opportunity[]; clearIncoming?: () => void }) {
+export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {}, guest = false }: { screen?: Screen; incoming?: Opportunity[]; clearIncoming?: () => void; guest?: boolean }) {
   const [filters, setFilters] = useState<Filters>({ q: "", location: "", view: "new", sort: "posted", usOnly: false, closingSoon: false, ignored: false });
   const q = useDebounced(filters.q);
   const location = useDebounced(filters.location);
@@ -176,14 +178,14 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
         e.preventDefault();
         search.current?.focus();
       } else if (!current) return;
-      else if (e.key === "s") setStatus.mutate({ id: current.id, status: current.action?.status === "saved" ? "new" : "saved" });
-      else if (e.key === "i") setStatus.mutate({ id: current.id, status: current.action?.status === "ignored" ? "new" : "ignored" });
-      else if (e.key === "a") setStatus.mutate({ id: current.id, status: "applied" });
+      else if (!guest && e.key === "s") setStatus.mutate({ id: current.id, status: current.action?.status === "saved" ? "new" : "saved" });
+      else if (!guest && e.key === "i") setStatus.mutate({ id: current.id, status: current.action?.status === "ignored" ? "new" : "ignored" });
+      else if (!guest && e.key === "a") setStatus.mutate({ id: current.id, status: "applied" });
       else if ((e.key === "o" || e.key === "Enter") && current.url) window.open(current.url, "_blank", "noopener");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [items, current, setStatus]);
+  }, [items, current, setStatus, guest]);
 
   const set = <K extends keyof Filters>(key: K, value: Filters[K]) => setFilters((f) => ({ ...f, [key]: value }));
   const count = `${loaded.length}${feed.hasNextPage ? "+" : ""}`;
@@ -206,8 +208,8 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
     <Detail
       key={current.id}
       o={current}
-      onStatus={(status) => setStatus.mutate({ id: current.id, status })}
-      onNotes={(notes) => setStatus.mutate({ id: current.id, notes })}
+      onStatus={guest ? undefined : (status) => setStatus.mutate({ id: current.id, status })}
+      onNotes={guest ? undefined : (notes) => setStatus.mutate({ id: current.id, notes })}
     />
   );
 
@@ -251,7 +253,9 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
           ["closingSoon", "Closing soon", "Deadline within 14 days."],
           ["ignored", "Ignored", "Show the roles you ignored instead."],
         ] as const
-      ).map(([key, label, hint]) => (
+      )
+        .filter(([key]) => !(guest && key === "ignored"))
+        .map(([key, label, hint]) => (
         <div key={key} className="flex items-center justify-between gap-4">
           <label htmlFor={key} className="flex flex-col">
             <span className="text-sm font-semibold">{label}</span>
@@ -400,7 +404,7 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
                         fresh={fresh.has(r.id)}
                         compact={compact}
                         onOpen={() => openRole(r)}
-                        onStatus={(status) => setStatus.mutate({ id: r.id, status })}
+                        onStatus={guest ? undefined : (status) => setStatus.mutate({ id: r.id, status })}
                       />
                     );
                     return (
@@ -449,7 +453,7 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
         )}
         {setStatus.isError && <ErrorNote error={setStatus.error} />}
         <p className="hidden text-center text-xs text-muted-foreground lg:block">
-          <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>s</kbd> save · <kbd>i</kbd> ignore · <kbd>a</kbd> applied · <kbd>o</kbd> open · <kbd>/</kbd> search
+          <kbd>j</kbd>/<kbd>k</kbd> move · {!guest && (<><kbd>s</kbd> save · <kbd>i</kbd> ignore · <kbd>a</kbd> applied · </>)}<kbd>o</kbd> open · <kbd>/</kbd> search
         </p>
       </section>
 

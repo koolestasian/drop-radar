@@ -42,6 +42,14 @@ class LoadUsersTests(unittest.TestCase):
         self.assertEqual(a.watchlist.companies[0].slug, "stripe")
         self.assertEqual(a.profile.grad_year, 2028)
 
+    def test_the_shipped_guest_profile_loads_and_is_broad(self):
+        from radar.config import load_guest_profile
+        guest = load_guest_profile()
+        self.assertIn("software engineer", guest.roles)
+        self.assertIn("investment banking", guest.roles)
+        self.assertIsNone(guest.grad_year)
+        self.assertEqual(guest.locations, ())
+
     def test_invalid_users_name_the_problem(self):
         ok = {"w.yaml": "", "p.yaml": ""}
         cases = [
@@ -51,6 +59,7 @@ class LoadUsersTests(unittest.TestCase):
             ("users: [{id: a, watchlist: w.yaml, profile: p.yaml}, {id: a, watchlist: w.yaml, profile: p.yaml}]",
              "duplicate user id"),
             ("users: [{id: a, watchlist: missing.yaml, profile: p.yaml}]", "cannot read"),
+            ("users: [{id: guest, watchlist: w.yaml, profile: p.yaml}]", "reserved"),
         ]
         for text, pattern in cases:
             with self.subTest(text=text), self.assertRaisesRegex(ConfigError, pattern):

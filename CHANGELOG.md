@@ -2,6 +2,16 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.5.0 (2026-10-03)
+
+Browse without signing in; sign in for more.
+
+- **Guest view (no token):** the Feed (a default early-career profile across tech and business) and All jobs (everything any watched source found), read-only, with Apply links and filters. No Save, Ignore, notes, Board, Sources, Settings, alerts or live stream. Guests see a banner and a Sign in button; the gated screens show the sign-in page with "Keep browsing as a guest".
+- **Signed in:** your own profile feed, Save and Board with notes, phone alerts, live drops, Settings and the account menu, as before.
+- **Server:** `viewer` dependency serves only `GET /api/me`, `GET /api/opportunities` and `GET /api/opportunities/{id}` to guests; every write and every account route stays token-only (a wrong token is still a 401). Guests never receive anyone's status, notes or notification URL. Guest requests are rate limited (60 a minute per address, 429 after) and pages are capped at 50 rows and cached for 60 seconds. `guest` is a reserved user id. The default profile ships with the code (`radar/guest_profile.yaml`).
+- Track chips gained Finance and Business, and Security no longer swallows "risk" roles. Calibrated on 1,500 live titles read-only on the box.
+- 5 new API tests and 2 config tests (346 total); 28 e2e tests.
+
 ## 0.4.0 (2026-10-03)
 
 - Compact rows: a toggle beside Filters on Feed and All jobs swaps the roomy cards for one-line rows (about 50px against about 160px) that keep Save and Apply. Remembered per browser. The column picker from the plan was skipped: rows are cards, not a table.

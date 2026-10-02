@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Bookmark, SlidersHorizontal, Zap } from "lucide-react";
+import { Bell, Bookmark, List, LogIn, SlidersHorizontal, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -12,6 +12,12 @@ const STEPS = [
   { icon: Bell, title: "Get a push on your phone", text: "Turn on alerts in Settings and a new match buzzes your phone within minutes." },
 ];
 
+const GUEST_STEPS = [
+  STEPS[0],
+  { icon: List, title: "Browse everything", text: "All jobs lists every posting the radar has found, from tech to finance. Search it and filter it." },
+  { icon: LogIn, title: "Sign in for more", text: "Your own feed and profile, saved roles with notes on a Board, and a phone push when a match appears." },
+];
+
 const key = (user: string) => `radar.welcomed.${user}`;
 const seen = (user: string) => {
   try {
@@ -22,7 +28,7 @@ const seen = (user: string) => {
 };
 
 /** A one-time explainer for a new user. Dismissal is remembered in this browser only. */
-export function Welcome({ user, sources }: { user: string; sources: number }) {
+export function Welcome({ user, sources, guest = false }: { user: string; sources: number; guest?: boolean }) {
   const [open, setOpen] = useState(() => !seen(user));
   const wide = useMediaQuery("(min-width: 640px)");
   const close = () => {
@@ -38,7 +44,7 @@ export function Welcome({ user, sources }: { user: string; sources: number }) {
   const body = (
     <div className="flex flex-col gap-5">
       <ul className="flex flex-col gap-4">
-        {STEPS.map(({ icon: Icon, title: t, text }) => (
+        {(guest ? GUEST_STEPS : STEPS).map(({ icon: Icon, title: t, text }) => (
           <li key={t} className="flex gap-3">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
               <Icon aria-hidden className="size-4" />
@@ -52,10 +58,10 @@ export function Welcome({ user, sources }: { user: string; sources: number }) {
       </ul>
       <div className="flex flex-col gap-2">
         <Button asChild size="lg" onClick={close}>
-          <a href="#/settings">Set up my profile</a>
+          <a href={guest ? "#/login" : "#/settings"}>{guest ? "Sign in" : "Set up my profile"}</a>
         </Button>
         <Button size="lg" variant="ghost" onClick={close}>
-          Start browsing
+          {guest ? "Keep browsing as a guest" : "Start browsing"}
         </Button>
       </div>
     </div>
