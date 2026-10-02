@@ -143,6 +143,16 @@ class Store:
         row = self.conn.execute("SELECT id FROM opportunities WHERE url = ? LIMIT 1", (url,)).fetchone()
         return row[0] if row else None
 
+    def recanonicalize_urls(self, canonical):
+        """Rewrite opportunities.url through `canonical` where it differs, so URL dedupe
+        still matches rows stored before a canonical_url rule existed. Ids never change.
+        Returns how many rows changed; a second call returns 0."""
+        rows = self.conn.execute("SELECT id, url FROM opportunities WHERE url != ''").fetchall()
+        changed = [(new, row["id"]) for row in rows if (new := canonical(row["url"])) != row["url"]]
+        with self.conn:
+            self.conn.executemany("UPDATE opportunities SET url = ? WHERE id = ?", changed)
+        return len(changed)
+
     def mark_seen(self, source, external_id, at=None):
         """Bump an item's last_seen_at (a source still lists it). False if unknown."""
         with self.conn:

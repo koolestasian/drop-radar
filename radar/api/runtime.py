@@ -14,6 +14,7 @@ from radar.api.events import EventBus
 from radar.config import load_settings, load_users
 from radar.errors import ConfigError
 from radar.pipeline import Pipeline
+from radar.pipeline.normalize import canonical_url
 from radar.scheduler import Scheduler
 from radar.sources.registry import build_sources_for_users
 
@@ -47,6 +48,7 @@ class Runtime:
         self.env = os.environ if env is None else env
         self.scheduler = self.pipeline = None
         self.events = EventBus()
+        store.recanonicalize_urls(canonical_url)  # rows from before a canonical_url rule change
         self.reload()
 
     def reload(self):
