@@ -78,6 +78,7 @@ class InstagramAccount:
     username: str
     interval_s: float = 300.0
     priority: int = 5
+    user_id: str = ""  # numeric id; set it so polls skip Instagram's heavily throttled profile lookup
 
 
 @dataclass(frozen=True)
@@ -208,6 +209,7 @@ def parse_watchlist(data: dict, path) -> Watchlist:
             username=_require_str(e, "username", where, path).lstrip("@"),
             interval_s=float(_number(e, "interval_s", 300, where, path)),
             priority=int(_number(e, "priority", 5, where, path)),
+            user_id=str(e.get("user_id") or ""),
         ))
     if len(accounts) > 5:
         raise ConfigError(f"{path}: 'instagram' supports at most 5 accounts, got {len(accounts)}")

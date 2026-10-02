@@ -50,7 +50,7 @@ class FakeNativeClient:
         self.exc = exc
         self.calls = 0
 
-    def stories(self, username):
+    def stories(self, username, user_id=None):
         self.calls += 1
         raise self.exc
 

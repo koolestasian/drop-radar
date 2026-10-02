@@ -101,10 +101,12 @@ class InstagramClient:
             self._profiles[username] = user
         return self._profiles[username]
 
-    def stories(self, username):
+    def stories(self, username, user_id=None):
+        """`user_id` skips the profile lookup: web_profile_info is the endpoint Instagram
+        throttles hardest, and an account's id never changes."""
         if not self.authenticated:
             raise InstagramAuthError("Stories need IG_SESSIONID (Instagram only serves them to logged-in viewers)")
-        user_id = str(self.profile(username)["id"])
+        user_id = str(user_id or self.profile(username)["id"])
         data = self._get("/api/v1/feed/reels_media/", {"reel_ids": user_id})
         reel = (data.get("reels") or {}).get(user_id)
         if reel is None:

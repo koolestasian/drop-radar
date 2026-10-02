@@ -132,6 +132,12 @@
             "title": "Priority",
             "type": "integer"
           },
+          "user_id": {
+            "default": "",
+            "description": "numeric id; skips the throttled profile lookup",
+            "title": "User Id",
+            "type": "string"
+          },
           "username": {
             "title": "Username",
             "type": "string"

@@ -616,7 +616,7 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: Koch Industries, ats: avature, slug: "koch.avature.net/careers/SearchJobs", tier: B}
   - {name: ManTech, ats: avature, slug: "mantech.avature.net/careers/SearchJobs", tier: B}
 instagram:
-  - {username: zero2sudo, interval_s: 120, priority: 1}
+  - {username: zero2sudo, user_id: "50350974961", interval_s: 120, priority: 1}   # id skips the throttled profile lookup
 feeds: []           # - {url: "https://example.com/feed.xml", kind: rss}   kind: rss|atom|json|html
 repos:               # - {name: owner/name, path: README.md}
   - {name: SimplifyJobs/Summer2027-Internships, path: README.md}

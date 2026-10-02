@@ -70,6 +70,12 @@ class ScraperTests(unittest.TestCase):
         self.assertIn("jobs.lever.co", item["links"][0])
         self.assertIn("Apply here", item["text"])
 
+    def test_known_user_id_skips_the_profile_lookup(self):
+        """web_profile_info is Instagram's most throttled endpoint; an id never changes."""
+        client = self.client({"/api/v1/feed/reels_media/": Response(payload={"reels": {USER_ID: {"items": [STORY]}}})})
+        self.assertEqual(len(client.stories("zero2sudo", user_id=USER_ID)), 1)
+        self.assertEqual([url for url, _ in client.session.calls], [ig.BASE + "/api/v1/feed/reels_media/"])
+
     def test_native_and_apify_items_for_one_story_share_an_id(self):
         client = self.client({
             "/api/v1/users/web_profile_info/": profile(),

@@ -119,7 +119,7 @@ class InstagramSource:
     async def fetch(self, ctx) -> list[Item]:
         username = self.account.username
         try:
-            raw_items = await asyncio.to_thread(self._native_client().stories, username)
+            raw_items = await asyncio.to_thread(self._native_client().stories, username, self.account.user_id or None)
         except InstagramAuthError as exc:
             native_error = SourceError(str(exc), kind="auth")
         except InstagramBlockedError as exc:

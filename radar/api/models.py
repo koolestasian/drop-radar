@@ -63,6 +63,7 @@ class InstagramConfig(BaseModel):
     username: str
     interval_s: float = 300.0
     priority: int = 5
+    user_id: str = Field("", description="numeric id; skips the throttled profile lookup")
 
 
 class FeedConfig(BaseModel):
