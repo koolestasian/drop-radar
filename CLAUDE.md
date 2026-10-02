@@ -20,7 +20,7 @@ Plan and contracts: `docs/specs/`.
   first live deploy did". Verified live: see the T10 row in
   `docs/specs/PROGRESS.md`.
 - Deliberately off on the box: `NTFY_TOPIC` (hourly.yml still pushes, so
-  enabling both would double-alert), `IG_SESSIONID`, `ANTHROPIC_API_KEY`,
+  enabling both would double-alert), `ANTHROPIC_API_KEY`,
   `HEARTBEAT_URL`. `GH_TOKEN` is set (classic, no scopes, read-only).
 - **Deployed 2026-10-02:** 621 sources (was 86): ~560 boards mined from SimplifyJobs, plus Amazon, Google,
   Microsoft, Apple, Goldman (Oracle), Two Sigma/Koch/ManTech (Avature) and Citadel/Citadel Securities (their
@@ -29,6 +29,13 @@ Plan and contracts: `docs/specs/`.
   API or a path robots.txt allows. So not covered: TikTok/ByteDance and Tesla (refuse non-browser clients
   everywhere, robots.txt included), iCIMS (robots.txt disallows all, no public API), Meta (robots.txt forbids
   automated collection without written permission). Simplify still covers them, ~3h late.
+- **For review (2026-10-02):** commits `a98b04b..8fa8be9` on this branch -- conditional ATS polls,
+  canonical_url ATS link shapes + startup re-canonicalize (`Runtime.__init__`), new sources (oracle,
+  eightfold, amazon, google, apple, avature, sitemap, workable; search-based ones subclass
+  `ats.WindowedSource`), Instagram `user_id` (skips `web_profile_info`). All deployed.
+- **Instagram:** `IG_SESSIONID` is set on the box (since 06:25 UTC). Its first poll got 429 from the
+  profile lookup, now skipped; the first poll with the stored id (~06:55 UTC) was not yet verified.
+  If 429s persist, next free step: poll Instagram from the owner's Mac (home IP) and relay to the box.
 - **Next, when the user asks: the alert cutover.** It's safe from about
   2026-10-03 (one day live, no unplanned restarts; the one counted restart
   was a deliberate SIGKILL test). Steps:
@@ -98,7 +105,7 @@ Exceptions:
 ## Current state (update when it changes)
 - Live pipeline: `radar/legacy/` (`opportunity_monitor.py`, `job_pages.py`, `llm_extraction.py`,
   `instagram_scraper.py`, `google_sheets_sync.py`; root files are import shims), workflow `.github/workflows/hourly.yml`.
-- 369 backend tests passing on Python 3.14; the preceding 326-test suite was also verified on Python 3.12, which `.github/workflows/ci.yml` now runs on every push/PR (a 3.12+3.14 matrix), split out from the hourly production workflow. Sources live: `radar/sources/` (ats.py + greenhouse/lever/ashby/smartrecruiters/workday, github_repo, instagram; registry.py auto-discovers them). SQLite store in `radar/store/` (DB at `data/radar.db`, gitignored);
+- 370 backend tests passing on Python 3.14; the preceding 326-test suite was also verified on Python 3.12, which `.github/workflows/ci.yml` now runs on every push/PR (a 3.12+3.14 matrix), split out from the hourly production workflow. Sources live: `radar/sources/` (ats.py + greenhouse/lever/ashby/smartrecruiters/workday, github_repo, instagram; registry.py auto-discovers them). SQLite store in `radar/store/` (DB at `data/radar.db`, gitignored);
   import the tracker with `python -m radar.store.migrate_legacy`; `radar.views.write_views` regenerates xlsx + LATEST.md. `radar/pipeline/` (normalize, dedupe, enrich, filter) is the Scheduler's `sink`: cross-source URL dedupe, LLM enrichment gated by a daily token budget, `matches_profile` against `config/profile.yaml`. `radar/alerts/` (`AlertDispatcher`, `NtfyChannel`) pushes instantly for zero2sudo items and anything matching the profile, claim-before-send idempotent, retried with in-memory backoff on every sink tick; `python -m radar stats` prints drop-latency p50/p95 per source. Multi-user (T8a): `config/users.yaml` lists users (first = owner) and each one's own watchlist/profile; the scheduler polls the union once; `actions` are per `(opportunity_id, user_id)`; `MultiUserAlertDispatcher` alerts a user only on their own sources' items. Profiles match role (track) AND keyword (level), whole words; `is_us_location` handles US locations. Verify any new board with `python -m radar.sources.discover --check` before adding it. ATS polls are conditional (ETag/304, all four ATS verified), so an unchanged board costs no download; the watchlists cover ~600 boards and career sites (incl. `oracle`, `eightfold`, `amazon`, `google`, `apple`, `avature`, `sitemap`, `workable` sources; search-based ones subclass `ats.WindowedSource`), mined 2026-10-02 from SimplifyJobs' active listings (`discover._slug_from_url` also parses Workday links), because Simplify lists a posting a median ~3h after the board does. `python -m radar serve` (alias `run`) runs scheduler + pipeline + the API (`radar/api/`: per-user feed, status/notes, config edits with hot reload, SSE stream; `docs/openapi.json` from `python -m radar openapi`) in one process. Tracker data lives in `Zero2Sudo_Opportunity_Tracker.xlsx`,
   `monitor_state.json`, `enrichment_cache.json` (committed by the workflow).
 
