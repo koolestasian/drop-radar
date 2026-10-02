@@ -605,6 +605,16 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: "Verizon Communications", ats: workday, slug: "verizon.wd12/verizon-careers", tier: B}
   - {name: "Wellington Management", ats: workday, slug: "wellington.wd5/Campus", tier: B}
   - {name: "Wilbur-Ellis", ats: workday, slug: "wilburellis.wd12/wilbur-ellis", tier: B}
+  # Batch 3 (2026-10-02): sites with no ATS API. Apple renders results into the page; Two Sigma, Koch and
+  # ManTech are Avature listing pages; Citadel's job pages 403 but its careers sitemap is published for
+  # crawlers (robots.txt points at it); Goldman's Oracle tenant holds its campus roles. robots.txt checked for each.
+  - {name: Apple, ats: apple, slug: internships-STDNT-INTRN, tier: S}
+  - {name: Goldman Sachs, ats: oracle, slug: "hdpc.fa.us2/LateralHiring", tier: A}
+  - {name: Citadel, ats: sitemap, slug: "www.citadel.com/career-sitemap.xml", tier: A}
+  - {name: Citadel Securities, ats: sitemap, slug: "www.citadelsecurities.com/career-sitemap.xml", tier: A}
+  - {name: Two Sigma, ats: avature, slug: "careers.twosigma.com/careers/InternshipsAndEarlyCareers", tier: A}
+  - {name: Koch Industries, ats: avature, slug: "koch.avature.net/careers/SearchJobs", tier: B}
+  - {name: ManTech, ats: avature, slug: "mantech.avature.net/careers/SearchJobs", tier: B}
 instagram:
   - {username: zero2sudo, interval_s: 120, priority: 1}
 feeds: []           # - {url: "https://example.com/feed.xml", kind: rss}   kind: rss|atom|json|html

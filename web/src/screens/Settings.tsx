@@ -3,13 +3,16 @@ import { useState, type FormEvent } from "react";
 import { api, type CompanyConfig, type Me, type ProfileConfig, type WatchlistConfig } from "../api/client";
 import { Button, ErrorNote, Spinner } from "../components/ui";
 
-const ATS = ["greenhouse", "lever", "ashby", "smartrecruiters", "workday", "workable", "oracle", "eightfold", "amazon", "google"];
+const ATS = ["greenhouse", "lever", "ashby", "smartrecruiters", "workday", "workable", "oracle", "eightfold", "amazon", "google", "apple", "avature", "sitemap"];
 const SLUG_HINT: Record<string, string> = {
   workday: "tenant.wd5/site",
   oracle: "jpmc.fa/CX_1001",
   eightfold: "host/domain.com",
   amazon: "amazon",
   google: "google",
+  apple: "internships-STDNT-INTRN",
+  avature: "host/careers/SearchJobs",
+  sitemap: "www.example.com/career-sitemap.xml",
 };
 const TIERS = ["S", "A", "B", "C"];
 const input =

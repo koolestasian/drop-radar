@@ -191,6 +191,71 @@ class WorkableTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([i.url for i in items if i.external_id == "NEW"], ["https://apply.workable.com/acme/j/NEW/"])
 
 
+class AppleTests(WindowedContract, unittest.IsolatedAsyncioTestCase):
+    """jobs.apple.com renders its results into the page (search text is ignored
+    server-side, the team filter isn't): JSON.parse("...") of the router data."""
+    ats, slug, new_id = "apple", "internships-STDNT-INTRN", "200999999"
+
+    def jobs(self, new):
+        rows = [{"positionId": "200664323", "postingTitle": "Software Engineering Intern", "postDateInGMT": "2026-09-30T00:00:00Z",
+                 "transformedPostingTitle": "software-engineering-intern", "locations": [{"name": "Cupertino"}]}]
+        if new:
+            rows.insert(0, {"positionId": self.new_id, "postingTitle": "Machine Learning Intern",
+                            "postDateInGMT": "2026-10-02T00:00:00Z", "transformedPostingTitle": "ml-intern", "locations": []})
+        def page(results):
+            data = {"loaderData": {"search": {"searchResults": results, "totalRecords": len(rows)}}}
+            return "<script>window.__staticRouterHydrationData = JSON.parse(" + json.dumps(json.dumps(data)) + ");</script>"
+
+        def route(method, url, body):
+            assert url.startswith("https://jobs.apple.com/en-us/search?team=internships-STDNT-INTRN&sort=newest"), url
+            return Resp(text=page([] if "page=2" in url else rows))
+        return route
+
+    async def test_detail_url(self):
+        [item] = await source(self.ats, self.slug).fetch(ctx(FakeHttp(lambda m, u, b: self.jobs(False)(m, u.split("&page=")[0], b))))
+        self.assertEqual(item.url, "https://jobs.apple.com/en-us/details/200664323/software-engineering-intern")
+
+
+class AvatureTests(unittest.IsolatedAsyncioTestCase):
+    def page(self, jobs):
+        links = "".join(f'<h3><a class="link" href="https://careers.twosigma.com/careers/JobDetail/New-York-{t.replace(' ', '-')}/{i}">'
+                        f"\n {t} </a></h3>" for i, t in jobs)
+        return lambda method, url, body: Resp(text=f"<html>{links}</html>")
+
+    async def test_listing_page_links_become_postings(self):
+        src = source("avature", "careers.twosigma.com/careers/InternshipsAndEarlyCareers")
+        first = ctx(FakeHttp(self.page([("13671", "AI Research Scientist - Campus Full-Time"), ("1", "Office Manager")])))
+        [seed] = await src.fetch(first)
+        self.assertEqual((seed.external_id, seed.title), ("13671", "AI Research Scientist - Campus Full-Time"))
+        later = ctx(FakeHttp(self.page([("13671", "AI Research Scientist - Campus Full-Time"),
+                                        ("14096", "AI Research Scientist Intern 2027 Summer")])), cursor=first.pending["cursor"])
+        [new] = await src.fetch(later)
+        self.assertEqual(new.url, "https://careers.twosigma.com/careers/JobDetail/New-York-AI-Research-Scientist-Intern-2027-Summer/14096")
+
+
+class SitemapTests(unittest.IsolatedAsyncioTestCase):
+    """Citadel answers its job pages with 403 but publishes them in a sitemap for crawlers."""
+
+    def sitemap(self, slugs):
+        urls = "".join(f"<url><loc>https://www.citadel.com/careers/details/{s}/</loc><lastmod>2026-10-02T05:21:16+00:00</lastmod></url>"
+                       for s in slugs)
+
+        def route(method, url, body):
+            assert url == "https://www.citadel.com/career-sitemap.xml", url
+            return Resp(text=f'<?xml version="1.0"?><urlset>{urls}</urlset>')
+        return route
+
+    async def test_titles_come_from_the_url_and_removed_urls_close(self):
+        src = source("sitemap", "www.citadel.com/career-sitemap.xml")
+        first = ctx(FakeHttp(self.sitemap(["software-engineer-intern-us", "portfolio-manager"])))
+        [seed] = await src.fetch(first)
+        self.assertEqual(seed.title, "Software Engineer Intern Us")
+        later = ctx(FakeHttp(self.sitemap(["quantitative-research-intern-us"])), cursor=first.pending["cursor"])
+        items = await src.fetch(later)
+        self.assertEqual(sorted((i.title, bool(i.raw.get("closed"))) for i in items),
+                         [("Quantitative Research Intern Us", False), ("Software Engineer Intern Us", True)])
+
+
 class MiningTests(unittest.TestCase):
     def test_career_site_links(self):
         cases = {

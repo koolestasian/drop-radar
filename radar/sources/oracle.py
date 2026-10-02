@@ -19,6 +19,8 @@ _SLUG_RE = re.compile(r"^([a-z0-9-]+\.fa(?:\.[a-z0-9]+)*)/([A-Za-z0-9_]+)$")
 
 class OracleSource(WindowedSource):
     kind = "oracle"
+    # campus titles often say neither: "2027 | Americas | New York | Engineering | Summer Analyst" (Goldman)
+    queries = ("intern", "graduate", "summer", "2027")
 
     def __init__(self, company):
         match = _SLUG_RE.match(company.slug or "")

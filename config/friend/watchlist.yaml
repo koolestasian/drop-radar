@@ -3,7 +3,7 @@
 # early-career finance/business postings on it; a board also on kevin's list is
 # polled once, not twice.
 # Banks and asset managers mostly use Workday (ats: workday, slug tenant.wdN/site).
-# Still not covered: Goldman, Morgan Stanley, Evercore, Moelis,
+# Still not covered: Morgan Stanley, Evercore, Moelis,
 # Centerview, McKinsey, Bain, BCG -- their own sites, or Workday tenants not yet
 # found/verified. Add a tenant only after `python -m radar.sources.discover --check`.
 companies:          # ats: greenhouse | lever | ashby | workable | smartrecruiters; tier: S|A|B|C
@@ -120,5 +120,9 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: "Radix Trading", ats: greenhouse, slug: "radixuniversity", tier: B}
   - {name: "Viking Global", ats: greenhouse, slug: "vikingglobalinvestors", tier: B}
   - {name: "Marshall Wace", ats: greenhouse, slug: "mw-tech-grad", tier: B}
+  - {name: Goldman Sachs, ats: oracle, slug: "hdpc.fa.us2/LateralHiring", tier: A}
+  - {name: Citadel, ats: sitemap, slug: "www.citadel.com/career-sitemap.xml", tier: A}
+  - {name: Citadel Securities, ats: sitemap, slug: "www.citadelsecurities.com/career-sitemap.xml", tier: A}
+  - {name: Two Sigma, ats: avature, slug: "careers.twosigma.com/careers/InternshipsAndEarlyCareers", tier: A}
 instagram: []
 repos: []
