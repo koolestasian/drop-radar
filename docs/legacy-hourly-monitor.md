@@ -1,15 +1,11 @@
 # The original hourly monitor (GitHub Actions)
 
-> This is the setup guide for the first version of the project: one scheduled GitHub
-> Actions job (`.github/workflows/hourly.yml`) that reads @zero2sudo's Instagram,
-> keeps an Excel tracker and sends an alert. It is still in the repository and still
-> runs, but the always-on service described in the [main README](../README.md)
-> replaces it. Files it maintains (`Zero2Sudo_Opportunity_Tracker.xlsx`, `LATEST.md`,
-> `monitor_state.json`, `monitor_status.json`) live at the repository root.
-
-An hourly GitHub Actions monitor for public **@zero2sudo** Instagram content.
-
-It is deliberately broader than an internship tracker. The goal is to catch **actionable opportunities** without making you repeatedly open Instagram.
+> **Retired 2026-10-02.** This is the setup guide for the first version of the project: one scheduled
+> GitHub Actions job that read @zero2sudo's Instagram, kept an Excel tracker and sent an alert. The
+> always-on service in the [main README](../README.md) replaced it, and the workflow, the scripts at the
+> repository root and the files it generated (`Zero2Sudo_Opportunity_Tracker.xlsx`, `LATEST.md`,
+> `monitor_state.json`, `monitor_status.json`) were removed. To see it as it was, check out the tag
+> `legacy-hourly-monitor`; the commands below only work there. Its code lives on in `radar/legacy/`.
 
 ## What it watches
 

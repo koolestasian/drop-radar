@@ -1,7 +1,7 @@
 # Deploying Drop Radar (T10)
 
 One always-on process (`python -m radar serve`: scheduler + pipeline + API,
-serving the built web app) on one small host, replacing the hourly GitHub
+serving the built web app) on one small host, replacing the original hourly GitHub
 Actions job. See `../docs/specs/00-overview.md` and `../docs/specs/T10-deploy-scale.md`.
 
 A home server or Raspberry Pi on your home network, not a VPS, is the better
@@ -166,41 +166,16 @@ HTTP are readable by anything between their phone and your box:
    <token>" https://<your domain>/api/stream` should hang open printing
    `retry: 5000` immediately, not buffer or drop after a few seconds.
 
-## 9. Retiring the hourly GitHub Actions job
+## 9. The hourly GitHub Actions job (retired)
 
-`.github/workflows/hourly.yml` is still the live alert path until you cut
-over; don't disable its `schedule:` trigger until `radar.service` has run
-for a full day with no `systemctl status` restarts. Before that cutover:
-
-- **Avoid double alerts during the overlap.** Both the old hourly job and the
-  new always-on process can see the same zero2sudo Story or job posting and
-  each push once, for as long as both are running. Add a repo variable (e.g.
-  `vars.LEGACY_ALERTS_ENABLED`, default `true`) and gate hourly.yml's "Send
-  idempotent alerts after persistence" step with
-  `if: vars.LEGACY_ALERTS_ENABLED != 'false'` -- keep the hourly schedule
-  itself running (it's still updating the tracker/Sheet), just turn off *its*
-  pushes once `radar.service` is live, by flipping that one variable instead
-  of editing the workflow file.
-- **A fresh deploy DB needs no cursor reseed.** `source_state` (ETags,
-  cursors) only exists once something has polled; a brand-new `data/radar.db`
-  plus `python -m radar.store.migrate_legacy` starts with none, so every
-  source's first poll naturally backfills silently (`raw.seed`, from T9) with
-  no reseed step. The reseed note in `docs/specs/PROGRESS.md` only applies if
-  you instead copy your already-running local `radar.db` up to the server --
-  in that case, clear its `source_state` table first, or postings that only
-  started matching under the post-audit title/location filters will look
-  "new" and alert instead of backfilling quietly.
-- **Instagram's first live poll isn't seeded** (T3/T5 predate the backfill
-  work; only ATS/GitHub sources backfill). A Story that's still up when
-  `radar.service` starts its first poll will push once, exactly like any
-  other still-live item would the first time a fresh source sees it. Decide
-  up front whether you accept that one-time burst (simplest) or want to
-  backfill `alerts` rows (`sent_at = first_seen`) for already-migrated
-  opportunities during `migrate_legacy` to suppress it -- either is fine,
-  just pick one rather than being surprised by it.
-- Once a day has passed clean, remove `hourly.yml`'s `schedule:` trigger
-  (keep `workflow_dispatch` and the `push` trigger -- tests and lint now run
-  independently of this file, in `../.github/workflows/ci.yml`).
+The original hourly job (`hourly.yml`, which fed an Excel tracker and a Google Sheet) was retired on
+2026-10-02, when `radar.service` had taken over: the workflow and its generated files were removed from
+the repository (tag `legacy-hourly-monitor` is the last commit that had them). Nothing else pushes alerts
+any more, so enabling a user's `NTFY_TOPIC` on the server cannot double up. The tracker's rows were
+imported once with `python -m radar.store.migrate_legacy --tracker <xlsx> --user <id>` (it skips links
+another opportunity already holds and marks imported rows as already open). The repository still holds
+three secrets only the old job used (`APIFY_TOKEN`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_SHEET_ID`) and
+the variable `GOOGLE_SYNC_REQUIRED`; delete them in the repository's Actions settings.
 
 ## What the first live deploy did (Oracle Cloud Always Free, 2026-10-02)
 
@@ -264,12 +239,9 @@ supports a shorter interval.
 T12 exposes each user's own ntfy subscription in Settings; subscribe in the ntfy
 phone app and permit notifications. `alerts_enabled` means a channel is configured,
 not that a phone has received anything. At this deploy the friend's separate topic
-can be enabled independently (the legacy job has no friend channel). The owner's
-topic is staged in `/opt/radar/alert-cutover.env`, mode 600, until the full-day gate
-above is met; load that topic into `radar.env` and set
-`LEGACY_ALERTS_ENABLED=false` together. Local `GH_TOKEN` is intentionally read-only;
-use `env -u GH_TOKEN -u GITHUB_TOKEN gh ...` for the owner's stored GitHub login
-when changing the repository variable. Never print either topic or token to logs.
+can be enabled independently. The owner's topic is staged in `/opt/radar/alert-cutover.env`, mode 600;
+load it into `radar.env` to turn the owner's pushes on (the old hourly job is retired, so nothing doubles up).
+Never print either topic or token to logs.
 
 ## Deferred
 

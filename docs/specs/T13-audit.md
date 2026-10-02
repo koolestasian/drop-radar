@@ -22,7 +22,7 @@ Tests missed every real problem so far; look at the user's actual feed
 - **Box health:** memory/swap, disk, restarts, backup timer, Caddy cert expiry.
 
 ## Known items to fold into the list
-- The hourly GitHub job has failed every hour since 2026-10-01 (Apify 403: the token lost
+- (Resolved 2026-10-02: the job was retired.) The hourly GitHub job failed every hour since 2026-10-01 (Apify 403: the token lost
   access to `data-slayer/instagram-stories-scraper`). So the xlsx tracker and Google Sheet
   haven't updated since 2026-09-30, and the legacy job sends no pushes.
 - The owner has no working push path (T14 fixes it).

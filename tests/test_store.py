@@ -5,7 +5,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import opportunity_monitor as legacy
+from radar.legacy import opportunity_monitor as legacy
 from radar.models import Item
 from radar.store import MIGRATIONS, SCHEMA, Store
 from radar.store.migrate_legacy import migrate

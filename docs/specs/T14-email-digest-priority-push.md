@@ -18,8 +18,10 @@ Retire GitHub Actions as the notification path (user, 2026-10-02):
    creates in their Google account; check OCI allows outbound 587. Resend, Postmark and
    similar need a verified domain, and we only have nip.io.]
 3. Should the friend get the digest too, and the same push rule?
-4. Retire the hourly GitHub job entirely (it fails every hour and feeds the xlsx and
-   Google Sheet), or fix Apify and keep it for the Sheet?
+4. ~~Retire the hourly GitHub job, or fix Apify and keep it for the Sheet?~~ **Decided
+   2026-10-02: retired** (workflow and generated files removed; tag `legacy-hourly-monitor`).
+   Still to do by hand: delete the repo secrets `APIFY_TOKEN`, `GOOGLE_SERVICE_ACCOUNT_JSON`,
+   `GOOGLE_SHEET_ID` and the variable `GOOGLE_SYNC_REQUIRED`.
 
 ## Design (defaults)
 - **Push:** add a priority gate to the one shared predicate (`should_alert` /
@@ -36,9 +38,8 @@ Retire GitHub Actions as the notification path (user, 2026-10-02):
 - **Secrets:** `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_TO` and `EMAIL_TO_<ID>` live in
   `radar.env` only. Never put addresses or passwords in committed files.
 - **Then the cutover:**
-  - load the owner's topic,
-  - set GitHub's `LEGACY_ALERTS_ENABLED=false`,
-  - drop hourly.yml's `schedule:` if question 4 says so.
+  - load the owner's topic (no legacy push is left to double up),
+  - ~~set `LEGACY_ALERTS_ENABLED=false`, drop hourly.yml's `schedule:`~~ (done: the job is gone).
 
 ## Acceptance
 - Offline tests (fake SMTP and clock): the window advances once per send, a restart

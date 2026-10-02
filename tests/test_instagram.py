@@ -2,8 +2,8 @@ import time
 import unittest
 from unittest.mock import patch
 
-import instagram_scraper as ig
-import opportunity_monitor as monitor
+from radar.legacy import instagram_scraper as ig
+from radar.legacy import opportunity_monitor as monitor
 
 PK = "3988152627153629542"
 USER_ID = "4242"

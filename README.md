@@ -122,7 +122,7 @@ Other commands: `python -m radar backup`, `python -m radar stats` (drop latency 
 
 ```bash
 python -m unittest discover -s tests       # ~400 offline tests, no network
-python -m pyflakes ./*.py radar tests
+python -m pyflakes radar tests
 (cd web && npm run e2e)                    # Playwright against the built app, desktop and phone
 ```
 
@@ -152,10 +152,10 @@ tests/         offline unit and integration tests
 docs/          specs/ (plan and decisions per milestone), openapi.json, images/
 ```
 
-The repository root also holds the first version of the project, an hourly GitHub Actions job
-(`.github/workflows/hourly.yml`, the small `opportunity_monitor.py` shims, and the tracker files it
-generates). Its guide is [`docs/legacy-hourly-monitor.md`](docs/legacy-hourly-monitor.md). `CLAUDE.md` /
-`AGENTS.md` are working notes for AI coding assistants.
+The project began as an hourly GitHub Actions job that read one Instagram account and kept an Excel
+tracker. The always-on service replaced it and the job is retired; its guide is kept in
+[`docs/legacy-hourly-monitor.md`](docs/legacy-hourly-monitor.md) and the last commit that still ran it is tagged
+`legacy-hourly-monitor`.
 
 ## Limits and responsible use
 

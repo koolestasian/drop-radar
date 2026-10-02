@@ -1,6 +1,6 @@
 import unittest
 
-import google_sheets_sync as sync
+from radar.legacy import google_sheets_sync as sync
 
 
 class FakeWorksheet:

@@ -4,9 +4,9 @@ from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import patch
 
-import job_pages
-import llm_extraction
-import opportunity_monitor as monitor
+from radar.legacy import job_pages
+from radar.legacy import llm_extraction
+from radar.legacy import opportunity_monitor as monitor
 
 
 class FakeResponse:
