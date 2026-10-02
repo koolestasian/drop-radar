@@ -91,7 +91,7 @@ export function App() {
 
   return (
     <div className="min-h-dvh pb-24 sm:pb-8">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-border bg-background">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
           <a href="#/feed" className="flex items-center gap-2 text-lg font-bold tracking-tight">
             <img src="/icon.svg" alt="" className="size-7" />

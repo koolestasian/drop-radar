@@ -26,7 +26,10 @@ function BoardCard({ o, onStatus, onNotes }: { o: Opportunity; onStatus: (status
       aria-label={`${o.company ? `${o.company}: ` : ""}${title}`}
       draggable
       onDragStart={(e) => e.dataTransfer.setData("text/opportunity-id", o.id)}
-      className={cn("flex cursor-grab flex-col gap-2.5 rounded-xl border border-stock-line p-3 shadow-[0_1px_0_var(--stock-line),0_8px_16px_-12px_rgb(0_0_0/0.4)] active:cursor-grabbing", stock.bg)}
+      className={cn(
+        "flex cursor-grab flex-col gap-2.5 rounded-xl border border-stock-line p-3 shadow-[0_2px_0_var(--stock-line)] active:cursor-grabbing",
+        stock.bg,
+      )}
     >
       <div className="flex items-start gap-3">
         <CompanyLogo name={o.company || "?"} domain={o.company_domain} className="size-9" />
@@ -38,7 +41,7 @@ function BoardCard({ o, onStatus, onNotes }: { o: Opportunity; onStatus: (status
       <p className="stamp text-muted-foreground">
         {[shortLocation(o.location), posted(o.published_at), `found ${ago(o.first_seen)}`, due?.label].filter(Boolean).join(" · ")}
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {o.url ? (
           <Button asChild>
             <a href={o.url} target="_blank" rel="noopener noreferrer" aria-label={`Apply: ${o.company ? `${o.company}, ` : ""}${title}`}>
@@ -49,12 +52,12 @@ function BoardCard({ o, onStatus, onNotes }: { o: Opportunity; onStatus: (status
         ) : (
           <span className="text-xs text-muted-foreground">No link yet</span>
         )}
-        <label className="ml-auto">
+        <label className="ml-auto min-w-0 max-w-full">
           <span className="sr-only">Status for {title}</span>
           <select
             value={STATUSES.includes(status as ActionStatus) ? status : "new"}
             onChange={(e) => onStatus(e.target.value as ActionStatus)}
-            className="h-11 rounded-lg border border-input bg-background/70 px-2 text-sm sm:h-9"
+            className="h-11 max-w-full rounded-lg border border-input bg-background/70 px-2 text-base sm:h-9 sm:text-sm"
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -133,7 +136,10 @@ export function Board() {
               onDragLeave={() => setOver(null)}
               onDrop={drop(column.status)}
               aria-label={`${column.label} column`}
-              className={cn("w-[85%] max-w-sm shrink-0 snap-start rounded-2xl border border-border p-2 sm:w-80 lg:w-auto", over === column.status ? "bg-accent" : "bg-muted/60")}
+              className={cn(
+                "w-[85%] max-w-sm shrink-0 snap-start rounded-2xl border border-border p-2 sm:w-80 lg:w-auto",
+                over === column.status ? "bg-accent" : "bg-muted/60",
+              )}
             >
               <h2 className="flex items-center justify-between px-2 py-1.5 text-sm font-semibold">
                 {column.label}

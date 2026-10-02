@@ -87,7 +87,7 @@ function ProfileForm({ initial }: { initial: ProfileConfig }) {
       }}
       className="flex flex-col gap-5"
     >
-      <Tags label="Roles (the track)" help="A title needs one of these… e.g. software engineer, investment banking." value={p.roles ?? []} onChange={set("roles")} />
+      <Tags label="Roles you want" help="A title needs one of these… e.g. software engineer, investment banking." value={p.roles ?? []} onChange={set("roles")} />
       <Tags label="Level keywords" help="…and one of these. e.g. intern, new grad, summer analyst." value={p.keywords ?? []} onChange={set("keywords")} />
       <Tags label="Exclude" help="Any of these in a title rules it out. e.g. senior, phd." value={p.exclude ?? []} onChange={set("exclude")} />
       <Tags label="Locations" help="“United States” accepts any US city; “Remote” accepts remote roles. Empty = anywhere." value={p.locations ?? []} onChange={set("locations")} />
