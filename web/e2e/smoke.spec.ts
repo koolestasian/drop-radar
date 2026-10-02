@@ -1,7 +1,8 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 const TOKEN = "test-token-kevin-0123456789";
-const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
+const GLOBE = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGUlEQVR4nGNoaGj4TwlmGDVg1IBRA4aLAQCJj38fETZOLAAAAABJRU5ErkJggg==", "base64");
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAK0lEQVR4nO3OIQEAAAwEoetfeovxBoGn6sYEBAQEBAQEBAQEBAQEBAS2gQe3tfwuZanJ7gAAAABJRU5ErkJggg==", "base64"); // 32px: real icons are bigger than Google's 16px "no icon" globe
 
 /** `format.ts`'s deadline() parses "YYYY-MM-DD" as a *local* midnight and diffs
  * against local "today". Date.now() + Nd then .toISOString() is UTC, so near a
@@ -228,7 +229,8 @@ test("a #token= link signs the device in and leaves the address bar", async ({ p
 
 test("a logo that fails to load becomes a letter; US only, search and sort reach the server", async ({ page }) => {
   await mockApi(page);
-  await page.route("**/s2/favicons**", (route) => route.fulfill({ status: 404, body: "" })); // registered last, wins
+  // Google's "no icon": a 16px globe with status 404, which the browser still draws
+  await page.route("**/s2/favicons**", (route) => route.fulfill({ status: 404, contentType: "image/png", body: GLOBE })); // registered last, wins
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
   const asked: URL[] = [];
   page.on("request", (r) => { if (r.url().includes("/api/opportunities?")) asked.push(new URL(r.url())); });

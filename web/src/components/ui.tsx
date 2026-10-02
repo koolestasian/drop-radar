@@ -74,7 +74,8 @@ export function ErrorNote({ error, retry }: { error: unknown; retry?: () => void
 
 const MONOGRAM = ["bg-zinc-900", "bg-sky-700", "bg-emerald-700", "bg-amber-700", "bg-rose-700", "bg-violet-700", "bg-teal-700"];
 
-/** The company's icon (by its looked-up domain), or a lettered tile when there is none or it fails to load. */
+/** The company's icon (by its looked-up domain), or a lettered tile when there is none or it fails to load.
+ * Google answers an unknown icon with a 16px globe (status 404, which browsers still draw), so tiny counts as none. */
 export function CompanyLogo({ name, domain }: { name: string; domain?: string | null }) {
   const [failed, setFailed] = useState(false);
   if (domain && !failed)
@@ -84,6 +85,7 @@ export function CompanyLogo({ name, domain }: { name: string; domain?: string | 
         alt=""
         loading="lazy"
         onError={() => setFailed(true)}
+        onLoad={(e) => e.currentTarget.naturalWidth <= 16 && setFailed(true)}
         className="size-8 shrink-0 rounded-lg border border-zinc-200 bg-white object-contain p-0.5 dark:border-zinc-700"
       />
     );
