@@ -226,7 +226,30 @@ export function Feed({
         </p>
       </header>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input
+            ref={search}
+            type="search"
+            value={filters.q}
+            onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+            placeholder="Search role, company, city"
+            aria-label="Search title, company or location"
+            className="min-h-10 w-full min-w-0 flex-1 rounded-full border border-zinc-200 bg-white px-4 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+          />
+          <select
+            aria-label="Sort"
+            value={filters.sort}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, sort: e.target.value as Sort }))
+            }
+            className="min-h-10 shrink-0 rounded-full border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+          >
+            <option value="posted">Newest posted</option>
+            <option value="found">Newest found</option>
+            <option value="prestige">Most prestigious</option>
+          </select>
+        </div>
         <div className="-mx-4 flex items-center gap-1 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <div
             role="group"
@@ -269,28 +292,7 @@ export function Feed({
           >
             Ignored
           </button>
-          <select
-            aria-label="Sort"
-            value={filters.sort}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, sort: e.target.value as Sort }))
-            }
-            className="min-h-8 shrink-0 rounded-full border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
-          >
-            <option value="posted">Newest posted</option>
-            <option value="found">Newest found</option>
-            <option value="prestige">Most prestigious</option>
-          </select>
         </div>
-        <input
-          ref={search}
-          type="search"
-          value={filters.q}
-          onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-          placeholder="Search title, company or city  ( / )"
-          aria-label="Search title, company or location"
-          className="min-h-10 w-full min-w-0 rounded-full border border-zinc-200 bg-white px-4 text-sm sm:ml-auto sm:w-64 dark:border-zinc-800 dark:bg-zinc-900"
-        />
       </div>
 
       {unseen.length > 0 && plainFeed && (
