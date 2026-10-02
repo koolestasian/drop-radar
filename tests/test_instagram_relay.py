@@ -75,6 +75,14 @@ class RelayTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(state["last_ok"])
         self.assertEqual(state["fail_count"], 0)
 
+    async def test_after_a_restart_stored_stories_are_not_ocrd_again(self):
+        story = {"pk": "1", "text": "SWE Intern", "image_url": "https://cdn.example/1.jpg"}
+        with patch("radar.sources.instagram.legacy.item_text", return_value="SWE Intern") as ocr:
+            await self.post([story])
+            self.source._text_cache = {}  # a restarted server starts with an empty cache
+            self.assertEqual((await self.post([story])).json()["new"], 0)
+        self.assertEqual(ocr.call_count, 1)
+
     async def test_vm_never_polls_external_instagram_and_a_sleeping_mac_is_visible(self):
         self.scheduler.launch_due()
         self.assertEqual(self.scheduler.running, {})

@@ -17,12 +17,14 @@ REMOTE_REPO = "/opt/radar/zero2sudo-opportunity-monitor"
 REMOTE_ENV = "/opt/radar/radar.env"
 
 
-def remote(code, payload=None):
+def remote(code, payload=None, timeout=300):
     command = (f"set -a; source {shlex.quote(REMOTE_ENV)}; cd {shlex.quote(REMOTE_REPO)}; "
                f".venv/bin/python -c {shlex.quote(code)}")
+    # Keepalives fail a connection a sleeping Mac dropped in ~90s; the timeout alone would hold launchd's only run.
     return subprocess.check_output(
-        ["/usr/bin/ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "drop-radar",
-         "sudo -u radar bash -c " + shlex.quote(command)], input=payload, text=True, timeout=300)
+        ["/usr/bin/ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "ServerAliveInterval=30",
+         "-o", "ServerAliveCountMax=3", "drop-radar", "sudo -u radar bash -c " + shlex.quote(command)],
+        input=payload, text=True, timeout=timeout)
 
 
 def main():
@@ -43,13 +45,13 @@ owner = load_users()[0].id
 token = next(secret for secret, uid in load_settings().api_tokens.items() if uid == owner)
 req = urllib.request.Request('http://127.0.0.1:8000/api/instagram/relay', data=sys.stdin.buffer.read(),
     headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
-with urllib.request.urlopen(req, timeout=240) as response:
+with urllib.request.urlopen(req, timeout=2400) as response:  # the VM OCRs each new Story; a first backfill is ~40
     print(response.read().decode())
 """
         payload = json.dumps({"username": account["username"], "stories": stories})
         for attempt in range(3):
             try:
-                result = remote(code, payload)
+                result = remote(code, payload, timeout=2460)
                 break
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
                 if attempt == 2:

@@ -52,6 +52,12 @@ def _parse_posted_at(raw):
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
+def story_id(raw) -> str:
+    """A Story's Item.external_id, computed without OCR ("" when it has no stable id)."""
+    media_id = legacy.instagram_media_key(legacy.normalize_links(raw))
+    return f"media:{media_id}" if media_id else str(raw.get("pk") or raw.get("id") or "")
+
+
 async def _build_item(username, raw, now, text_cache=None) -> Item | None:
     """One raw story dict (native- or Apify-shaped) -> Item, or None if it carries no stable id.
 
@@ -69,7 +75,7 @@ async def _build_item(username, raw, now, text_cache=None) -> Item | None:
     """
     links = legacy.normalize_links(raw)
     media_id = legacy.instagram_media_key(links)
-    external_id = f"media:{media_id}" if media_id else str(raw.get("pk") or raw.get("id") or "")
+    external_id = story_id(raw)
     if not external_id:
         return None  # no stable identity to dedupe on; skip rather than risk a re-alert storm
     if text_cache is not None and external_id in text_cache:

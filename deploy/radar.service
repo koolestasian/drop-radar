@@ -9,6 +9,9 @@ User=radar
 Group=radar
 WorkingDirectory=/opt/radar/zero2sudo-opportunity-monitor
 EnvironmentFile=/opt/radar/radar.env
+# Tesseract's OpenMP threads spin against each other on a 2-vCPU VM: one Story
+# OCR took ~25s with the default and 4-7s with one thread (measured 2026-10-02).
+Environment=OMP_THREAD_LIMIT=1
 ExecStart=/opt/radar/zero2sudo-opportunity-monitor/.venv/bin/python -m radar serve --host 127.0.0.1 --port 8000
 # Load-bearing: a crashed scheduler task re-delivers SIGTERM to this same process
 # (radar/api/app.py's _log_crash) specifically so this fires -- systemd treats a

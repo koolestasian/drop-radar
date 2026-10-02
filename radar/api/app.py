@@ -43,6 +43,7 @@ from radar.models import utcnow
 from radar.pipeline.filter import is_us_location
 from radar.pipeline.normalize import canonical_company
 from radar.pipeline.enrich import DEFAULT_DAILY_TOKEN_BUDGET
+from radar.sources.instagram import story_id
 from radar.stats import latency_by_source
 
 log = logging.getLogger(__name__)
@@ -196,6 +197,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         state = store.get_source_state(source.name) or {}
         fresh = 0
         for raw in body.stories:
+            if store.item_opportunity_id(source.name, story_id(raw)) is not None:
+                continue  # stored already: skip its OCR (the text cache is empty after a restart)
             items = await source._to_items([raw], scheduler.context(source.name))
             for item in items:
                 if store.item_opportunity_id(item.source, item.external_id) is not None:
