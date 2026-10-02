@@ -4,8 +4,9 @@ import time
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest import mock
 
-from radar.alerts import ZERO2SUDO_SOURCE, AlertDispatcher, should_alert
+from radar.alerts import ZERO2SUDO_SOURCE, AlertDispatcher, NtfyChannel, should_alert
 from radar.config import Profile
 from radar.models import Item, utcnow
 from radar.store import Store
@@ -229,6 +230,21 @@ class AlertDispatcherTests(unittest.IsolatedAsyncioTestCase):
         self.store.save_opportunity(opp_id, first_seen=T0, status="Closed")
         await dispatcher.dispatch(it, opp_id)
         self.assertEqual(channel.sent, [])
+
+
+class NtfyPriorityTests(unittest.TestCase):
+    """Default-priority pushes stay silent on a phone in Do Not Disturb; a drop shouldn't."""
+
+    def priority(self, source):
+        with mock.patch("radar.alerts.requests.post") as post:
+            post.return_value.status_code = 200
+            NtfyChannel("t", server="https://ntfy.example", token="").send(
+                {"title": "SWE Intern", "items": [{"source": source}]}, [], None)
+        return post.call_args.kwargs["json"]["priority"]
+
+    def test_insider_is_urgent_everything_else_high(self):
+        self.assertEqual(self.priority(ZERO2SUDO_SOURCE), 5)
+        self.assertEqual(self.priority("ats.greenhouse.stripe"), 4)
 
 
 if __name__ == "__main__":

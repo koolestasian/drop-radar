@@ -1,4 +1,8 @@
-"""Greenhouse board listing: boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true."""
+"""Greenhouse board listing: boards-api.greenhouse.io/v1/boards/{slug}/jobs.
+
+No ?content=true: it inlines every job description (Stripe 5.5MB, Databricks
+9.5MB vs 0.45/0.75MB without, measured 2026-10-02) and nothing here reads it.
+"""
 from __future__ import annotations
 
 from radar.sources.ats import AtsSource, parse_date
@@ -9,7 +13,7 @@ class GreenhouseSource(AtsSource):
     kind = "greenhouse"
 
     def board_url(self):
-        return f"https://boards-api.greenhouse.io/v1/boards/{self.company.slug}/jobs?content=true"
+        return f"https://boards-api.greenhouse.io/v1/boards/{self.company.slug}/jobs"
 
     def parse(self, data):
         postings = {}

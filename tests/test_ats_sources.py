@@ -21,10 +21,11 @@ from radar.store import Store
 
 
 class FakeResponse:
-    def __init__(self, status_code=200, payload=None, text="not json"):
+    def __init__(self, status_code=200, payload=None, text="not json", headers=None):
         self.status_code = status_code
         self._payload = payload
         self.text = text
+        self.headers = headers or {}
 
     def json(self):
         if self._payload is None:
@@ -38,9 +39,11 @@ class FakeHttp:
     def __init__(self, routes):
         self.routes = routes
         self.calls = []
+        self.headers = []  # request headers, one dict per call
 
     async def get(self, url, **kwargs):
         self.calls.append(url)
+        self.headers.append(kwargs.get("headers") or {})
         if url not in self.routes:
             raise AssertionError(f"unexpected URL requested: {url}")
         result = self.routes[url]
@@ -60,10 +63,10 @@ class FakeClock:
         await asyncio.sleep(0)
 
 
-def make_ctx(http, cursor=None):
+def make_ctx(http, cursor=None, etag=None):
     clock = FakeClock()
     return FetchContext(
-        "test", http, clock, HostLimiter(clock, per_second=1000.0), asyncio.Semaphore(10), None, cursor,
+        "test", http, clock, HostLimiter(clock, per_second=1000.0), asyncio.Semaphore(10), etag, cursor,
     )
 
 
@@ -127,6 +130,26 @@ class AtsSourceContractMixin:
         self.assertEqual(items[0].external_id, self.baseline_matching_id())
         self.assertEqual(items[0].raw, {"closed": True})
         self.assertEqual(items[0].source, f"ats.{self.ats}.acme")
+
+    async def test_unchanged_board_304_emits_nothing_and_keeps_baseline(self):
+        """Polls send the last ETag; a 304 means nothing changed, so no body, no diff."""
+        source = self.source_cls(company(self.ats))
+        seed_ctx = make_ctx(FakeHttp({self.url(): FakeResponse(
+            payload=self.payload(self.baseline_jobs()), headers={"etag": 'W/"v1"'})}))
+        await source.fetch(seed_ctx)
+        self.assertEqual(seed_ctx.pending["etag"], 'W/"v1"')
+
+        http = FakeHttp({self.url(): FakeResponse(status_code=304)})
+        ctx = make_ctx(http, cursor=seed_ctx.pending["cursor"], etag=seed_ctx.pending["etag"])
+        self.assertEqual(await source.fetch(ctx), [])
+        self.assertEqual(http.headers, [{"If-None-Match": 'W/"v1"'}])
+        self.assertEqual(ctx.pending, {})  # cursor and etag stay as they were
+
+    async def test_etag_not_sent_before_a_baseline_exists(self):
+        """An ETag without a cursor (e.g. a reset baseline) must never 304 a board out of seeding."""
+        http = FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()))})
+        await self.source_cls(company(self.ats)).fetch(make_ctx(http, etag='W/"v1"'))
+        self.assertEqual(http.headers, [{}])
 
     async def test_non_200_raises_schema_error(self):
         http = FakeHttp({self.url(): FakeResponse(status_code=404, payload=None)})
@@ -359,6 +382,10 @@ class SlugMiningTests(unittest.TestCase):
                 "https://jobs.lever.co/arcteryx.com/826dc4d8-f91e-4893-b8d6-56706194edfb"},
             {"Application / Registration Link": "https://jobs.ashbyhq.com/acme/abc-123"},
             {"Application / Registration Link": "https://jobs.smartrecruiters.com/Acme/744000152787099"},
+            {"Application / Registration Link":
+                "https://bah.wd1.myworkdayjobs.com/en-US/BAH_Jobs/job/McLean-VA/Intern_R0221234"},
+            {"Application / Registration Link":  # unlisted site: not a board anyone can poll
+                "https://globalhr.wd5.myworkdayjobs.com/en-US/PRIVATE_POSTING_NO_TMP/job/x_123"},
             {"Application / Registration Link": "https://lu.ma/some-event"},  # not an ATS link
             {"Application / Registration Link": ""},
         ]
@@ -368,6 +395,7 @@ class SlugMiningTests(unittest.TestCase):
             ("greenhouse", "financialtimes33"),  # both the embed and the direct form
             ("lever", "arcteryx.com"),
             ("smartrecruiters", "Acme"),
+            ("workday", "bah.wd1/BAH_Jobs"),  # tenant.wdN/site, case kept, locale dropped
         }))
 
 

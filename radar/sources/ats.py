@@ -80,9 +80,11 @@ class AtsSource:
         raise NotImplementedError
 
     async def fetch_postings(self, ctx):
-        """(postings, complete). One GET of the whole board; override for an
-        ATS that needs several requests (Workday)."""
+        """(postings, complete), or None when the board is unchanged (304). One GET
+        of the whole board; override for an ATS that needs several requests (Workday)."""
         data = await self._get_json(ctx, self.board_url())
+        if data is None:
+            return None
         try:
             parsed = self.parse(data)
         except (KeyError, TypeError, AttributeError, IndexError) as exc:
@@ -90,7 +92,10 @@ class AtsSource:
         return parsed if isinstance(parsed, tuple) else (parsed, True)
 
     async def fetch(self, ctx) -> list[Item]:
-        raw, complete = await self.fetch_postings(ctx)
+        fetched = await self.fetch_postings(ctx)
+        if fetched is None:
+            return []  # 304: nothing changed since the last poll; baseline and ETag stay as they are
+        raw, complete = fetched
 
         prior = json.loads(ctx.cursor) if ctx.cursor else None
         if not raw and prior:
@@ -137,13 +142,29 @@ class AtsSource:
         )
 
     async def _get_json(self, ctx, url):
-        return await self._request_json(ctx.get, url)
+        """Conditional GET: None on a 304. Every supported ATS answers If-None-Match
+        with a bodiless 304 (verified live 2026-10-02), so an unchanged board costs
+        no download or parse. The ETag is sent only once a baseline exists, so a
+        board can never 304 its way past seeding."""
+        headers = {"If-None-Match": ctx.etag} if ctx.etag and ctx.cursor else {}
+        response = await self._send(ctx.get, url, headers=headers)
+        if response.status_code == 304:
+            return None
+        etag = response.headers.get("etag")
+        if etag:
+            ctx.remember(etag=etag)
+        return self._json(response)
 
     async def _request_json(self, send, url, **kwargs):
+        return self._json(await self._send(send, url, **kwargs))
+
+    async def _send(self, send, url, **kwargs):
         try:
-            response = await send(url, **kwargs)
+            return await send(url, **kwargs)
         except Exception as exc:
             raise SourceError(f"{self.name}: request failed: {exc}", kind="transient") from exc
+
+    def _json(self, response):
         status = response.status_code
         if status == 429:
             raise SourceError(f"{self.name}: rate limited (429)", kind="blocked")

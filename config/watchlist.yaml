@@ -69,6 +69,321 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: Wise, ats: smartrecruiters, slug: Wise, tier: B}
   - {name: Wurl, ats: greenhouse, slug: wurljobs, tier: B}
   - {name: ZipRecruiter, ats: greenhouse, slug: ziprecruiter, tier: B}
+  # Mined 2026-10-02 from SimplifyJobs' active Summer 2027 + New Grad SWE/AI/Quant listings: every
+  # board with >=2 active postings (Workday: >=5) that answered a live check. Simplify posts a median
+  # ~3h after the board itself, so these are the ones worth watching directly. Staffing agencies,
+  # AI-gig boards and non-US-only boards left out. Tier A = the 120s lane, for the most contested.
+  - {name: "SpaceX", ats: greenhouse, slug: "spacex", tier: A}
+  - {name: "DRW", ats: greenhouse, slug: "drweng", tier: A}
+  - {name: "Five Rings Capital", ats: greenhouse, slug: "fiveringsllc", tier: A}
+  - {name: "Jane Street", ats: greenhouse, slug: "janestreet", tier: A}
+  - {name: "National Information Solutions Cooperative", ats: greenhouse, slug: "testnisc", tier: B}
+  - {name: "Veeam Software", ats: greenhouse, slug: "veeamsoftware", tier: B}
+  - {name: "Zoox", ats: lever, slug: "zoox", tier: B}
+  - {name: "Anduril", ats: greenhouse, slug: "andurilindustries", tier: A}
+  - {name: "Applied Intuition", ats: ashby, slug: "applied", tier: B}
+  - {name: "SingleStore", ats: greenhouse, slug: "singlestore", tier: B}
+  - {name: "The Nuclear Company", ats: greenhouse, slug: "thenuclearcompany", tier: B}
+  - {name: "Robert Bosch Venture Capital", ats: smartrecruiters, slug: "BoschGroup", tier: B}
+  - {name: "Chicago Trading Company", ats: greenhouse, slug: "ctccampusboard", tier: B}
+  - {name: "Chicago Trading Company", ats: greenhouse, slug: "chicagotradingcampus", tier: B}
+  - {name: "Cybernetic Labs", ats: ashby, slug: "netic", tier: B}
+  - {name: "Maven Securities", ats: greenhouse, slug: "mavensecuritiesholdingltd", tier: B}
+  - {name: "NewsBreak", ats: greenhouse, slug: "newsbreak", tier: B}
+  - {name: "OneImaging", ats: greenhouse, slug: "oneimaging", tier: B}
+  - {name: "True Anomaly", ats: greenhouse, slug: "trueanomalyinc", tier: B}
+  - {name: "Wellmark", ats: smartrecruiters, slug: "WellmarkInc", tier: B}
+  - {name: "Collaborative Robotics", ats: ashby, slug: "cobot", tier: B}
+  - {name: "Domino's", ats: smartrecruiters, slug: "Dominos", tier: B}
+  - {name: "Dyna Robotics", ats: ashby, slug: "dyna-robotics", tier: B}
+  - {name: "General Dynamics UK", ats: smartrecruiters, slug: "GDMSI", tier: B}
+  - {name: "Geotab", ats: greenhouse, slug: "internshiplist2000", tier: B}
+  - {name: "Kodiak Robotics", ats: greenhouse, slug: "kodiak", tier: B}
+  - {name: "Lawrence Livermore National Laboratory (LLNL)", ats: smartrecruiters, slug: "LLNL", tier: B}
+  - {name: "Perpay", ats: greenhouse, slug: "perpay", tier: B}
+  - {name: "Pilot Company", ats: smartrecruiters, slug: "PilotCompany", tier: B}
+  - {name: "Veeva Systems", ats: lever, slug: "veeva", tier: B}
+  - {name: "Voloridge", ats: greenhouse, slug: "voloridgeinvestmentmanagement", tier: B}
+  - {name: "XPENG Motors", ats: greenhouse, slug: "xpengmotors", tier: B}
+  - {name: "Accenture", ats: greenhouse, slug: "accenturefederalservices", tier: B}
+  - {name: "Audax Group", ats: greenhouse, slug: "audaxgroup", tier: B}
+  - {name: "BlackEdge Capital", ats: greenhouse, slug: "blackedgecapital", tier: B}
+  - {name: "Blenheim Chalcot", ats: greenhouse, slug: "blenheimchalcot", tier: B}
+  - {name: "Bot Auto", ats: greenhouse, slug: "botauto", tier: B}
+  - {name: "Compeer Financial", ats: greenhouse, slug: "compeerfinancial", tier: B}
+  - {name: "Dev Technology Group", ats: greenhouse, slug: "devtechnology", tier: B}
+  - {name: "Dunn Solutions Group", ats: smartrecruiters, slug: "DunnSolutionsGroup", tier: B}
+  - {name: "Equitable Bank", ats: lever, slug: "eqbank", tier: B}
+  - {name: "Evolver", ats: greenhouse, slug: "evolver", tier: B}
+  - {name: "Fab2", ats: ashby, slug: "fab2", tier: B}
+  - {name: "Flagship Pioneering", ats: greenhouse, slug: "fspco-op012325", tier: B}
+  - {name: "Gallup", ats: greenhouse, slug: "gallup", tier: B}
+  - {name: "Garda Capital Partners", ats: greenhouse, slug: "gardacp", tier: B}
+  - {name: "Garner Health", ats: greenhouse, slug: "garnerhealth", tier: B}
+  - {name: "Global Lending Services", ats: lever, slug: "glsllc", tier: B}
+  - {name: "HP IQ", ats: greenhouse, slug: "hpiq", tier: B}
+  - {name: "incident.io", ats: ashby, slug: "incident", tier: B}
+  - {name: "Integra FEC", ats: greenhouse, slug: "integrainterns", tier: B}
+  - {name: "Integra FEC", ats: greenhouse, slug: "integra", tier: B}
+  - {name: "Marshall Wace", ats: greenhouse, slug: "mwinternshipprogram", tier: B}
+  - {name: "National Information Solutions Cooperative", ats: greenhouse, slug: "nisc", tier: B}
+  - {name: "PMG", ats: greenhouse, slug: "pmg", tier: B}
+  - {name: "Seven Research", ats: greenhouse, slug: "sevenresearch", tier: B}
+  - {name: "Superhuman", ats: ashby, slug: "Superhuman%20Platform%20Inc", tier: B}
+  - {name: "Talos", ats: ashby, slug: "Talos-Trading", tier: B}
+  - {name: "TransMarket Group", ats: greenhouse, slug: "transmarketgroup", tier: B}
+  - {name: "Verkada", ats: greenhouse, slug: "verkada", tier: B}
+  - {name: "Walleye Capital", ats: greenhouse, slug: "walleyecapital-external-students", tier: B}
+  - {name: "3RedPartners", ats: greenhouse, slug: "3redpartners", tier: B}
+  - {name: "AbbVie", ats: smartrecruiters, slug: "AbbVie", tier: B}
+  - {name: "Abridge", ats: ashby, slug: "abridge", tier: B}
+  - {name: "Accenture", ats: smartrecruiters, slug: "AccentureFederalServices", tier: B}
+  - {name: "AHEAD", ats: lever, slug: "thinkahead", tier: B}
+  - {name: "Anthelion Capital", ats: ashby, slug: "anthelioncap", tier: B}
+  - {name: "Apera AI", ats: greenhouse, slug: "aperaaiinc", tier: B}
+  - {name: "Aquatic Capital Management", ats: greenhouse, slug: "aquaticcapitalmanagement", tier: B}
+  - {name: "Atoms", ats: greenhouse, slug: "cssmerge", tier: B}
+  - {name: "Atria Group", ats: smartrecruiters, slug: "AtriaGroupLLC", tier: B}
+  - {name: "Base Power", ats: ashby, slug: "base-power", tier: B}
+  - {name: "Bree", ats: ashby, slug: "bree", tier: B}
+  - {name: "Composio", ats: ashby, slug: "composio", tier: B}
+  - {name: "Ellipsis Labs", ats: ashby, slug: "ellipsislabs", tier: B}
+  - {name: "Eulerity", ats: greenhouse, slug: "eulerity", tier: B}
+  - {name: "Felix Magazine", ats: smartrecruiters, slug: "LuxeMediaLLC", tier: B}
+  - {name: "Field AI", ats: lever, slug: "field-ai", tier: B}
+  - {name: "Fospha", ats: greenhouse, slug: "fosphamarketing", tier: B}
+  - {name: "Gritt Robotics Inc", ats: ashby, slug: "gritt", tier: B}
+  - {name: "Hadrian", ats: ashby, slug: "hadrian-automation", tier: B}
+  - {name: "ibotta", ats: ashby, slug: "ibotta", tier: B}
+  - {name: "ID.me", ats: greenhouse, slug: "idmeuniversityrecruiting", tier: B}
+  - {name: "Immuta", ats: lever, slug: "immuta", tier: B}
+  - {name: "InstaLILY", ats: greenhouse, slug: "instalilyai", tier: B}
+  - {name: "InterSystems", ats: greenhouse, slug: "intersystems", tier: B}
+  - {name: "Man Group", ats: greenhouse, slug: "mangroup", tier: B}
+  - {name: "Northwestern Mutual", ats: smartrecruiters, slug: "NorthwesternMutual", tier: B}
+  - {name: "Persona AI", ats: ashby, slug: "persona.ai", tier: B}
+  - {name: "Rainmaker", ats: lever, slug: "make-rain", tier: B}
+  - {name: "Realm", ats: ashby, slug: "realmalliance", tier: B}
+  - {name: "Resultant", ats: smartrecruiters, slug: "Resultant", tier: B}
+  - {name: "Retell AI", ats: ashby, slug: "retell-ai", tier: B}
+  - {name: "Rivian and Volkswagen Group Technologies", ats: ashby, slug: "rivianvw.tech", tier: B}
+  - {name: "RWS", ats: lever, slug: "rws", tier: B}
+  - {name: "Sierra", ats: ashby, slug: "Sierra", tier: B}
+  - {name: "Sim", ats: ashby, slug: "sim", tier: B}
+  - {name: "The Brattle Group", ats: greenhouse, slug: "thebrattlegroup", tier: B}
+  - {name: "The Voleon Group", ats: ashby, slug: "voleon", tier: B}
+  - {name: "Tilde Research", ats: ashby, slug: "tilderesearch", tier: B}
+  - {name: "Toyota Research Institute", ats: lever, slug: "tri", tier: B}
+  - {name: "Truveta", ats: greenhouse, slug: "truveta", tier: B}
+  - {name: "Western Digital", ats: smartrecruiters, slug: "WesternDigital", tier: B}
+  - {name: "Wintermute", ats: lever, slug: "wintermute-trading", tier: B}
+  - {name: "Wyetech", ats: lever, slug: "wyetechllc", tier: B}
+  - {name: "Xaira Therapeutics", ats: greenhouse, slug: "xairatherapeutics", tier: B}
+  - {name: "Abundant", ats: ashby, slug: "abundant", tier: B}
+  - {name: "Acceldata", ats: lever, slug: "acceldata", tier: B}
+  - {name: "AECOM", ats: smartrecruiters, slug: "AECOM2", tier: B}
+  - {name: "Agile Defense", ats: lever, slug: "agile-defense", tier: B}
+  - {name: "ALTEN Technology", ats: greenhouse, slug: "altentechnologyusa", tier: B}
+  - {name: "Ambrook", ats: ashby, slug: "ambrook", tier: B}
+  - {name: "Analytic Partners", ats: lever, slug: "analyticpartners", tier: B}
+  - {name: "AnaVation", ats: lever, slug: "anavationllc", tier: B}
+  - {name: "AppLovin", ats: greenhouse, slug: "applovin", tier: B}
+  - {name: "Arch", ats: ashby, slug: "arch.co", tier: B}
+  - {name: "Armadin", ats: ashby, slug: "armadin", tier: B}
+  - {name: "Aurelian", ats: ashby, slug: "aurelian", tier: B}
+  - {name: "Axiomatic AI", ats: greenhouse, slug: "axiomaticai", tier: B}
+  - {name: "AXQ Capital", ats: greenhouse, slug: "axq", tier: B}
+  - {name: "Barnes & Thornburg", ats: ashby, slug: "barnes", tier: B}
+  - {name: "BGE", ats: greenhouse, slug: "bgeinc", tier: B}
+  - {name: "BGE", ats: greenhouse, slug: "bgeinccampus", tier: B}
+  - {name: "Canonical", ats: greenhouse, slug: "canonical", tier: B}
+  - {name: "Clay", ats: ashby, slug: "claylabs", tier: B}
+  - {name: "Cogent Security", ats: ashby, slug: "cogent-security", tier: B}
+  - {name: "Cohere", ats: ashby, slug: "cohere", tier: A}
+  - {name: "Collinear AI", ats: ashby, slug: "collinear-ai", tier: B}
+  - {name: "Crest Industries", ats: lever, slug: "crestoperations", tier: B}
+  - {name: "CSC Generation", ats: lever, slug: "cscgeneration-2", tier: B}
+  - {name: "Cyvl", ats: ashby, slug: "cyvl", tier: B}
+  - {name: "Dandy", ats: ashby, slug: "dandy", tier: B}
+  - {name: "Dark Wolf Solutions", ats: greenhouse, slug: "darkwolfsolutions", tier: B}
+  - {name: "Decagon", ats: ashby, slug: "decagon", tier: B}
+  - {name: "Deepgram", ats: ashby, slug: "deepgram", tier: B}
+  - {name: "Dexmate", ats: ashby, slug: "dexmate", tier: B}
+  - {name: "DiDi Global", ats: greenhouse, slug: "didi", tier: B}
+  - {name: "Docugami", ats: greenhouse, slug: "docugami", tier: B}
+  - {name: "DoorDash", ats: greenhouse, slug: "doordashcanada", tier: B}
+  - {name: "Dynamic Catholic", ats: lever, slug: "dynamiccatholic", tier: B}
+  - {name: "Etched", ats: ashby, slug: "Etched", tier: A}
+  - {name: "Eurofins", ats: smartrecruiters, slug: "Eurofins", tier: B}
+  - {name: "Extropic", ats: ashby, slug: "extropic", tier: B}
+  - {name: "Faraday Future", ats: greenhouse, slug: "faradayfuture", tier: B}
+  - {name: "Figure", ats: greenhouse, slug: "figureai", tier: B}
+  - {name: "Firetiger", ats: ashby, slug: "firetiger", tier: B}
+  - {name: "FS Studio", ats: ashby, slug: "fs-studio", tier: B}
+  - {name: "Gas South", ats: greenhouse, slug: "gassouth", tier: B}
+  - {name: "Gecko Robotics", ats: ashby, slug: "gecko-robotics", tier: B}
+  - {name: "GrayMatter Robotics", ats: ashby, slug: "graymatter-robotics", tier: B}
+  - {name: "Heliux", ats: ashby, slug: "heliux", tier: B}
+  - {name: "Hermeus", ats: lever, slug: "hermeus", tier: B}
+  - {name: "Human Computer Lab", ats: ashby, slug: "human-computer-lab", tier: B}
+  - {name: "Humanoid", ats: ashby, slug: "humanoid", tier: B}
+  - {name: "HumanSignal", ats: greenhouse, slug: "humansignal", tier: B}
+  - {name: "Iambic Therapeutics", ats: ashby, slug: "iambic-therapeutics", tier: B}
+  - {name: "InfiniteQuant", ats: smartrecruiters, slug: "InfiniteQuant", tier: B}
+  - {name: "Intropic", ats: lever, slug: "intropic", tier: B}
+  - {name: "Kastle AI", ats: ashby, slug: "kastle", tier: B}
+  - {name: "Klarity", ats: ashby, slug: "klarity-ai", tier: B}
+  - {name: "Later", ats: greenhouse, slug: "later", tier: B}
+  - {name: "Latitude AI", ats: greenhouse, slug: "latitude", tier: B}
+  - {name: "Lightfield", ats: ashby, slug: "Lightfield", tier: B}
+  - {name: "Loram", ats: smartrecruiters, slug: "Loram1", tier: B}
+  - {name: "Major League Baseball", ats: greenhouse, slug: "clevelandguardiansbops", tier: B}
+  - {name: "Marshall Wace", ats: greenhouse, slug: "mw-tech-grad", tier: B}
+  - {name: "Maximor AI", ats: ashby, slug: "maximor", tier: B}
+  - {name: "MegazoneCloud", ats: ashby, slug: "megazone", tier: B}
+  - {name: "Melius", ats: ashby, slug: "melius", tier: B}
+  - {name: "Mulligan Funding", ats: lever, slug: "mulliganfunding", tier: B}
+  - {name: "Multiply Labs", ats: lever, slug: "multiplylabs", tier: B}
+  - {name: "Myriad Genetics", ats: smartrecruiters, slug: "MyriadGenetics1", tier: B}
+  - {name: "National Life", ats: greenhouse, slug: "nationallifeinsurancecompany", tier: B}
+  - {name: "Neighbor", ats: lever, slug: "neighbor", tier: B}
+  - {name: "Neuralink", ats: greenhouse, slug: "neuralink", tier: A}
+  - {name: "ONE Finance", ats: ashby, slug: "oneapp", tier: B}
+  - {name: "Oratomic", ats: ashby, slug: "oratomic", tier: B}
+  - {name: "Pace", ats: ashby, slug: "withpace", tier: B}
+  - {name: "Penta Group", ats: lever, slug: "pentagrp", tier: B}
+  - {name: "Pylon", ats: ashby, slug: "pylon-labs", tier: B}
+  - {name: "Quadrillion", ats: ashby, slug: "quadrillion-labs", tier: B}
+  - {name: "QualityAI", ats: smartrecruiters, slug: "QANALYSTSLLC2", tier: B}
+  - {name: "Quantcast", ats: ashby, slug: "quantcast", tier: B}
+  - {name: "Qumulo", ats: ashby, slug: "qumulo", tier: B}
+  - {name: "Radix Trading", ats: greenhouse, slug: "radixuniversity", tier: A}
+  - {name: "Relay", ats: greenhouse, slug: "relaypro", tier: B}
+  - {name: "Replit", ats: ashby, slug: "replit", tier: B}
+  - {name: "Revel", ats: ashby, slug: "revel", tier: B}
+  - {name: "RoboForce", ats: greenhouse, slug: "roboforce", tier: B}
+  - {name: "Sage", ats: greenhouse, slug: "sage49", tier: B}
+  - {name: "Saronic", ats: ashby, slug: "saronic", tier: B}
+  - {name: "SEP", ats: lever, slug: "sep", tier: B}
+  - {name: "ServiceNow", ats: smartrecruiters, slug: "ServiceNow", tier: B}
+  - {name: "ShyftLabs", ats: lever, slug: "shyftlabs", tier: B}
+  - {name: "SimpliSafe", ats: greenhouse, slug: "simplisafe", tier: B}
+  - {name: "Solace Health", ats: ashby, slug: "solace", tier: B}
+  - {name: "Stand Together", ats: lever, slug: "standtogether", tier: B}
+  - {name: "Sunday Robotics", ats: ashby, slug: "sunday", tier: B}
+  - {name: "The Exploration Company", ats: ashby, slug: "the-exploration-company", tier: B}
+  - {name: "The Information Lab", ats: lever, slug: "theinformationlab", tier: B}
+  - {name: "The MJ Companies", ats: greenhouse, slug: "themjcos", tier: B}
+  - {name: "The Trade Desk", ats: greenhouse, slug: "thetradedesk", tier: B}
+  - {name: "Trace3", ats: greenhouse, slug: "trace3", tier: B}
+  - {name: "TTP", ats: smartrecruiters, slug: "TTP1", tier: B}
+  - {name: "Uncountable", ats: ashby, slug: "uncountable", tier: B}
+  - {name: "Valon", ats: ashby, slug: "Valon", tier: B}
+  - {name: "Valstad", ats: ashby, slug: "valstad", tier: B}
+  - {name: "Verne Robotics", ats: ashby, slug: "Verne%20Robotics", tier: B}
+  - {name: "Viking Global", ats: greenhouse, slug: "vikingglobalinvestors", tier: B}
+  - {name: "Vmax AI Corp", ats: ashby, slug: "vmax", tier: B}
+  - {name: "VML", ats: greenhouse, slug: "map", tier: B}
+  - {name: "WeRide", ats: lever, slug: "weride", tier: B}
+  - {name: "Winsupply", ats: smartrecruiters, slug: "Winsupply1", tier: B}
+  - {name: "xAI", ats: greenhouse, slug: "xai", tier: A}
+  - {name: "Xantium", ats: greenhouse, slug: "xantium", tier: B}
+  - {name: "Zettabyte", ats: ashby, slug: "zettabyte-space", tier: B}
+  - {name: "Zip", ats: ashby, slug: "zip", tier: B}
+  - {name: "RTX", ats: workday, slug: "globalhr.wd5/rec_rtx_ext_gateway", tier: B}
+  - {name: "Booz Allen", ats: workday, slug: "bah.wd1/bah_jobs", tier: B}
+  - {name: "Palo Alto Networks", ats: workday, slug: "paloaltonetworks.wd5/panwexternalcareers", tier: B}
+  - {name: "Xcel Energy", ats: workday, slug: "xcelenergy.wd1/External", tier: B}
+  - {name: "Northrop Grumman", ats: workday, slug: "ngc.wd1/Northrop_Grumman_External_Site", tier: B}
+  - {name: "CACI", ats: workday, slug: "caci.wd1/external", tier: B}
+  - {name: "Clearwater Analytics", ats: workday, slug: "clearwateranalytics.wd1/Clearwater_Analytics_Careers", tier: B}
+  - {name: "Procter & Gamble", ats: workday, slug: "pg.wd5/1000", tier: B}
+  - {name: "Vanguard", ats: workday, slug: "vanguard.wd5/vanguard_external", tier: B}
+  - {name: "Cigna Group", ats: workday, slug: "cigna.wd5/cignacareers", tier: B}
+  - {name: "First National Bank", ats: workday, slug: "fnbcorp.wd501/FNBCORP", tier: B}
+  - {name: "Johnson & Johnson", ats: workday, slug: "jj.wd5/JJ", tier: B}
+  - {name: "Motorola", ats: workday, slug: "motorolasolutions.wd5/Careers", tier: B}
+  - {name: "Oshkosh", ats: workday, slug: "oshkoshcorporation.wd5/Oshkosh", tier: B}
+  - {name: "Stryker", ats: workday, slug: "stryker.wd1/StrykerCareers", tier: B}
+  - {name: "Applied Materials", ats: workday, slug: "amat.wd1/External", tier: B}
+  - {name: "Barclays", ats: workday, slug: "barclays.wd3/External_Career_Site_Barclays", tier: B}
+  - {name: "CoStar Group", ats: workday, slug: "costar.wd1/Costar_Campus", tier: B}
+  - {name: "Gilead Sciences", ats: workday, slug: "gilead.wd1/gileadcareers", tier: B}
+  - {name: "Gordon Food Service", ats: workday, slug: "gfs.wd5/usjobs-gen-gfs", tier: B}
+  - {name: "KBR", ats: workday, slug: "kbr.wd5/KBR_Careers", tier: B}
+  - {name: "Merck", ats: workday, slug: "msd.wd5/searchjobs", tier: B}
+  - {name: "Autodesk", ats: workday, slug: "autodesk.wd1/uni", tier: B}
+  - {name: "Autodesk", ats: workday, slug: "autodesk.wd1/Ext", tier: B}
+  - {name: "Fidelity Investments", ats: workday, slug: "fmr.wd1/targeted", tier: B}
+  - {name: "Freddie Mac", ats: workday, slug: "freddiemac.wd5/External", tier: B}
+  - {name: "Leidos", ats: workday, slug: "leidos.wd5/External", tier: B}
+  - {name: "PIMCO", ats: workday, slug: "pimco.wd1/pimco-careers", tier: B}
+  - {name: "The Campbell's Company", ats: workday, slug: "campbellsoup.wd5/externalcareers_globalsite", tier: B}
+  - {name: "Auto-Owners Insurance", ats: workday, slug: "aoins.wd5/AutoOwners", tier: B}
+  - {name: "Cadence Design Systems", ats: workday, slug: "cadence.wd1/External_Careers", tier: B}
+  - {name: "Excellus BCBS", ats: workday, slug: "lthc.wd1/ExcellusBCBSCareers", tier: B}
+  - {name: "Sierra Nevada Corporation", ats: workday, slug: "snc.wd1/snc_external_career_site", tier: B}
+  - {name: "AeroVironment", ats: workday, slug: "avav.wd1/avav", tier: B}
+  - {name: "Capital Group", ats: workday, slug: "capgroup.wd1/capitalgroupcareers", tier: B}
+  - {name: "Copart", ats: workday, slug: "copart.wd12/copart", tier: B}
+  - {name: "General Motors", ats: workday, slug: "generalmotors.wd5/Careers_GM", tier: B}
+  - {name: "KLA", ats: workday, slug: "kla.wd1/AnnArbor", tier: B}
+  - {name: "LSEG", ats: workday, slug: "lseg.wd3/Graduate_Careers", tier: B}
+  - {name: "RELX", ats: workday, slug: "relx.wd3/relx", tier: B}
+  - {name: "Teledyne", ats: workday, slug: "flir.wd1/flircareers", tier: B}
+  - {name: "The Aerospace Corporation", ats: workday, slug: "aero.wd5/external", tier: B}
+  - {name: "The Boeing Company", ats: workday, slug: "boeing.wd1/EXTERNAL_CAREERS", tier: B}
+  - {name: "The Home Depot", ats: workday, slug: "homedepot.wd5/careerdepot", tier: B}
+  - {name: "Amgen", ats: workday, slug: "amgen.wd1/careers", tier: B}
+  - {name: "DraftKings", ats: workday, slug: "draftkings.wd1/Campus_Career_Portal", tier: B}
+  - {name: "Equifax", ats: workday, slug: "equifax.wd5/UR_External", tier: B}
+  - {name: "LexisNexis Risk Solutions", ats: workday, slug: "relx.wd3/RiskSolutions", tier: B}
+  - {name: "Mastercard", ats: workday, slug: "mastercard.wd1/Campus", tier: B}
+  - {name: "MFS", ats: workday, slug: "mfs.wd1/MFS-Careers", tier: B}
+  - {name: "Micron Technology", ats: workday, slug: "micron.wd1/External", tier: B}
+  - {name: "OCC", ats: workday, slug: "theocc.wd5/careers", tier: B}
+  - {name: "Philips", ats: workday, slug: "philips.wd3/jobs-and-careers", tier: B}
+  - {name: "Radiance Technologies", ats: workday, slug: "radiancetech.wd12/Radiance_External", tier: B}
+  - {name: "Symbotic", ats: workday, slug: "symbotic.wd504/Symbotic", tier: B}
+  - {name: "Tokyo Electron", ats: workday, slug: "tel.wd3/tel-careers", tier: B}
+  - {name: "AIG", ats: workday, slug: "aig.wd1/aig", tier: B}
+  - {name: "AIG", ats: workday, slug: "aig.wd1/early_careers", tier: B}
+  - {name: "Avis Budget Group", ats: workday, slug: "avisbudget.wd1/abg_careers", tier: B}
+  - {name: "Hewlett Packard", ats: workday, slug: "hp.wd5/EXTEU-AC-CareerSite", tier: B}
+  - {name: "Hewlett Packard", ats: workday, slug: "hp.wd5/externalcareersite", tier: B}
+  - {name: "Lowe's", ats: workday, slug: "lowes.wd5/LWS_External_CS", tier: B}
+  - {name: "LSEG", ats: workday, slug: "lseg.wd3/Careers", tier: B}
+  - {name: "Omnicom Group", ats: workday, slug: "interpublic.wd5/omc", tier: B}
+  - {name: "Q2", ats: workday, slug: "q2ebanking.wd5/Q2", tier: B}
+  - {name: "Southwest Airlines", ats: workday, slug: "swa.wd1/external", tier: B}
+  - {name: "Tencent", ats: workday, slug: "tencent.wd1/Tencent_Careers", tier: B}
+  - {name: "The Toro Company", ats: workday, slug: "ttc.wd1/Toro_External_Careers", tier: B}
+  - {name: "USAA", ats: workday, slug: "usaa.wd1/USAAJOBSWD", tier: B}
+  - {name: "American Family Insurance Group", ats: workday, slug: "amfam.wd1/AmFamGroupInternCareers", tier: B}
+  - {name: "Brunswick", ats: workday, slug: "brunswick.wd1/search", tier: B}
+  - {name: "Cadence Design Systems", ats: workday, slug: "cadence.wd1/Univ_Careers", tier: B}
+  - {name: "Caterpillar", ats: workday, slug: "cat.wd5/CaterpillarCareers", tier: B}
+  - {name: "Corteva", ats: workday, slug: "corteva.wd5/corteva", tier: B}
+  - {name: "Cox", ats: workday, slug: "cox.wd1/Cox_External_Career_Site_1", tier: B}
+  - {name: "Dallas Fort Worth International Airport", ats: workday, slug: "dfwairport.wd5/External", tier: B}
+  - {name: "Dimensional Fund Advisors", ats: workday, slug: "dimensional.wd5/dfa_careers", tier: B}
+  - {name: "FHLBank Chicago", ats: workday, slug: "fhlbc.wd1/search", tier: B}
+  - {name: "G-Research", ats: workday, slug: "gresearch.wd103/G-Research", tier: A}
+  - {name: "GE Healthcare", ats: workday, slug: "gehc.wd5/GEHC_ExternalSite", tier: B}
+  - {name: "GE Vernova", ats: workday, slug: "gevernova.wd5/vernova_externalsite", tier: B}
+  - {name: "General Dynamics Information Technology", ats: workday, slug: "gdit.wd5/external_career_site", tier: B}
+  - {name: "Genuine Parts Company", ats: workday, slug: "genpt.wd1/Careers", tier: B}
+  - {name: "KLA Corporation", ats: workday, slug: "kla.wd1/search", tier: B}
+  - {name: "Momentive", ats: workday, slug: "momentive.wd1/MC", tier: B}
+  - {name: "NXP Semiconductors", ats: workday, slug: "nxp.wd3/careers", tier: B}
+  - {name: "Rockwell Automation", ats: workday, slug: "rockwellautomation.wd1/External_Rockwell_Automation", tier: B}
+  - {name: "Rockwell Automation", ats: workday, slug: "rockwellautomation.wd1/External-Rockwell-Automation-Early-Careers", tier: B}
+  - {name: "The Federal Reserve System", ats: workday, slug: "rb.wd5/FRS", tier: B}
+  - {name: "Travelers", ats: workday, slug: "travelers.wd5/External", tier: B}
+  - {name: "Uline", ats: workday, slug: "uline.wd1/Uline_Careers", tier: B}
+  - {name: "United Parcel Service", ats: workday, slug: "hcmportal.wd5/Search", tier: B}
+  - {name: "US Foods", ats: workday, slug: "usfoods.wd1/usfoodscareersExternal", tier: B}
+  - {name: "Viavi Solutions", ats: workday, slug: "viavisolutions.wd1/careers", tier: B}
 instagram:
   - {username: zero2sudo, interval_s: 120, priority: 1}
 feeds: []           # - {url: "https://example.com/feed.xml", kind: rss}   kind: rss|atom|json|html

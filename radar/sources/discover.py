@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import re
 import sys
 from urllib.parse import parse_qsl, urlparse
 
@@ -53,6 +54,14 @@ def _slug_from_url(url):
         return ("ashby", parts[0]) if parts else None
     if host == "jobs.smartrecruiters.com":
         return ("smartrecruiters", parts[0]) if parts else None
+    if host.endswith(".myworkdayjobs.com"):
+        # https://<tenant>.wdN.myworkdayjobs.com/[en-US/]<site>/job/... -> "tenant.wdN/site"
+        if parts and re.fullmatch(r"[a-z]{2}-[a-z]{2}", parts[0], re.I):
+            parts = parts[1:]
+        site = parts[0] if parts else ""
+        if not site or any(w in site.lower() for w in ("private", "confidential", "privileged")):
+            return None  # an unlisted site: links work, but there's no board to poll
+        return ("workday", f"{host.removesuffix('.myworkdayjobs.com')}/{site}")
     return None
 
 

@@ -114,6 +114,8 @@ class NtfyChannel:
             "title": f"{opp.get('company') or 'New'} — {opp.get('title') or 'Opportunity'}"[:250],
             "message": "\n".join(lines).strip(),
             "tags": ["briefcase"],
+            # 5 = urgent (the one level a phone can let through Do Not Disturb); 4 = high, still loud
+            "priority": 5 if ZERO2SUDO_SOURCE in sources else 4,
         }
         url = opp.get("url") or ""
         if url:
