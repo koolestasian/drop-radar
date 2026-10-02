@@ -2,6 +2,17 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 
 const TOKEN = "test-token-kevin-0123456789";
 
+/** `format.ts`'s deadline() parses "YYYY-MM-DD" as a *local* midnight and diffs
+ * against local "today". Date.now() + Nd then .toISOString() is UTC, so near a
+ * local midnight (any timezone behind UTC, e.g. the evening in US timezones)
+ * it lands on the wrong calendar day and "due in 2d" becomes "due in 3d" --
+ * compute the string the same local way the app does. */
+function localDateDaysFromNow(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 type Opp = Record<string, unknown> & { id: string; action: { status: string; notes: string } | null };
 
 function opp(id: string, company: string, title: string, extra: Partial<Opp> = {}): Opp {
@@ -16,7 +27,7 @@ function opp(id: string, company: string, title: string, extra: Partial<Opp> = {
 
 async function mockApi(page: Page) {
   const state: Opp[] = [
-    opp("o1", "Stripe", "Software Engineer, Intern (Summer 2027)", { deadline: new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10) }),
+    opp("o1", "Stripe", "Software Engineer, Intern (Summer 2027)", { deadline: localDateDaysFromNow(2) }),
     opp("o2", "NVIDIA", "Systems Software Engineer - New College Grad 2026", { sources: ["ats.workday.nvidia.wd5/NVIDIAExternalCareerSite"] }),
     opp("o3", "Airbnb", "Software Engineer, New Grad", { sources: ["github_repo.SimplifyJobs/New-Grad-Positions"], backfill: true }),
   ];

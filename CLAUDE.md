@@ -8,12 +8,17 @@ Plan and contracts: `docs/specs/`.
 ## Session handoff (2026-10-01)
 
 - Branch: `claude/trim-drop-radar-plan`. T9 web shipped in `472b172`; Codex finished
-  the inherited first-day feed changes in `287bf51`, committed and pushed.
-- Verified at `287bf51`: 326 offline backend tests on Python 3.14, pyflakes,
-  exact generated OpenAPI match, frontend production build, and 6 Playwright
-  checks across desktop/phone. The delayed-backfill browser test reproduced the
-  empty-feed bug before the fix. Live scraping, push delivery and Lighthouse
-  performance were not reverified; the updated suite was not rerun on 3.12.
+  the inherited first-day feed changes in `287bf51`. Claude reviewed `287bf51`
+  (agreed with all of it, including Codex's own additions: an edge-case test for
+  `backfill` when a user's sources disagree on seed-vs-live, and a `refetchInterval`
+  poll-while-empty in `Feed.tsx` with its own Playwright test) and fixed one
+  pre-existing flaky e2e test it exposed (`2cfbb3b`): a deadline fixture computed
+  in UTC was compared against the app's local-midnight day arithmetic, so "due in
+  2d" silently became "due in 3d" in the evening in any timezone behind UTC.
+- Verified at `2cfbb3b`: 326 offline backend tests (3.14 and 3.12), pyflakes,
+  exact generated OpenAPI match, frontend production build, and all 6 Playwright
+  checks across desktop/phone, deterministically (not timing-dependent anymore).
+  Live scraping, push delivery and Lighthouse performance were not reverified.
 - User asked how to test locally and how their friend could test remotely,
   then asked to wrap up for Claude. Remote testing was discussed, not set up:
   Codex started no app server or public tunnel, and no hosted URL or real login
