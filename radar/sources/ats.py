@@ -176,3 +176,28 @@ class AtsSource:
             return response.json()
         except Exception as exc:
             raise SourceError(f"{self.name}: unparseable JSON: {exc}", kind="schema") from exc
+
+
+class WindowedSource(AtsSource):
+    """A career site searched newest-first, not listed whole: each poll sees only a
+    window of the newest matches per query. So closed-detection stays off (a posting
+    that leaves the window hasn't closed) and the baseline keeps every id it has seen,
+    so a posting drifting back into view never re-alerts. Subclasses set `queries`
+    and implement `search(ctx, query) -> {eid: (title, url, location, published_at)}`.
+    ponytail: the baseline only grows; trim it by age if a cursor ever gets large."""
+    queries = ("intern", "graduate")
+
+    async def fetch_postings(self, ctx):
+        postings = {}
+        for query in self.queries:
+            postings.update(await self.search(ctx, query))
+        return postings, False
+
+    async def search(self, ctx, query):
+        raise NotImplementedError
+
+    def _shape(self, fn, data):
+        try:
+            return fn(data)
+        except (KeyError, TypeError, AttributeError, IndexError, ValueError) as exc:
+            raise SourceError(f"{self.name}: unexpected response shape: {exc}", kind="schema") from exc

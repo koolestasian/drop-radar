@@ -384,6 +384,227 @@ companies:          # ats: greenhouse | lever | ashby | workable | smartrecruite
   - {name: "United Parcel Service", ats: workday, slug: "hcmportal.wd5/Search", tier: B}
   - {name: "US Foods", ats: workday, slug: "usfoods.wd1/usfoodscareersExternal", tier: B}
   - {name: "Viavi Solutions", ats: workday, slug: "viavisolutions.wd1/careers", tier: B}
+  # Big tech on their own career sites (radar/sources/amazon.py, google_careers.py, eightfold.py): searched
+  # newest-first, so they never infer a closed posting from one that left the search window.
+  - {name: Amazon, ats: amazon, slug: amazon, tier: S}
+  - {name: Google, ats: google, slug: google, tier: S}
+  - {name: Microsoft, ats: eightfold, slug: "apply.careers.microsoft.com/microsoft.com", tier: S}
+  - {name: Waymo, ats: greenhouse, slug: waymo, tier: A}
+  # Batch 2, mined 2026-10-02 like the block above, now incl. Oracle HCM, Eightfold and Workable boards
+  # and Workday boards with 2-4 active postings; same exclusions plus universities and Canada-only boards.
+  - {name: "American Express", ats: oracle, slug: "egug.fa.us2/CX_1", tier: B}
+  - {name: "Navy Federal", ats: oracle, slug: "fa-etbx-saasfaprod1.fa.ocs/nfcu", tier: B}
+  - {name: "Nokia", ats: oracle, slug: "fa-evmr-saasfaprod1.fa.ocs/CX_1", tier: B}
+  - {name: "Emerson Electric", ats: oracle, slug: "hdjq.fa.us2/CX_1", tier: B}
+  - {name: "JP Morgan Chase", ats: oracle, slug: "jpmc.fa/CX_1001", tier: B}
+  - {name: "BNY", ats: oracle, slug: "eofe.fa.us2/CX_1001", tier: B}
+  - {name: "Citizens Financial Group", ats: oracle, slug: "hcgn.fa.us2/CX_1", tier: B}
+  - {name: "Vertiv", ats: oracle, slug: "egup.fa.us2/CX", tier: B}
+  - {name: "GM financial", ats: oracle, slug: "fa-exvu-saasfaprod1.fa.ocs/CX_1", tier: B}
+  - {name: "John Deere", ats: eightfold, slug: "johndeere.eightfold.ai/johndeere.com", tier: B}
+  - {name: "Honeywell", ats: oracle, slug: "ibqbjb.fa.ocs/Honeywell", tier: B}
+  - {name: "Oracle", ats: oracle, slug: "eeho.fa.us2/CX_45001", tier: A}
+  - {name: "Avalore", ats: workable, slug: "avalore", tier: B}
+  - {name: "Fanatics", ats: oracle, slug: "fa-exki-saasfaprod1.fa.ocs/CX_1", tier: B}
+  - {name: "Boston Scientific", ats: eightfold, slug: "bostonscientific.eightfold.ai/bostonscientific.com", tier: B}
+  - {name: "Cummins", ats: oracle, slug: "fa-espx-saasfaprod1.fa.ocs/CX_1", tier: B}
+  - {name: "Qualcomm", ats: eightfold, slug: "qualcomm.eightfold.ai/qualcomm.com", tier: A}
+  - {name: "DTCC", ats: oracle, slug: "ebxr.fa.us2/CX_1", tier: B}
+  - {name: "Tradeweb", ats: oracle, slug: "ecnf.fa.us2/CX", tier: B}
+  - {name: "WTW", ats: oracle, slug: "eedu.fa.em3/CX_1003", tier: B}
+  - {name: "CSX", ats: oracle, slug: "fa-eowa-saasfaprod1.fa.ocs/CSXCareers", tier: B}
+  - {name: "Dell Technologies", ats: oracle, slug: "iawmqy.fa.ocs/careers", tier: B}
+  - {name: "Eaton", ats: eightfold, slug: "eaton.eightfold.ai/eaton.com", tier: B}
+  - {name: "Lazard", ats: oracle, slug: "icbpjb.fa.ocs/LazardProfessionalCareers", tier: B}
+  - {name: "Luminance", ats: workable, slug: "luminance-1", tier: B}
+  - {name: "Ralliant", ats: oracle, slug: "ibwujb.fa.ocs/CX_1001", tier: B}
+  - {name: "Texas Instruments", ats: oracle, slug: "edbz.fa.us2/CX", tier: A}
+  - {name: "TWG Global", ats: workable, slug: "twgai", tier: B}
+  - {name: "Berkshire Hathaway Energy", ats: oracle, slug: "fa-essf-saasfaprod1.fa.ocs/CX_1", tier: B}
+  - {name: "Caesars Entertainment", ats: oracle, slug: "edmn.fa.us2/CX_1", tier: B}
+  - {name: "Capula", ats: workable, slug: "capula-investment-management-ltd", tier: B}
+  - {name: "EXL", ats: oracle, slug: "fa-ewjt-saasfaprod1.fa.ocs/CX_2", tier: B}
+  - {name: "Fortinet", ats: oracle, slug: "edel.fa.us2/CX_2001", tier: A}
+  - {name: "Genetec", ats: workable, slug: "genetec-inc", tier: B}
+  - {name: "NOV", ats: oracle, slug: "egay.fa.us6/CX_4001", tier: B}
+  - {name: "Starbucks", ats: eightfold, slug: "starbucks.eightfold.ai/starbucks.com", tier: B}
+  - {name: "WallStreetQuants", ats: workable, slug: "wallstreetquants", tier: B}
+  - {name: "Arconic", ats: oracle, slug: "hdnn.fa.us6/CX", tier: B}
+  - {name: "Arondite", ats: workable, slug: "arondite", tier: B}
+  - {name: "AutoZone", ats: oracle, slug: "egud.fa.us2/CX_1", tier: B}
+  - {name: "GuideWell Mutual", ats: oracle, slug: "fa-etum-saasfaprod1.fa.ocs/CX_1", tier: B}
+  - {name: "Hearst", ats: oracle, slug: "eevd.fa.us6/CX_1", tier: B}
+  - {name: "Howmet Aerospace", ats: oracle, slug: "fa-exty-saasfaprod1.fa.ocs/CX_1", tier: B}
+  - {name: "onsemi", ats: oracle, slug: "hctz.fa.us2/CX_1001", tier: B}
+  - {name: "Pella", ats: oracle, slug: "ebgj.fa.us2/CX_1", tier: B}
+  - {name: "pony.ai", ats: workable, slug: "pony-dot-ai", tier: B}
+  - {name: "SCOR", ats: oracle, slug: "fa-errt-saasfaprod1.fa.ocs/CX_2001", tier: B}
+  - {name: "Sinclair", ats: oracle, slug: "edyy.fa.us2/CX_2002", tier: B}
+  - {name: "Stantec", ats: oracle, slug: "hdhl.fa.us6/CX_1", tier: B}
+  - {name: "Verisk", ats: oracle, slug: "fa-ewmy-saasfaprod1.fa.ocs/CX_1", tier: B}
+  - {name: "WSP", ats: oracle, slug: "emit.fa.ca3/CX_2001", tier: B}
+  - {name: "Amentum", ats: workday, slug: "pae.wd1/amentum_careers", tier: B}
+  - {name: "Ameren", ats: workday, slug: "ameren.wd1/External", tier: B}
+  - {name: "American Century Investments", ats: workday, slug: "americancentury.wd5/AmericanCenturyInvestments", tier: B}
+  - {name: "Analog Devices", ats: workday, slug: "analogdevices.wd1/External", tier: B}
+  - {name: "Ancestry", ats: workday, slug: "ancestry.wd501/Careers", tier: B}
+  - {name: "Aptiv", ats: workday, slug: "aptiv.wd5/aptiv_careers", tier: B}
+  - {name: "AspenTech", ats: workday, slug: "aspentech.wd5/aspentech", tier: B}
+  - {name: "Axos Bank", ats: workday, slug: "axos.wd5/Axos", tier: B}
+  - {name: "Baird", ats: workday, slug: "baird.wd1/careers", tier: B}
+  - {name: "Blue Origin", ats: workday, slug: "blueorigin.wd5/blueorigin", tier: A}
+  - {name: "Cadence Design Systems", ats: workday, slug: "cadence.wd1/University_Talent", tier: B}
+  - {name: "Clarios", ats: workday, slug: "clarios.wd5/clarioscareers", tier: B}
+  - {name: "Dow Jones", ats: workday, slug: "dowjones.wd1/Dow_Jones_Career", tier: B}
+  - {name: "DriveTime", ats: workday, slug: "drivetime.wd1/DriveTime", tier: B}
+  - {name: "Entegris", ats: workday, slug: "entegris.wd1/entegriscareers", tier: B}
+  - {name: "GE Aerospace", ats: workday, slug: "geaerospace.wd5/ge_externalsite", tier: B}
+  - {name: "Graco", ats: workday, slug: "graco.wd501/Graco_Careers", tier: B}
+  - {name: "Ingredion", ats: workday, slug: "ingredion.wd1/IngredionCareers", tier: B}
+  - {name: "KLA", ats: workday, slug: "kla.wd1/UR", tier: B}
+  - {name: "LPL Financial Holdings", ats: workday, slug: "lplfinancial.wd1/university", tier: B}
+  - {name: "Newrez", ats: workday, slug: "newrez.wd1/NRZ", tier: B}
+  - {name: "PNC Financial Services", ats: workday, slug: "pnc.wd5/External", tier: B}
+  - {name: "Repsol", ats: workday, slug: "repsol.wd3/Repsol", tier: B}
+  - {name: "Tencent", ats: workday, slug: "tencent.wd1/OA_Huoshui_Platform", tier: B}
+  - {name: "U.S. Bank", ats: workday, slug: "usbank.wd1/US_Bank_Careers", tier: B}
+  - {name: "Vermeer", ats: workday, slug: "vermeer.wd5/externalcareersite", tier: B}
+  - {name: "Viridien", ats: workday, slug: "cgg.wd103/viridiencareers", tier: B}
+  - {name: "Walmart", ats: workday, slug: "walmart.wd504/WalmartExternal", tier: A}
+  - {name: "Ankura Consulting Group", ats: workday, slug: "ankura.wd5/ankura", tier: B}
+  - {name: "BlueCross BlueShield of Nebraska", ats: workday, slug: "nebraskablue.wd1/BCBSNE", tier: B}
+  - {name: "Cadence Design Systems", ats: workday, slug: "cadence.wd1/University_Talent_NCG", tier: B}
+  - {name: "Cambridge Investment Research", ats: workday, slug: "cir.wd108/CIR_External_Career_Site", tier: B}
+  - {name: "Cencora", ats: workday, slug: "myhrabc.wd5/Global", tier: B}
+  - {name: "CNA Insurance", ats: workday, slug: "cna.wd1/CNA_Careers", tier: B}
+  - {name: "Commerce Bank", ats: workday, slug: "commercebank.wd1/CommerceJobs", tier: B}
+  - {name: "Crowe", ats: workday, slug: "crowe.wd12/external_careers", tier: B}
+  - {name: "Danaher", ats: workday, slug: "danaher.wd1/danaherjobs", tier: B}
+  - {name: "Delta Dental", ats: workday, slug: "rhsc.wd5/delta_dental_of_michigan", tier: B}
+  - {name: "Deluxe", ats: workday, slug: "deluxe.wd5/USA_CAN", tier: B}
+  - {name: "DIRECTV", ats: workday, slug: "directv.wd1/careers", tier: B}
+  - {name: "EMC Insurance", ats: workday, slug: "emcins.wd5/EMC_Careers", tier: B}
+  - {name: "Ensemble Health Partners", ats: workday, slug: "ensemblehp.wd5/ensemblehealthpartnerscareers", tier: B}
+  - {name: "Entrust", ats: workday, slug: "entrust.wd1/entrustcareers", tier: B}
+  - {name: "Fannie Mae", ats: workday, slug: "fanniemae.wd1/FannieMaeCareers", tier: B}
+  - {name: "Fifth Third Bank", ats: workday, slug: "fifththird.wd5/53careers", tier: B}
+  - {name: "Gartner", ats: workday, slug: "gartner.wd5/EXT", tier: B}
+  - {name: "General Dynamics Information Technology", ats: workday, slug: "gdit.wd5/gdit_earlytalent", tier: B}
+  - {name: "Guardian Life", ats: workday, slug: "guardianlife.wd5/guardian-life-careers", tier: B}
+  - {name: "Hewlett Packard Enterprise", ats: workday, slug: "hpe.wd5/acjobsite", tier: B}
+  - {name: "Hy-Vee", ats: workday, slug: "hyvee.wd1/HyVeeCareers", tier: B}
+  - {name: "ICF International", ats: workday, slug: "icf.wd5/icfexternal_career_site", tier: B}
+  - {name: "Invesco", ats: workday, slug: "invesco.wd1/IVZ", tier: B}
+  - {name: "Kyndryl", ats: workday, slug: "kyndryl.wd5/KyndrylProfessionalCareers", tier: B}
+  - {name: "LabCorp", ats: workday, slug: "labcorp.wd1/external", tier: B}
+  - {name: "LexisNexis Legal & Professional", ats: workday, slug: "relx.wd3/LexisNexisLegal", tier: B}
+  - {name: "Louisiana Blue", ats: workday, slug: "bcbsla.wd1/Generation_Blue", tier: B}
+  - {name: "Marmon Holdings", ats: workday, slug: "marmon.wd501/Marmon_Careers", tier: B}
+  - {name: "Marvell", ats: workday, slug: "marvell.wd1/MarvellCareers", tier: A}
+  - {name: "McKesson", ats: workday, slug: "mckesson.wd3/External_Careers", tier: B}
+  - {name: "Meijer", ats: workday, slug: "meijer.wd5/Meijer", tier: B}
+  - {name: "National Laboratory of the Rockies", ats: workday, slug: "nrel.wd5/NLR", tier: B}
+  - {name: "Nationwide", ats: workday, slug: "nationwide.wd1/Nationwide_Career", tier: B}
+  - {name: "Nelnet", ats: workday, slug: "nelnet.wd1/MyNelnet", tier: B}
+  - {name: "Nike", ats: workday, slug: "nike.wd1/nke", tier: B}
+  - {name: "NiSource", ats: workday, slug: "nisource.wd1/NiSource", tier: B}
+  - {name: "OneMain Financial", ats: workday, slug: "myhrhome.wd1/OneMainCareers", tier: B}
+  - {name: "Polar Semiconductor", ats: workday, slug: "polarsemi.wd501/Polar", tier: B}
+  - {name: "Polaris", ats: workday, slug: "polaris.wd5/PolarisJobs", tier: B}
+  - {name: "Republic Airways", ats: workday, slug: "rjet.wd108/External_Career_Site", tier: B}
+  - {name: "Risepoint", ats: workday, slug: "risepoint.wd503/Risepoint", tier: B}
+  - {name: "Saab", ats: workday, slug: "saabusa.wd1/saab_careers", tier: B}
+  - {name: "State Street", ats: workday, slug: "statestreet.wd1/Global", tier: B}
+  - {name: "Sun Life", ats: workday, slug: "sunlife.wd3/Campus", tier: B}
+  - {name: "The Walt Disney Company", ats: workday, slug: "disney.wd5/disneycareerdc", tier: B}
+  - {name: "Torch Technologies", ats: workday, slug: "starfish.wd501/Careers", tier: B}
+  - {name: "Visa", ats: workday, slug: "visa.wd5/Visa", tier: A}
+  - {name: "Wonder", ats: workday, slug: "wonder.wd1/WG", tier: B}
+  - {name: "ABB", ats: workday, slug: "abb.wd3/external_career_page", tier: B}
+  - {name: "AES", ats: workday, slug: "aes.wd1/AES_US", tier: B}
+  - {name: "Allegion", ats: workday, slug: "allegion.wd5/careers", tier: B}
+  - {name: "AllianceBernstein", ats: workday, slug: "abglobal.wd1/abcampuscareers", tier: B}
+  - {name: "AllianceBernstein", ats: workday, slug: "abglobal.wd1/alliancebernsteincareers", tier: B}
+  - {name: "Amcor", ats: workday, slug: "amcor.wd5/amcor_external_career_site", tier: B}
+  - {name: "Ameriprise Financial", ats: workday, slug: "ameriprise.wd5/Ameriprise", tier: B}
+  - {name: "Arlo", ats: workday, slug: "arlo.wd12/external_careers", tier: B}
+  - {name: "Arrowstreet Capital", ats: workday, slug: "arrowstreetcapital.wd5/Campus_Careers", tier: B}
+  - {name: "ASM Global", ats: workday, slug: "asmglobal.wd1/careers", tier: B}
+  - {name: "AstraZeneca", ats: workday, slug: "astrazeneca.wd3/Careers", tier: B}
+  - {name: "Axcelis Technologies", ats: workday, slug: "axcelis.wd1/axcelis", tier: B}
+  - {name: "BP", ats: workday, slug: "bpinternational.wd3/bpEarlyCareers", tier: B}
+  - {name: "CAI", ats: workday, slug: "cai.wd5/computer_aid", tier: B}
+  - {name: "CarMax", ats: workday, slug: "carmax.wd1/External", tier: B}
+  - {name: "Central Hudson", ats: workday, slug: "cenhud.wd5/cenhud", tier: B}
+  - {name: "Cerity Partners", ats: workday, slug: "ceritypartners.wd12/ceritypartnerscareers", tier: B}
+  - {name: "Charter Manufacturing", ats: workday, slug: "chartermfg.wd5/Charter_Careers", tier: B}
+  - {name: "Chevron Corporation", ats: workday, slug: "chevron.wd5/University", tier: B}
+  - {name: "Ciena", ats: workday, slug: "ciena.wd5/Careers", tier: B}
+  - {name: "Cleveland-Cliffs", ats: workday, slug: "aksteel.wd1/careers", tier: B}
+  - {name: "CME Group", ats: workday, slug: "cmegroup.wd1/cme_careers", tier: B}
+  - {name: "Cone Health", ats: workday, slug: "conehealth.wd12/cone_health-careers", tier: B}
+  - {name: "ConocoPhillips", ats: workday, slug: "conocophillips.wd1/External", tier: B}
+  - {name: "Covestro", ats: workday, slug: "covestro.wd3/cov_external", tier: B}
+  - {name: "Dairyland Power Cooperative", ats: workday, slug: "dairynet.wd1/DPCcareers", tier: B}
+  - {name: "Dick's Sporting Goods", ats: workday, slug: "dickssportinggoods.wd1/DSG", tier: B}
+  - {name: "Direct Supply", ats: workday, slug: "directsupply.wd501/direct-supply-careers", tier: B}
+  - {name: "Dow Chemical Company", ats: workday, slug: "dow.wd1/ExternalCareers", tier: B}
+  - {name: "DraftKings", ats: workday, slug: "draftkings.wd1/Employee_Referral_Portal", tier: B}
+  - {name: "Draper", ats: workday, slug: "draper.wd5/Draper_Careers", tier: B}
+  - {name: "DuCharme, McMillen & Associates", ats: workday, slug: "dmainc.wd5/dma", tier: B}
+  - {name: "EMC Insurance", ats: workday, slug: "emcins.wd5/EMC_Internships", tier: B}
+  - {name: "Exelixis", ats: workday, slug: "exelixis.wd1/exel", tier: B}
+  - {name: "Foresters Financial", ats: workday, slug: "foresters.wd3/ForestersFinancialCareers", tier: B}
+  - {name: "GE Appliances", ats: workday, slug: "haier.wd3/ge_appliances", tier: B}
+  - {name: "Generac", ats: workday, slug: "generac.wd5/external", tier: B}
+  - {name: "Gentex Corporation", ats: workday, slug: "gentex.wd5/Gentex", tier: B}
+  - {name: "GlobalFoundries", ats: workday, slug: "globalfoundries.wd1/External", tier: B}
+  - {name: "Globus Medical", ats: workday, slug: "globusmedical.wd5/GMED_Careers", tier: B}
+  - {name: "GreatAmerica Financial Services", ats: workday, slug: "greatamerica.wd12/greatamericacareers", tier: B}
+  - {name: "Greenheck Group", ats: workday, slug: "greenheckgroup.wd5/external", tier: B}
+  - {name: "HMH", ats: workday, slug: "hmhw.wd12/hmh_careers", tier: B}
+  - {name: "HUB", ats: workday, slug: "hubinternational.wd1/HUBInternational", tier: B}
+  - {name: "Invesco", ats: workday, slug: "invesco.wd1/IVZearlycareers", tier: B}
+  - {name: "Jabil", ats: workday, slug: "jabil.wd5/Jabil_Careers", tier: B}
+  - {name: "Jain Global", ats: workday, slug: "jainglobal.wd5/ExternalSite", tier: B}
+  - {name: "Johnson Controls", ats: workday, slug: "jci.wd5/JCI", tier: B}
+  - {name: "Kensho", ats: workday, slug: "spgi.wd5/Kensho_Careers", tier: B}
+  - {name: "Magna", ats: workday, slug: "magna.wd3/magna", tier: B}
+  - {name: "Marvell", ats: workday, slug: "marvell.wd1/MarvellCareers2", tier: A}
+  - {name: "Medline", ats: workday, slug: "medline.wd5/Medline", tier: B}
+  - {name: "Medtronic", ats: workday, slug: "medtronic.wd1/redeploymentmedtroniccareers", tier: B}
+  - {name: "Michelin", ats: workday, slug: "michelinhr.wd3/Michelin", tier: B}
+  - {name: "Moderna", ats: workday, slug: "modernatx.wd1/M_tx", tier: B}
+  - {name: "MUFG", ats: workday, slug: "mufgub.wd3/mufg-careers", tier: B}
+  - {name: "Nasdaq", ats: workday, slug: "nasdaq.wd1/Global_External_Site", tier: B}
+  - {name: "Netsmart", ats: workday, slug: "ntst.wd1/careers", tier: B}
+  - {name: "Nidec", ats: workday, slug: "nidec.wd1/nidec", tier: B}
+  - {name: "NJM Insurance Group", ats: workday, slug: "njm.wd1/njm", tier: B}
+  - {name: "Northwestern Mutual", ats: workday, slug: "northwesternmutual.wd5/corporate-careers", tier: B}
+  - {name: "Pacific Life", ats: workday, slug: "pacificlife.wd1/PacificLifeCareers", tier: B}
+  - {name: "Parsons", ats: workday, slug: "parsons.wd5/search", tier: B}
+  - {name: "Perseus Group", ats: workday, slug: "talentmanagementsolution.wd3/perseus-careers", tier: B}
+  - {name: "POET", ats: workday, slug: "poet.wd1/POET", tier: B}
+  - {name: "Premier", ats: workday, slug: "premierinc.wd1/external_professional", tier: B}
+  - {name: "Red Hat", ats: workday, slug: "redhat.wd5/jobs", tier: B}
+  - {name: "S&P Global", ats: workday, slug: "spgi.wd5/SPGI_Careers", tier: B}
+  - {name: "Schweitzer Engineering Laboratories", ats: workday, slug: "selinc.wd1/SEL", tier: B}
+  - {name: "Simon Property Group", ats: workday, slug: "simon.wd1/Simon", tier: B}
+  - {name: "TC Energy", ats: workday, slug: "tcenergy.wd3/CAREER_SITE_TC", tier: B}
+  - {name: "Tencent", ats: workday, slug: "tencent.wd1/Lightspeed", tier: B}
+  - {name: "The Boeing Company", ats: workday, slug: "boeing.wd1/external_subsidiary", tier: B}
+  - {name: "The Hartford", ats: workday, slug: "thehartford.wd5/Careers_External", tier: B}
+  - {name: "The Home Depot", ats: workday, slug: "homedepot.wd5/CareerDepotCanada", tier: B}
+  - {name: "The Walt Disney Company", ats: workday, slug: "disney.wd5/disneycareer", tier: B}
+  - {name: "Thomson Reuters", ats: workday, slug: "thomsonreuters.wd5/External_Career_Site", tier: B}
+  - {name: "Thrivent", ats: workday, slug: "thrivent.wd5/external", tier: B}
+  - {name: "TSC", ats: workday, slug: "tsc.wd12/TSC-Careers", tier: B}
+  - {name: "Tyson Foods", ats: workday, slug: "tysonfoods.wd5/TSN", tier: B}
+  - {name: "Upbound Group", ats: workday, slug: "upbound.wd501/Upbound", tier: B}
+  - {name: "Vanderlande Industries", ats: workday, slug: "vanderlande.wd3/careers", tier: B}
+  - {name: "Verizon Communications", ats: workday, slug: "verizon.wd12/verizon-careers", tier: B}
+  - {name: "Wellington Management", ats: workday, slug: "wellington.wd5/Campus", tier: B}
+  - {name: "Wilbur-Ellis", ats: workday, slug: "wilburellis.wd12/wilbur-ellis", tier: B}
 instagram:
   - {username: zero2sudo, interval_s: 120, priority: 1}
 feeds: []           # - {url: "https://example.com/feed.xml", kind: rss}   kind: rss|atom|json|html

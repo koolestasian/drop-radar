@@ -14,19 +14,6 @@ import re
 import sys
 from urllib.parse import parse_qsl, urlparse
 
-from radar.sources.ashby import AshbySource
-from radar.sources.greenhouse import GreenhouseSource
-from radar.sources.lever import LeverSource
-from radar.sources.smartrecruiters import SmartRecruitersSource
-from radar.sources.workday import WorkdaySource
-
-_BOARD_SOURCE = {
-    "greenhouse": GreenhouseSource,
-    "lever": LeverSource,
-    "ashby": AshbySource,
-    "smartrecruiters": SmartRecruitersSource,
-}
-
 
 def _slug_from_url(url):
     """(ats, slug) for a recognized ATS application link, else None.
@@ -62,6 +49,13 @@ def _slug_from_url(url):
         if not site or any(w in site.lower() for w in ("private", "confidential", "privileged")):
             return None  # an unlisted site: links work, but there's no board to poll
         return ("workday", f"{host.removesuffix('.myworkdayjobs.com')}/{site}")
+    match = re.fullmatch(r"([a-z0-9-]+\.fa(?:\.[a-z0-9]+)*)\.oraclecloud\.com", host)
+    if match and len(parts) >= 5 and parts[1:4] == ["CandidateExperience", parts[2], "sites"]:
+        return ("oracle", f"{match.group(1)}/{parts[4]}")  # /hcmUI/CandidateExperience/<lang>/sites/<site>/...
+    if host.endswith(".eightfold.ai"):
+        return ("eightfold", f"{host}/{host.removesuffix('.eightfold.ai')}.com")  # domain guessed; --check verifies
+    if host == "apply.workable.com":
+        return ("workable", parts[0]) if parts else None
     return None
 
 
@@ -78,37 +72,25 @@ def mine_tracker_slugs(records=None):
     return sorted(found)
 
 
-async def _check_workday(client, company):
-    source = WorkdaySource(company)
-    body = {"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": ""}
-    try:
-        response = await client.post(source.jobs_url(), json=body)
-    except Exception as exc:
-        return company.ats, company.slug, f"error: {exc}"
-    if response.status_code != 200:
-        return company.ats, company.slug, f"HTTP {response.status_code}"
-    total = (response.json() or {}).get("total") or 0
-    return company.ats, company.slug, f"200 OK ({total} postings)" if total else "200 but EMPTY"
-
-
 async def _check_one(client, company):
-    if company.ats == "workday":
-        return await _check_workday(client, company)
-    source_cls = _BOARD_SOURCE.get(company.ats)
-    if source_cls is None:
-        return company.ats, company.slug, "skipped (no board-listing endpoint)"
-    source = source_cls(company)
+    """One live fetch through the source's real fetch_postings, so the check runs
+    the code the radar will: a parseable 200 with postings, or why not."""
+    import asyncio
+
+    from radar.scheduler import Clock, FetchContext, HostLimiter
+    from radar.sources.registry import FACTORIES, _import_source_modules
+
+    _import_source_modules()
+    factory = FACTORIES.get(company.ats)
+    if factory is None:
+        return company.ats, company.slug, "skipped (no source for this ats)"
+    clock = Clock()
+    ctx = FetchContext("check", client, clock, HostLimiter(clock, 5.0), asyncio.Semaphore(5))
     try:
-        response = await client.get(source.board_url())
+        fetched = await factory(company, None).fetch_postings(ctx)
     except Exception as exc:  # live tool: report every company, don't crash the batch
         return company.ats, company.slug, f"error: {exc}"
-    if response.status_code != 200:
-        return company.ats, company.slug, f"HTTP {response.status_code}"
-    try:
-        parsed = source.parse(response.json())
-    except Exception as exc:
-        return company.ats, company.slug, f"200 but unparseable: {exc}"
-    postings = parsed[0] if isinstance(parsed, tuple) else parsed
+    postings = fetched[0] if fetched else {}
     if not postings:
         return company.ats, company.slug, "200 but EMPTY (unknown slug, or nothing posted)"
     return company.ats, company.slug, f"200 OK ({len(postings)} postings)"

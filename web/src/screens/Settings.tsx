@@ -3,7 +3,14 @@ import { useState, type FormEvent } from "react";
 import { api, type CompanyConfig, type Me, type ProfileConfig, type WatchlistConfig } from "../api/client";
 import { Button, ErrorNote, Spinner } from "../components/ui";
 
-const ATS = ["greenhouse", "lever", "ashby", "smartrecruiters", "workday"];
+const ATS = ["greenhouse", "lever", "ashby", "smartrecruiters", "workday", "workable", "oracle", "eightfold", "amazon", "google"];
+const SLUG_HINT: Record<string, string> = {
+  workday: "tenant.wd5/site",
+  oracle: "jpmc.fa/CX_1001",
+  eightfold: "host/domain.com",
+  amazon: "amazon",
+  google: "google",
+};
 const TIERS = ["S", "A", "B", "C"];
 const input =
   "min-h-10 rounded-lg border border-zinc-300 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
@@ -154,7 +161,7 @@ function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
         </select>
         <input
           aria-label="Board slug"
-          placeholder={draft.ats === "workday" ? "tenant.wd5/site" : "board slug"}
+          placeholder={SLUG_HINT[draft.ats] ?? "board slug"}
           value={draft.slug}
           onChange={(e) => setDraft({ ...draft, slug: e.target.value })}
           className={input}

@@ -10,7 +10,8 @@ import yaml
 from radar.errors import ConfigError
 
 CONFIG_DIR = Path(os.getenv("RADAR_CONFIG_DIR", "config"))
-ATS_KINDS = ("greenhouse", "lever", "ashby", "workable", "smartrecruiters", "workday")
+ATS_KINDS = ("greenhouse", "lever", "ashby", "workable", "smartrecruiters", "workday",
+             "oracle", "eightfold", "amazon", "google")
 FEED_KINDS = ("rss", "atom", "json", "html")
 TIERS = ("S", "A", "B", "C")
 
