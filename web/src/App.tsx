@@ -7,6 +7,7 @@ import { openStream, type StreamStatus } from "./api/stream";
 import { patchCachedOpportunity } from "./hooks";
 import { Feed } from "./screens/Feed";
 import { Login } from "./screens/Login";
+import { Welcome } from "./components/Welcome";
 import { ListSkeleton } from "./components/common";
 
 // Screens you don't open first load on demand, so the feed's first paint ships less code.
@@ -127,6 +128,7 @@ export function App() {
             </span>
           </p>
         )}
+        {me.data && <Welcome key={me.data.user} user={me.data.user} sources={me.data.sources} />}
         {route === "feed" && <Feed incoming={incoming} clearIncoming={() => setIncoming([])} />}
         {route === "jobs" && <Feed key="jobs" screen="jobs" />}
         <Suspense fallback={<ListSkeleton rows={3} />}>

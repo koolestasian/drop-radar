@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CompanyLogo } from "./common";
+import { CompanyLogo, WorkModelBadge } from "./common";
 import { shareLink } from "./RoleCard";
 
 const TRACKED: { status: ActionStatus; label: string }[] = [
@@ -44,11 +44,14 @@ export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus: (st
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-muted-foreground">{o.company || "Unknown company"}</p>
           <h2 className="text-xl leading-snug font-semibold [overflow-wrap:anywhere]">{o.title || "Untitled opportunity"}</h2>
-          {stock.label && (
-            <Badge variant="outline" className="mt-1.5 bg-background/60">
-              {stock.label}
-            </Badge>
-          )}
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {stock.label && (
+              <Badge variant="outline" className="bg-background/60">
+                {stock.label}
+              </Badge>
+            )}
+            <WorkModelBadge o={o} className="bg-background/60" />
+          </div>
         </div>
       </div>
 

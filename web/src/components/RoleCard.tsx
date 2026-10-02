@@ -6,7 +6,7 @@ import { ago, deadline, posted, shortLocation } from "../format";
 import { stockOf } from "../stock";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CompanyLogo } from "./common";
+import { CompanyLogo, WorkModelBadge } from "./common";
 
 const DEADLINE_TONE = { urgent: "text-destructive", soon: "text-foreground", normal: "text-muted-foreground", past: "text-muted-foreground" } as const;
 
@@ -88,6 +88,7 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
             {stock.label}
           </Badge>
         )}
+        <WorkModelBadge o={o} className="bg-background/60" />
         {due && <span className={cn("stamp font-medium", DEADLINE_TONE[due.tone])}>{due.label}</span>}
         <span className="stamp min-w-0 truncate text-muted-foreground">found {ago(o.first_seen)}</span>
         <div className="ml-auto flex items-center">
