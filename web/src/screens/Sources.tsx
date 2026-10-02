@@ -66,7 +66,7 @@ export function Sources() {
       <dl aria-label="How the radar is doing" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           ["Next check", nextIn === "now" ? "now" : `in ${nextIn}`, "A source is polled again as soon as its timer is up."],
-          ["Healthy", `${rows.length - problems} of ${rows.length}`, problems ? `${problems} below need attention.` : "Every source answered on time."],
+          ["Healthy", `${rows.length - problems} of ${rows.length}`, problems ? `${problems} ${problems === 1 ? "needs" : "need"} attention, listed below.` : "Every source answered on time."],
           ["Checked in the last hour", `${checkedLastHour} of ${live.length}`, "Sources that answered at least once."],
           ["Typical alert speed", speed === null ? "none yet" : duration(speed * 1000), "Median time from posted to push sent."],
         ].map(([label, value, note]) => (

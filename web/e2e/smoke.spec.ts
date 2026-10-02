@@ -318,3 +318,14 @@ test("Sources shows the radar's own numbers in plain words", async ({ page }) =>
   await expect(stats).toContainText("Typical alert speed");
   await expect(stats).toContainText("42s");
 });
+
+test("sign out is one tap from the account menu, on any screen", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Account/ }).click();
+  await expect(page.getByRole("menuitem", { name: "Settings" })).toBeVisible();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
+  await expect(page.getByRole("button", { name: /^Account/ })).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("radar.token"))).toBeNull();
+});
