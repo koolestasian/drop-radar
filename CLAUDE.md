@@ -76,20 +76,6 @@ Plan and contracts: `docs/specs/`.
 
 ## When the user says "start" (or "continue", "next")
 
-**Next "start" only (user, 2026-10-02):** don't begin T13. Give a full, detailed walkthrough
-in plain language, then stop and wait. Run only read-only checks for fresh numbers:
-1. What Drop Radar is and how it works end to end: sources -> pipeline -> store -> pushes and
-   feed, with where each piece lives in the repo.
-2. What runs where today, and how each user uses it: the box (service, Caddy, backups), the
-   Mac (Instagram relay LaunchAgent), GitHub (hourly job, CI), the web app and Settings.
-3. Live state right now: source health, both users' feed counts, the alerts sent, relay
-   freshness, the last hourly job runs.
-4. What's broken or unverified (T13's known items, plus anything the checks turn up).
-5. The plan, task by task (T13, T14, T15): what each involves and what the user must do
-   themselves (Gmail app password, ntfy subscription, approving box writes).
-6. Every decision the user needs to make, as one list with defaults.
-Delete this note once the walkthrough is given; after that "start" works as below.
-
 Do this without asking questions:
 1. Read `docs/specs/PROGRESS.md` and pick the first task whose status is `todo`
    (or `doing`: resume it). Dependencies are in `docs/specs/00-overview.md`.
