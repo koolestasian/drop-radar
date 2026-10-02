@@ -25,6 +25,7 @@ class Settings:
     db_path: str = "data/radar.db"
     config_dir: Path = CONFIG_DIR
     api_tokens: dict = field(default_factory=dict)  # secret -> user id, from API_TOKENS
+    heartbeat_url: str = ""  # GET after each scheduler loop if set (T10 dead-man switch)
 
 
 def load_settings(env=None) -> Settings:
@@ -38,6 +39,7 @@ def load_settings(env=None) -> Settings:
         db_path=env.get("RADAR_DB_PATH", "data/radar.db"),
         config_dir=Path(env.get("RADAR_CONFIG_DIR", "config")),
         api_tokens=parse_api_tokens(env.get("API_TOKENS", "")),
+        heartbeat_url=env.get("HEARTBEAT_URL", ""),
     )
 
 

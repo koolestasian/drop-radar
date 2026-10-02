@@ -47,6 +47,13 @@ class RuntimeTests(unittest.TestCase):
         channels = {uid: [c.name for c in d.channels] for uid, d in rt.pipeline.alerter.dispatchers.items()}
         self.assertEqual(channels, {"kevin": ["ntfy"], "friend": ["ntfy:friend"]})
 
+    def test_heartbeat_url_from_settings_reaches_the_scheduler(self):
+        """T10: HEARTBEAT_URL is a process-wide setting, not per-user config --
+        Runtime must thread it into the Scheduler it builds."""
+        rt = Runtime(self.store, settings=load_settings({"HEARTBEAT_URL": "https://hc.example/ping"}),
+                    users_path=self.dir / "users.yaml", env={})
+        self.assertEqual(rt.scheduler.heartbeat_url, "https://hc.example/ping")
+
     def test_reload_picks_up_an_edit_in_place(self):
         rt = self.runtime()
         scheduler, pipeline = rt.scheduler, rt.pipeline

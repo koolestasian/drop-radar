@@ -63,6 +63,19 @@ class FakeRuntime:
         self.scheduler = FakeScheduler()
 
 
+class CrashingScheduler:
+    """run() raises as soon as it starts, simulating a scheduler bug uvicorn's
+    lifespan can't otherwise detect (it just logs and keeps serving)."""
+
+    async def run(self, stop):
+        raise RuntimeError("boom")
+
+
+class CrashingRuntime:
+    def __init__(self):
+        self.scheduler = CrashingScheduler()
+
+
 class AppLifecycleTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.store = Store(Path(tempfile.mkdtemp()) / "radar.db")
@@ -75,6 +88,23 @@ class AppLifecycleTests(unittest.IsolatedAsyncioTestCase):
             await asyncio.wait_for(runtime.scheduler.started.wait(), 1)
             self.assertFalse(runtime.scheduler.stopped)
         self.assertTrue(runtime.scheduler.stopped, "shutdown lets the scheduler drain, not just cancels it")
+
+    async def test_a_crashed_scheduler_takes_the_process_down_with_it(self):
+        """Without this, uvicorn just logs Scheduler.run()'s exception and keeps
+        serving a process that stopped polling -- Restart=always never fires."""
+        calls = []
+        app = create_app(self.store, CrashingRuntime(), crash_exit=lambda: calls.append(1))
+        async with app.router.lifespan_context(app):
+            await asyncio.sleep(0.05)
+        self.assertEqual(calls, [1])
+
+    async def test_a_clean_shutdown_never_calls_crash_exit(self):
+        calls = []
+        runtime = FakeRuntime()
+        app = create_app(self.store, runtime, crash_exit=lambda: calls.append(1))
+        async with app.router.lifespan_context(app):
+            await asyncio.wait_for(runtime.scheduler.started.wait(), 1)
+        self.assertEqual(calls, [])
 
     async def test_without_a_runtime_nothing_polls(self):
         app = create_app(self.store)

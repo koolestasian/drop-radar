@@ -7,33 +7,29 @@ Plan and contracts: `docs/specs/`.
 
 ## Session handoff (2026-10-01)
 
-- Branch: `claude/trim-drop-radar-plan`. T9 web shipped in `472b172`; Codex finished
-  the inherited first-day feed changes in `287bf51`. Claude reviewed `287bf51`
-  (agreed with all of it, including Codex's own additions: an edge-case test for
-  `backfill` when a user's sources disagree on seed-vs-live, and a `refetchInterval`
-  poll-while-empty in `Feed.tsx` with its own Playwright test) and fixed one
-  pre-existing flaky e2e test it exposed (`2cfbb3b`): a deadline fixture computed
-  in UTC was compared against the app's local-midnight day arithmetic, so "due in
-  2d" silently became "due in 3d" in the evening in any timezone behind UTC.
-- Verified at `2cfbb3b`: 326 offline backend tests (3.14 and 3.12), pyflakes,
-  exact generated OpenAPI match, frontend production build, and all 6 Playwright
-  checks across desktop/phone, deterministically (not timing-dependent anymore).
-  Live scraping, push delivery and Lighthouse performance were not reverified.
-- User asked how to test locally and how their friend could test remotely,
-  then asked to wrap up for Claude. Remote testing was discussed, not set up:
-  Codex started no app server or public tunnel, and no hosted URL or real login
-  tokens were created. `ngrok` is not currently on PATH. User testing is unconfirmed.
-- Suggested temporary route: run `python -m radar serve` on localhost:8000 with
-  a separate test DB, fresh random `API_TOKENS` assigned to `friend`, and phone
-  pushes/LLM calls disabled; expose it with `ngrok http 8000`. Share the HTTPS
-  URL and only the friend's app token, not the ngrok account token. Mac and
-  both processes must remain running. Settings saves edit the configured YAML
-  files; copy config and set `RADAR_CONFIG_DIR` for an isolated preview.
-- Next implementation task is T10 (`docs/specs/T10-deploy-scale.md`): always-on
-  deployment, backups and heartbeat. Remote friend access needs HTTPS and
-  separate user tokens. T11 remains deferred. Do not remove the legacy hourly
-  schedule until the new runner has been live for a day; review PROGRESS.md's
-  migration/alert-history/cursor-reseed notes before cutover.
+- Branch: `claude/trim-drop-radar-plan`. T0-T10 are all `done`; only T11
+  (hardening) remains, and it's explicitly `deferred` until the service has
+  run live for a few weeks. T9 web shipped in `472b172` (reviewed Codex's
+  handoff of it in `4fc6425`); T10 deploy shipped this session (see
+  `docs/specs/PROGRESS.md`'s T10 row for the full list).
+- T10 highlights: `serve`'s shutdown is now actually graceful even with an
+  open `/api/stream` (SSE) connection (`--graceful-timeout`, real-subprocess
+  tested); a crashed scheduler task takes the whole process down so
+  systemd's `Restart=always` fires instead of uvicorn quietly serving a
+  process that stopped polling; `HEARTBEAT_URL` + `python -m radar backup`
+  for the dead-man switch and nightly backups; `deploy/` has the systemd
+  units, a `Caddyfile` for HTTPS, and a `README.md` covering VPS setup,
+  restore-from-backup, and the hourly-GitHub-Actions cutover (double-push
+  gating, when a cursor reseed is/isn't needed, the one-time Instagram
+  re-push). None of `deploy/README.md` was exercised on a real VPS.
+- **Not done yet, if the user wants remote friend access next:** no box has
+  actually been provisioned. `deploy/README.md` replaces the earlier ad hoc
+  ngrok suggestion with a real plan (systemd + Caddy + the friend's own
+  `API_TOKENS` entry), but someone still has to run through it on a real
+  host before the friend can use this remotely.
+- Do not remove `hourly.yml`'s `schedule:` trigger until `radar.service` has
+  actually run live for a day with no restarts -- that's still true and
+  still not done (nothing has been deployed yet this session).
 
 ## When the user says "start" (or "continue", "next")
 
@@ -92,8 +88,17 @@ Exceptions:
 ## Current state (update when it changes)
 - Live pipeline: `radar/legacy/` (`opportunity_monitor.py`, `job_pages.py`, `llm_extraction.py`,
   `instagram_scraper.py`, `google_sheets_sync.py`; root files are import shims), workflow `.github/workflows/hourly.yml`.
-- 326 backend tests passing on Python 3.14; the preceding 322-test suite was also verified on Python 3.12, which hourly CI uses. Sources live: `radar/sources/` (ats.py + greenhouse/lever/ashby/smartrecruiters/workday, github_repo, instagram; registry.py auto-discovers them). SQLite store in `radar/store/` (DB at `data/radar.db`, gitignored);
-  import the tracker with `python -m radar.store.migrate_legacy`; `radar.views.write_views` regenerates xlsx + LATEST.md. `radar/pipeline/` (normalize, dedupe, enrich, filter) is the Scheduler's `sink`: cross-source URL dedupe, LLM enrichment gated by a daily token budget, `matches_profile` against `config/profile.yaml`. `radar/alerts/` (`AlertDispatcher`, `NtfyChannel`) pushes instantly for zero2sudo items and anything matching the profile, claim-before-send idempotent, retried with in-memory backoff on every sink tick; `python -m radar stats` prints drop-latency p50/p95 per source. Multi-user (T8a): `config/users.yaml` lists users (first = owner) and each one's own watchlist/profile; the scheduler polls the union once; `actions` are per `(opportunity_id, user_id)`; `MultiUserAlertDispatcher` alerts a user only on their own sources' items. Profiles match role (track) AND keyword (level), whole words; `is_us_location` handles US locations. Verify any new board with `python -m radar.sources.discover --check` before adding it. `python -m radar serve` runs scheduler + pipeline + the API (`radar/api/`: per-user feed, status/notes, config edits with hot reload, SSE stream; `docs/openapi.json` from `python -m radar openapi`) in one process; systemd/backups/hosting are T10. Tracker data lives in `Zero2Sudo_Opportunity_Tracker.xlsx`,
+- 338 backend tests passing on Python 3.14; the preceding 326-test suite was also verified on Python 3.12, which `.github/workflows/ci.yml` now runs on every push/PR (a 3.12+3.14 matrix), split out from the hourly production workflow. Sources live: `radar/sources/` (ats.py + greenhouse/lever/ashby/smartrecruiters/workday, github_repo, instagram; registry.py auto-discovers them). SQLite store in `radar/store/` (DB at `data/radar.db`, gitignored);
+  import the tracker with `python -m radar.store.migrate_legacy`; `radar.views.write_views` regenerates xlsx + LATEST.md. `radar/pipeline/` (normalize, dedupe, enrich, filter) is the Scheduler's `sink`: cross-source URL dedupe, LLM enrichment gated by a daily token budget, `matches_profile` against `config/profile.yaml`. `radar/alerts/` (`AlertDispatcher`, `NtfyChannel`) pushes instantly for zero2sudo items and anything matching the profile, claim-before-send idempotent, retried with in-memory backoff on every sink tick; `python -m radar stats` prints drop-latency p50/p95 per source. Multi-user (T8a): `config/users.yaml` lists users (first = owner) and each one's own watchlist/profile; the scheduler polls the union once; `actions` are per `(opportunity_id, user_id)`; `MultiUserAlertDispatcher` alerts a user only on their own sources' items. Profiles match role (track) AND keyword (level), whole words; `is_us_location` handles US locations. Verify any new board with `python -m radar.sources.discover --check` before adding it. `python -m radar serve` (alias `run`) runs scheduler + pipeline + the API (`radar/api/`: per-user feed, status/notes, config edits with hot reload, SSE stream; `docs/openapi.json` from `python -m radar openapi`) in one process. Tracker data lives in `Zero2Sudo_Opportunity_Tracker.xlsx`,
   `monitor_state.json`, `enrichment_cache.json` (committed by the workflow).
 
-- T9 web is committed (`472b172`): `web/` React PWA with feed, board, sources, settings and token login. First-poll ATS/GitHub/Workday items now backfill silently (`raw.seed`), expose per-user `backfill` in the API/UI, and get season/track enrichment from titles without the LLM. Empty feeds refresh every 5s until populated; 6 desktop/phone Playwright checks pass (`cd web && npm run e2e`, builds first). T10 deploy is next; reseed old ATS/GitHub cursors and GitHub ETags at cutover to populate their backlog without alerts. Live scraping/push delivery and Lighthouse performance were not reverified.
+- T9 web is committed (`472b172`): `web/` React PWA with feed, board, sources, settings and token login. First-poll ATS/GitHub/Workday items now backfill silently (`raw.seed`), expose per-user `backfill` in the API/UI, and get season/track enrichment from titles without the LLM. Empty feeds refresh every 5s until populated; 6 desktop/phone Playwright checks pass (`cd web && npm run e2e`, builds first). Live scraping/push delivery and Lighthouse performance were not reverified.
+
+- T10 deploy is committed: `deploy/radar.service` (systemd; `--graceful-timeout`, default 10s, bounds `/api/stream`'s
+  indefinitely-open SSE connections on shutdown; `TimeoutStopSec` gives systemd margin above that), `deploy/radar-backup.service`+`.timer`
+  (nightly `python -m radar backup`, stdlib sqlite3 backup API, keeps the 14 most recent), `deploy/Caddyfile` (HTTPS for
+  remote friend access) and `deploy/README.md` (full VPS setup, backup/restore, and the hourly-GitHub-Actions cutover
+  checklist). `HEARTBEAT_URL` (env) gets a debounced GET from the scheduler (at most once a minute, not once a loop
+  tick) for a dead-man switch (e.g. healthchecks.io). A crashed scheduler task now takes the whole `serve` process down
+  with it, so `Restart=always` actually fires. `hourly.yml` itself is untouched; its schedule stays live until
+  `radar.service` has run a full day -- see `deploy/README.md` for the alert-double-push gate and reseed notes.

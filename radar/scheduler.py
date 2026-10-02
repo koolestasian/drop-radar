@@ -29,6 +29,8 @@ USER_AGENT = "Mozilla/5.0 (compatible; drop-radar; +https://github.com)"
 BACKOFF_CAP_S = 900.0
 BLOCKED_COOLDOWN_S = 1800.0
 TICK_S = 1.0  # ponytail: loop wakes at least every second; event-driven wakeups if 1s latency ever matters
+HEARTBEAT_INTERVAL_S = 60.0  # dead-man switch (T10): don't hit HEARTBEAT_URL every TICK_S, debounce to this
+HEARTBEAT_TIMEOUT_S = 5.0    # bounds a hung heartbeat GET; it must never stall the poll loop
 
 
 class Source(Protocol):
@@ -108,7 +110,9 @@ def _parse(value):
 
 class Scheduler:
     def __init__(self, sources, store, *, sink=None, on_health_alert=None, http=None, clock=None,
-                 max_concurrency=20, per_host_per_second=1.0, jitter=0.1, rng=None):
+                 max_concurrency=20, per_host_per_second=1.0, jitter=0.1, rng=None,
+                 heartbeat_url=None, heartbeat_interval_s=HEARTBEAT_INTERVAL_S,
+                 heartbeat_timeout_s=HEARTBEAT_TIMEOUT_S):
         names = [source.name for source in sources]
         if len(names) != len(set(names)):
             raise ValueError(f"duplicate source names: {sorted({n for n in names if names.count(n) > 1})}")
@@ -123,6 +127,11 @@ class Scheduler:
         self.jitter, self.rng = jitter, rng or random.Random()
         self.disabled = {}  # name -> reason; in memory, so a restart (e.g. with a new session) re-enables
         self.running = {}   # name -> task
+        self.heartbeat_url = heartbeat_url
+        self.heartbeat_interval_s = heartbeat_interval_s
+        self.heartbeat_timeout_s = heartbeat_timeout_s
+        self._last_heartbeat = None
+        self._heartbeat_task = None
         now = self.clock.now()
         self.next_run = {
             name: _parse((store.get_source_state(name) or {}).get("next_run")) or now for name in self.sources
@@ -169,12 +178,36 @@ class Scheduler:
         try:
             while not stop.is_set():
                 self.launch_due()
+                self._maybe_heartbeat()
                 await self.clock.sleep(self._idle_s())
             await self.drain()
         finally:
+            if self._heartbeat_task is not None:
+                self._heartbeat_task.cancel()
             if own_http:
                 await self.http.aclose()
                 self.http = None
+
+    def _maybe_heartbeat(self):
+        """Dead-man switch (T10): GET heartbeat_url, debounced to heartbeat_interval_s
+        (every scheduler loop would hammer it, since the idle loop wakes every TICK_S).
+        Fire-and-forget with its own timeout, never inline: a slow/hung heartbeat
+        endpoint must not stall launch_due()."""
+        if not self.heartbeat_url:
+            return
+        now = self.clock.now()
+        if self._last_heartbeat is not None and (now - self._last_heartbeat).total_seconds() < self.heartbeat_interval_s:
+            return
+        if self._heartbeat_task is not None and not self._heartbeat_task.done():
+            return
+        self._last_heartbeat = now
+        self._heartbeat_task = asyncio.create_task(self._ping_heartbeat())
+
+    async def _ping_heartbeat(self):
+        try:
+            await asyncio.wait_for(self.http.get(self.heartbeat_url), self.heartbeat_timeout_s)
+        except Exception as exc:
+            log.warning("heartbeat GET to %s failed: %s", self.heartbeat_url, exc)
 
     def _idle_s(self):
         now = self.clock.now()

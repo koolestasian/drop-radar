@@ -20,6 +20,7 @@ import hmac
 import json
 import logging
 import os
+import signal
 import tempfile
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -42,11 +43,6 @@ from radar.stats import latency_by_source
 log = logging.getLogger(__name__)
 HIDDEN_BY_DEFAULT = "ignored"  # a user's own ignored opportunities leave their feed unless asked for
 WEB_DIST = Path(__file__).resolve().parents[2] / "web" / "dist"
-
-
-def _log_crash(task):
-    if not task.cancelled() and task.exception() is not None:
-        log.error("scheduler stopped", exc_info=task.exception())
 
 
 def _encode_cursor(opp):
@@ -78,11 +74,20 @@ def _atomic_write(path, text):
     os.replace(tmp, path)
 
 
-def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST):
+def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, crash_exit=None):
     tokens = load_settings().api_tokens if tokens is None else tokens
     bus = getattr(runtime, "events", None) or events.EventBus()
     if runtime is not None and not tokens:
         log.warning("API_TOKENS is empty: every /api request will be refused")
+    # A crashed scheduler must take the process down with it, or systemd's Restart=always
+    # never fires -- uvicorn would otherwise keep serving a process that stopped polling.
+    crash_exit = crash_exit or (lambda: os.kill(os.getpid(), signal.SIGTERM))
+
+    def _log_crash(task):
+        if task.cancelled() or task.exception() is None:
+            return
+        log.error("scheduler stopped", exc_info=task.exception())
+        crash_exit()
 
     @asynccontextmanager
     async def lifespan(app):

@@ -1,0 +1,11 @@
+## HTTPS reverse proxy to the local serve process (see README.md "Remote access").
+## Replace radar.example.com with your own domain pointed at this box, then:
+##   sudo apt install caddy   (or: https://caddyserver.com/docs/install)
+##   sudo cp Caddyfile /etc/caddy/Caddyfile
+##   sudo systemctl restart caddy
+## Caddy gets a Let's Encrypt cert for the domain automatically; keep radar.service
+## bound to 127.0.0.1 (never 0.0.0.0) so :8000 is never reachable except through this.
+
+radar.example.com {
+	reverse_proxy 127.0.0.1:8000
+}

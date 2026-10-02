@@ -270,6 +270,49 @@ class SchedulerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(src.calls, 3)
         self.assertTrue(all(0 < s <= 1.0 for s in self.clock.slept))
 
+    async def test_run_polls_persists_and_shuts_down_cleanly(self):
+        """T10 accept: a real Scheduler.run() against a fixture source polls,
+        persists through the default sink, and shuts down cleanly -- stop set
+        while a fetch is in flight waits for it (does not cancel it), and
+        nothing new launches once stopped."""
+        gate = asyncio.Event()
+        src = FakeSource("s", 30, results=[lambda ctx: [item("s", "1")]], gate=gate)
+        sched = self.scheduler(src, http=object())
+        stop = asyncio.Event()
+        task = asyncio.create_task(sched.run(stop))
+        await settle()
+        self.assertIn("s", sched.running, "fetch should be gated in flight")
+        stop.set()
+        await settle()
+        self.assertIn("s", sched.running, "stop must let an in-flight fetch finish, not cancel it")
+        gate.set()
+        await asyncio.wait_for(task, timeout=2)
+        self.assertEqual(sched.running, {})
+        self.assertEqual(len(self.store.list_opportunities()), 1)
+        self.assertEqual(self.store.get_source_state("s")["fail_count"], 0)
+
+    async def test_heartbeat_pings_at_most_once_per_interval(self):
+        http = Http()
+        stop = asyncio.Event()
+        src = FakeSource("s", 1, results=[[]] * 4 + [lambda ctx: stop.set() or []])
+        sched = self.scheduler(src, http=http, heartbeat_url="https://hc.example/ping", heartbeat_interval_s=2)
+        await asyncio.wait_for(sched.run(stop), timeout=2)
+        await settle()  # let the fire-and-forget heartbeat task(s) land
+        self.assertTrue(http.urls, "expected at least one heartbeat ping")
+        self.assertTrue(all(u == "https://hc.example/ping" for u in http.urls))
+        # ~5 one-second loop ticks with a 2s debounce: nowhere near one ping per tick.
+        self.assertLess(len(http.urls), 5)
+
+    async def test_heartbeat_timeout_does_not_stall_the_loop(self):
+        hang = asyncio.Event()  # never set: the heartbeat GET hangs forever
+        http = Http(gate=hang)
+        stop = asyncio.Event()
+        src = FakeSource("s", 1, results=[[], lambda ctx: stop.set() or []])
+        sched = self.scheduler(src, http=http, heartbeat_url="https://hc.example/ping",
+                               heartbeat_interval_s=0, heartbeat_timeout_s=0.01)
+        await asyncio.wait_for(sched.run(stop), timeout=2)
+        self.assertEqual(src.calls, 2, "a hung heartbeat endpoint must not stall polling")
+
     def test_duplicate_source_names_rejected(self):
         with self.assertRaises(ValueError):
             self.scheduler(FakeSource("s"), FakeSource("s"))

@@ -167,6 +167,10 @@ jobs:
           fi
 
       - name: Send idempotent alerts after persistence
+        # T10 cutover: once radar.service is live and sending its own alerts, set the
+        # repo variable LEGACY_ALERTS_ENABLED to "false" to stop this step from also
+        # pushing (see deploy/README.md) -- the rest of this workflow keeps running.
+        if: vars.LEGACY_ALERTS_ENABLED != 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}

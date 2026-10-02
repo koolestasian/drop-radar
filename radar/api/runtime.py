@@ -68,7 +68,8 @@ class Runtime:
         if self.scheduler is None:
             self.pipeline = Pipeline(self.store, alerter=alerter)
             self.pipeline.on_new = lambda opportunity_id: self.events.publish("opportunity", opportunity_id)
-            self.scheduler = Scheduler(sources, self.store, sink=self.pipeline)
+            self.scheduler = Scheduler(sources, self.store, sink=self.pipeline,
+                                       heartbeat_url=self.settings.heartbeat_url)
         else:
             self.scheduler.reload(sources)
             self.pipeline.alerter = alerter
