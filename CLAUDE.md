@@ -65,17 +65,14 @@ Plan and contracts: `docs/specs/`.
   Jump, Optiver rank B today; no UI edits `company_tiers`). (3) Citadel's sitemap jobs have no location,
   so "... Intern Europe" passes the profile filter. (4) Unconfirmed: the owner once saw the friend's feed
   in his browser (likely an installed-app window with its own storage); the `#token=` link fixes it.
-- **Next, when the user asks: the alert cutover.** It's safe from about
-  2026-10-03 (one day live, no unplanned restarts; the one counted restart
-  was a deliberate SIGKILL test). Steps:
-  1. Get the user's ntfy topic and add `NTFY_TOPIC` (plus `NTFY_TOPIC_FRIEND`
-     if the friend wants pushes) to `radar.env`, then restart `radar`.
-  2. Set the GitHub repo variable `LEGACY_ALERTS_ENABLED=false`, which gates
-     hourly.yml's own push step.
-  3. Later, drop hourly.yml's `schedule:`.
-
-  Expect a one-time push burst for any zero2sudo Story still up when
-  Instagram is first enabled; see the cutover notes in `deploy/README.md`.
+- **Next session (user's plan, 2026-10-02 night):** T13 audit (the user still sees bugs; ask which),
+  then T14 (hourly email digest of new drops + phone push only for the priority list; replaces
+  GitHub Actions as the notification path and ends with the alert cutover), then T15 UI (user-led).
+  State going in: PR #42 (this branch) is merged into `main` (`686a1f8`); keep working on this branch
+  and open a new PR. The hourly GitHub job has failed every hour since 2026-10-01 (Apify 403 on the
+  Stories actor), so the owner currently gets **no pushes** and the xlsx/Google Sheet are stale since
+  2026-09-30. A cutover attempt was blocked by the permission classifier: writes to `radar.env`
+  and the live DB need the user's explicit yes in the conversation.
 
 ## When the user says "start" (or "continue", "next")
 
