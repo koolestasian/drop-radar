@@ -2,6 +2,11 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.4.0 (2026-10-03)
+
+- Compact rows: a toggle beside Filters on Feed and All jobs swaps the roomy cards for one-line rows (about 50px against about 160px) that keep Save and Apply. Remembered per browser. The column picker from the plan was skipped: rows are cards, not a table.
+- Frontend only. 26 e2e tests; Lighthouse accessibility and best practices 100.
+
 ## 0.3.1 (2026-10-03)
 
 - Account menu in the top right (profile icon): Settings and Sign out, one tap from any screen. Sign out is no longer at the bottom of Settings.

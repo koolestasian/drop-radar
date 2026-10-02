@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, ChevronDown, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowUp, ChevronDown, Rows2, Rows4, Search, SlidersHorizontal } from "lucide-react";
 import { api, query, type Me, type Opportunity, type Page } from "../api/client";
 import { Detail } from "../components/Detail";
 import { ErrorNote, ListSkeleton } from "../components/common";
@@ -14,7 +14,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ago } from "../format";
-import { useMediaQuery, useSetStatus } from "../hooks";
+import { useDensity, useMediaQuery, useSetStatus } from "../hooks";
 
 /** "feed": what matches your profile (New, All matches). "jobs": everything, to filter by hand. */
 type Screen = "feed" | "jobs";
@@ -82,6 +82,8 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
   const setStatus = useSetStatus();
   const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me") });
   const wide = useMediaQuery("(min-width: 1024px)");
+  const [density, setDensity] = useDensity();
+  const compact = density === "compact";
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
   const [filterSheet, setFilterSheet] = useState(false);
@@ -297,6 +299,17 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
               Filters
               {activeFilters > 0 && <Badge className="ml-0.5">{activeFilters}</Badge>}
             </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-11 shrink-0 rounded-full sm:size-10"
+              aria-pressed={compact}
+              aria-label="Compact rows"
+              title={compact ? "Switch to roomy cards" : "Switch to compact rows"}
+              onClick={() => setDensity(compact ? "comfortable" : "compact")}
+            >
+              {compact ? <Rows2 /> : <Rows4 />}
+            </Button>
           </div>
           {screen === "feed" && (
             <ToggleGroup
@@ -385,6 +398,7 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {} 
                         opportunity={r}
                         selected={wide && r.id === current?.id}
                         fresh={fresh.has(r.id)}
+                        compact={compact}
                         onOpen={() => openRole(r)}
                         onStatus={(status) => setStatus.mutate({ id: r.id, status })}
                       />

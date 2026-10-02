@@ -28,12 +28,13 @@ type Props = {
   opportunity: Opportunity;
   selected?: boolean;
   fresh?: boolean;
+  compact?: boolean;
   onStatus: (status: ActionStatus) => void;
   onOpen?: () => void;
 };
 
 /** One role as an index card: the stock colour is its state, the Apply button is always at the same edge. */
-export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ opportunity: o, selected, fresh, onStatus, onOpen }, ref) {
+export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ opportunity: o, selected, fresh, compact, onStatus, onOpen }, ref) {
   const title = o.title || "Untitled opportunity";
   const status = o.action?.status ?? "new";
   const stock = stockOf(o);
@@ -43,6 +44,58 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
     e.stopPropagation();
     fn();
   };
+
+  if (compact)
+    return (
+      <article
+        ref={ref}
+        tabIndex={-1}
+        aria-label={`${o.company ? `${o.company}: ` : ""}${title}`}
+        aria-current={selected ? "true" : undefined}
+        onClick={onOpen}
+        className={cn(
+          "flex cursor-pointer items-center gap-2.5 rounded-lg border border-stock-line px-3 py-1.5 outline-none",
+          stock.bg,
+          selected && "ring-2 ring-foreground",
+          fresh && "animate-[pin-in_0.55s_cubic-bezier(0.16,1,0.3,1)]",
+        )}
+      >
+        <CompanyLogo name={o.company || "?"} domain={o.company_domain} className="size-7 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-[15px] leading-tight font-semibold">
+            <button type="button" onClick={stop(() => onOpen?.())} className="max-w-full truncate text-left hover:underline">
+              {title}
+            </button>
+          </h3>
+          <p title={o.location} className="stamp truncate text-muted-foreground">
+            {[o.company, meta].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+        {stock.label && (
+          <Badge variant="outline" className="hidden bg-background/60 sm:inline-flex">
+            {stock.label}
+          </Badge>
+        )}
+        <WorkModelBadge o={o} className="hidden bg-background/60 md:inline-flex" />
+        {due && <span className={cn("stamp hidden font-medium sm:inline", DEADLINE_TONE[due.tone])}>{due.label}</span>}
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-pressed={status === "saved"}
+          aria-label={status === "saved" ? "Saved: tap to unsave" : "Save"}
+          onClick={stop(() => onStatus(status === "saved" ? "new" : "saved"))}
+        >
+          {status === "saved" ? <BookmarkCheck /> : <Bookmark />}
+        </Button>
+        {o.url && (
+          <Button asChild size="icon" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <a href={o.url} target="_blank" rel="noopener noreferrer" aria-label={`Apply: ${o.company ? `${o.company}, ` : ""}${title}`}>
+              <ArrowUpRight />
+            </a>
+          </Button>
+        )}
+      </article>
+    );
 
   return (
     <article

@@ -47,3 +47,26 @@ export function useMediaQuery(query: string) {
   }, [query]);
   return matches;
 }
+
+export type Density = "comfortable" | "compact";
+const DENSITY_KEY = "radar.density";
+
+/** Remembered per browser; falls back to comfortable when storage is unavailable. */
+export function useDensity(): [Density, (d: Density) => void] {
+  const [density, setDensity] = useState<Density>(() => {
+    try {
+      return localStorage.getItem(DENSITY_KEY) === "compact" ? "compact" : "comfortable";
+    } catch {
+      return "comfortable";
+    }
+  });
+  const set = (d: Density) => {
+    setDensity(d);
+    try {
+      localStorage.setItem(DENSITY_KEY, d);
+    } catch {
+      /* session-only */
+    }
+  };
+  return [density, set];
+}
