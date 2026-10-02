@@ -39,8 +39,11 @@ SORT_KEYS = {
     "found": _FOUND,
     # Date-only postings are stored as midnight UTC; they count as late that day as the
     # sighting allows, so "posted Oct 2" doesn't sink below "posted Oct 2, 01:29".
-    # No posting date at all falls back to when it was found.
-    "posted": f"""CASE WHEN published_at IS NULL THEN {_FOUND}
+    # No posting date: a live drop's found time is a fair stand-in (it was caught soon after
+    # posting); a first-poll backfill's says nothing (it can be months old), so it sorts last.
+    "posted": f"""CASE WHEN published_at IS NULL THEN CASE WHEN EXISTS (SELECT 1 FROM items i
+            WHERE i.opportunity_id = opportunities.id AND coalesce(json_extract(i.raw, '$.seed'), 0) = 0)
+            THEN {_FOUND} ELSE '' END
         WHEN published_at LIKE '%T00:00:00+00:00' THEN min({_FOUND}, date(published_at) || 'T23:59:59.999')
         ELSE strftime('%Y-%m-%dT%H:%M:%f', published_at) END""",
 }

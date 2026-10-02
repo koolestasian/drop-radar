@@ -285,11 +285,13 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
             "dateonly": (T0 + timedelta(hours=10), datetime(2026, 9, 20, tzinfo=timezone.utc)),  # "posted Sep 20"
             "undated": (T0 + timedelta(hours=5), None),
             "old": (T0 + timedelta(hours=11), T0 - timedelta(hours=48)),
+            "undated-backfill": (T0 + timedelta(hours=12), None),  # found on a first poll: age unknown
         }
         for eid, (found, posted) in rows.items():
             self.ids[eid], _ = self.store.upsert_item(Item(
                 source="ats.greenhouse.airbnb", external_id=eid, url=f"https://x.example/{eid}",
-                title=f"Software Engineer Intern Sortcheck {eid}", seen_at=found, published_at=posted))
+                title=f"Software Engineer Intern Sortcheck {eid}", seen_at=found, published_at=posted,
+                raw={"seed": True} if eid == "undated-backfill" else {}))
 
         async def walk(sort):
             seen, cursor = [], None
@@ -301,8 +303,10 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
                     return seen
 
         # date-only counts as late that day as its sighting allows (22:00), above 21:00Z
-        self.assertEqual(await walk("posted"), [self.ids[e] for e in ("dateonly", "timed", "undated", "old")])
-        self.assertEqual(await walk("found"), [self.ids[e] for e in ("old", "timed", "dateonly", "undated")])
+        self.assertEqual(await walk("posted"),
+                         [self.ids[e] for e in ("dateonly", "timed", "undated", "old", "undated-backfill")])
+        self.assertEqual(await walk("found"),
+                         [self.ids[e] for e in ("undated-backfill", "old", "timed", "dateonly", "undated")])
 
 
 class FeedAndAlertsAgreeTests(unittest.IsolatedAsyncioTestCase):
