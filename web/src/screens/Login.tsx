@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { ApiError, token, type Me } from "../api/client";
-import { Button } from "../components/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function Login({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
   const [value, setValue] = useState("");
@@ -25,37 +26,38 @@ export function Login({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4">
-      <div className="mb-8 flex items-center gap-3">
-        <img src="/icon.svg" alt="" className="size-10" />
+    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 px-4 py-10">
+      <div className="flex items-center gap-3">
+        <img src="/icon.svg" alt="" className="size-12" />
         <div>
-          <h1 className="text-xl font-semibold">Drop Radar</h1>
-          <p className="text-sm text-zinc-500">New roles, the moment they go live.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Drop Radar</h1>
+          <p className="text-sm text-muted-foreground">New roles, the moment they go live.</p>
         </div>
       </div>
-      <form onSubmit={submit} className="space-y-3">
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Your access token</span>
-          <input
-            type="password"
-            autoComplete="current-password"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            required
-            className="min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-900"
-          />
+      <form onSubmit={submit} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
+        <label htmlFor="token" className="text-sm font-semibold">
+          Your access token
         </label>
+        <Input
+          id="token"
+          type="password"
+          autoComplete="current-password"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          required
+          className="h-11 bg-background text-base"
+        />
         {error && (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p role="alert" className="text-sm font-medium text-destructive">
             {error}
           </p>
         )}
-        <Button type="submit" variant="primary" disabled={busy || !value.trim()} className="w-full">
+        <Button type="submit" size="lg" disabled={busy || !value.trim()}>
           {busy ? "Checking…" : "Sign in"}
         </Button>
       </form>
-      <p className="mt-6 text-xs text-zinc-500">
-        Your token is the secret after your name in the server's <code>API_TOKENS</code>. It stays on this device.
+      <p className="text-sm text-muted-foreground">
+        No token? Ask whoever invited you for your personal link: opening it signs you in. The token stays on this device.
       </p>
     </main>
   );

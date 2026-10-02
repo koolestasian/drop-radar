@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient, type InfiniteData, type QueryClient } from "@tanstack/react-query";
 import { setStatus, type ActionStatus, type Opportunity, type Page } from "./api/client";
 
@@ -33,4 +34,16 @@ export function useSetStatus() {
     onSuccess: (saved) => patchCachedOpportunity(qc, saved.id, () => saved),
     onSettled: () => qc.invalidateQueries({ queryKey: ["opportunities", "board"] }),
   });
+}
+
+/** True while the media query matches (e.g. the desktop layout with a persistent detail pane). */
+export function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const m = window.matchMedia(query);
+    const on = () => setMatches(m.matches);
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, [query]);
+  return matches;
 }

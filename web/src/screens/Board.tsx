@@ -1,27 +1,81 @@
 import { useQueries } from "@tanstack/react-query";
 import { useState } from "react";
+import { ArrowUpRight, Kanban } from "lucide-react";
+import { cn } from "cn";
 import { api, query, type ActionStatus, type Opportunity, type Page } from "../api/client";
-import { OpportunityCard } from "../components/OpportunityCard";
-import { Empty, ErrorNote, Spinner } from "../components/ui";
-import { BOARD_COLUMNS } from "../format";
+import { CompanyLogo, ErrorNote, ListSkeleton } from "../components/common";
+import { Button } from "@/components/ui/button";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Textarea } from "@/components/ui/textarea";
+import { ago, BOARD_COLUMNS, deadline, posted, shortLocation, STATUS_LABEL } from "../format";
 import { useSetStatus } from "../hooks";
+import { stockOf } from "../stock";
 
-function Notes({ opportunity }: { opportunity: Opportunity }) {
-  const setStatus = useSetStatus();
-  const saved = opportunity.action?.notes ?? "";
+const STATUSES: ActionStatus[] = ["new", "saved", "applied", "interview", "offer", "rejected", "ignored"];
+
+/** A card on the board: drag it between columns, or pick a status (the picker is the touch and keyboard route). */
+function BoardCard({ o, onStatus, onNotes }: { o: Opportunity; onStatus: (status: ActionStatus) => void; onNotes: (notes: string) => void }) {
+  const title = o.title || "Untitled opportunity";
+  const status = o.action?.status ?? "new";
+  const stock = stockOf(o);
+  const due = deadline(o.deadline);
+  const saved = o.action?.notes ?? "";
   const [draft, setDraft] = useState(saved);
   return (
-    <label className="mt-2 block">
-      <span className="sr-only">Notes for {opportunity.title}</span>
-      <textarea
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => draft !== saved && setStatus.mutate({ id: opportunity.id, notes: draft })}
-        rows={draft ? 3 : 1}
-        placeholder="Notes (saved when you leave the box)"
-        className="w-full resize-y rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-sm dark:border-zinc-800 dark:bg-zinc-950"
-      />
-    </label>
+    <article
+      aria-label={`${o.company ? `${o.company}: ` : ""}${title}`}
+      draggable
+      onDragStart={(e) => e.dataTransfer.setData("text/opportunity-id", o.id)}
+      className={cn("flex cursor-grab flex-col gap-2.5 rounded-xl border border-stock-line p-3 shadow-[0_1px_0_var(--stock-line),0_8px_16px_-12px_rgb(0_0_0/0.4)] active:cursor-grabbing", stock.bg)}
+    >
+      <div className="flex items-start gap-3">
+        <CompanyLogo name={o.company || "?"} domain={o.company_domain} className="size-9" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-muted-foreground">{o.company || "Unknown company"}</p>
+          <h3 className="leading-snug font-semibold [overflow-wrap:anywhere]">{title}</h3>
+        </div>
+      </div>
+      <p className="stamp text-muted-foreground">
+        {[shortLocation(o.location), posted(o.published_at), `found ${ago(o.first_seen)}`, due?.label].filter(Boolean).join(" · ")}
+      </p>
+      <div className="flex items-center gap-2">
+        {o.url ? (
+          <Button asChild>
+            <a href={o.url} target="_blank" rel="noopener noreferrer" aria-label={`Apply: ${o.company ? `${o.company}, ` : ""}${title}`}>
+              Apply
+              <ArrowUpRight data-icon="inline-end" />
+            </a>
+          </Button>
+        ) : (
+          <span className="text-xs text-muted-foreground">No link yet</span>
+        )}
+        <label className="ml-auto">
+          <span className="sr-only">Status for {title}</span>
+          <select
+            value={STATUSES.includes(status as ActionStatus) ? status : "new"}
+            onChange={(e) => onStatus(e.target.value as ActionStatus)}
+            className="h-11 rounded-lg border border-input bg-background/70 px-2 text-sm sm:h-9"
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABEL[s]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label>
+        <span className="sr-only">Notes for {title}</span>
+        <Textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => draft !== saved && onNotes(draft)}
+          rows={draft ? 3 : 1}
+          placeholder="Notes (saved when you leave the box)"
+          className="min-h-0 bg-background/70 text-base sm:text-sm"
+        />
+      </label>
+    </article>
   );
 }
 
@@ -35,13 +89,21 @@ export function Board() {
     })),
   });
 
-  if (columns.some((c) => c.isPending)) return <Spinner label="Loading your board" />;
+  if (columns.some((c) => c.isPending)) return <ListSkeleton rows={3} label="Loading your board" />;
   const failed = columns.find((c) => c.isError);
   if (failed) return <ErrorNote error={failed.error} retry={() => columns.forEach((c) => c.refetch())} />;
   if (columns.every((c) => !c.data?.items.length))
     return (
-      <Empty title="Your board is empty">
-        Save something from the feed (or press <kbd>s</kbd> on it) and it lands here. Move it along as you apply.
+      <Empty className="rounded-xl border border-dashed border-border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Kanban />
+          </EmptyMedia>
+          <EmptyTitle>Your board is empty</EmptyTitle>
+          <EmptyDescription>
+            Save something from the feed (or press <kbd>s</kbd> on it) and it lands here. Move it along as you apply.
+          </EmptyDescription>
+        </EmptyHeader>
       </Empty>
     );
 
@@ -53,9 +115,9 @@ export function Board() {
   };
 
   return (
-    <section aria-labelledby="board-title">
-      <h1 id="board-title" className="sr-only">
-        Application board
+    <section aria-labelledby="board-title" className="flex flex-col gap-4">
+      <h1 id="board-title" className="text-3xl font-bold tracking-tight">
+        Your applications
       </h1>
       {setStatus.isError && <ErrorNote error={setStatus.error} />}
       <div className="relative -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0">
@@ -71,25 +133,19 @@ export function Board() {
               onDragLeave={() => setOver(null)}
               onDrop={drop(column.status)}
               aria-label={`${column.label} column`}
-              className={`w-[85%] max-w-sm shrink-0 snap-start rounded-2xl p-2 sm:w-80 lg:w-auto ${
-                over === column.status ? "bg-zinc-200/80 dark:bg-zinc-800/60" : "bg-zinc-100/70 dark:bg-zinc-900/50"
-              }`}
+              className={cn("w-[85%] max-w-sm shrink-0 snap-start rounded-2xl border border-border p-2 sm:w-80 lg:w-auto", over === column.status ? "bg-accent" : "bg-muted/60")}
             >
-              <h2 className="flex items-center justify-between px-2 py-1 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+              <h2 className="flex items-center justify-between px-2 py-1.5 text-sm font-semibold">
                 {column.label}
-                <span className="text-xs font-normal text-zinc-500">{items.length}</span>
+                <span className="stamp font-normal text-muted-foreground">{items.length}</span>
               </h2>
-              <ol className="mt-1 space-y-2">
+              <ol className="mt-1 flex flex-col gap-2.5">
                 {items.map((o) => (
                   <li key={o.id}>
-                    <OpportunityCard
-                      opportunity={o}
-                      onStatus={(status) => setStatus.mutate({ id: o.id, status })}
-                    />
-                    <Notes opportunity={o} />
+                    <BoardCard o={o} onStatus={(status) => setStatus.mutate({ id: o.id, status })} onNotes={(notes) => setStatus.mutate({ id: o.id, notes })} />
                   </li>
                 ))}
-                {items.length === 0 && <li className="px-2 py-6 text-center text-xs text-zinc-500">Drop cards here</li>}
+                {items.length === 0 && <li className="px-2 py-6 text-center text-sm text-muted-foreground">Drop cards here</li>}
               </ol>
             </div>
           );
