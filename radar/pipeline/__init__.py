@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import replace
+from datetime import timedelta
 
 from radar.pipeline.dedupe import resolve_opportunity_id
 from radar.pipeline.enrich import Enricher
@@ -16,6 +17,17 @@ from radar.pipeline.normalize import canonical_company, canonical_url
 log = logging.getLogger(__name__)
 
 __all__ = ["Pipeline", "matches_profile"]
+
+STALE_AFTER = timedelta(days=7)
+
+
+def _long_dated(item) -> bool:
+    """Posted more than STALE_AFTER before we saw it: a title edit, a widened search or a
+    late list row surfaced a job that was open all along, so it is not a drop."""
+    try:
+        return item.published_at is not None and item.seen_at - item.published_at > STALE_AFTER
+    except TypeError:  # a naive timestamp from a source; treat as undated rather than fail the batch
+        return False
 
 
 class Pipeline:
@@ -47,6 +59,8 @@ class Pipeline:
         company = canonical_company(item.company) or item.company
         if url != item.url or company != item.company:
             item = replace(item, url=url, company=company)
+        if _long_dated(item) and not item.raw.get("seed"):
+            item = replace(item, raw={**item.raw, "seed": True})  # stored as already open, never a drop
         opportunity_id = resolve_opportunity_id(self.store, item, url)
         new_sighting = self.store.item_opportunity_id(item.source, item.external_id) is None
         opportunity_id, _ = self.store.upsert_item(item, opportunity_id=opportunity_id)

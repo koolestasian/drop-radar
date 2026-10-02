@@ -1,7 +1,7 @@
 import asyncio
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from radar.alerts import AlertDispatcher
@@ -381,6 +381,35 @@ class BackfillTests(unittest.IsolatedAsyncioTestCase):
         await p(None, [item("ats.greenhouse.stripe", "2", url="https://boards.greenhouse.io/stripe/jobs/2")])
         self.assertEqual(len(channel.sent), 1, "a genuinely new posting still alerts")
         self.assertEqual(len(announced), 1)
+
+    async def test_a_posting_dated_long_before_we_saw_it_is_backfill_not_a_drop(self):
+        # a title edit, a widened search or a late list row surfaces an old posting as a new sighting
+        store = Store(Path(tempfile.mkdtemp()) / "radar.db")
+        self.addCleanup(store.close)
+
+        class Channel:
+            name, sent = "ntfy", []
+
+            def send(self, opp, reasons, latency):
+                self.sent.append(opp["id"])
+
+        channel, announced = Channel(), []
+        p = Pipeline(store, enricher=Enricher(store, extractor=FakeExtractor()),
+                     alerter=AlertDispatcher(store, profile=Profile(keywords=("intern",)), channels=[channel]))
+        p.on_new = announced.append
+        days = lambda n: T0 - timedelta(days=n)  # noqa: E731
+        await p(None, [
+            item("ats.oracle.x", "old", url="https://x.example/job/old", published_at=days(10)),
+            item("ats.oracle.x", "fresh", url="https://x.example/job/fresh", published_at=days(2)),
+            item("ats.oracle.x", "naive", url="https://x.example/job/naive", published_at=datetime(2026, 8, 1)),
+        ])
+        old = store.item_opportunity_id("ats.oracle.x", "old")
+        self.assertEqual(len(channel.sent), 2, "the 2-day-old and the undatable one still alert; the 10-day-old does not")
+        self.assertNotIn(old, channel.sent)
+        self.assertEqual(len(announced), 2)
+        mine = {"ats.oracle.x"}  # the backfill filter is per source set
+        self.assertEqual(len(store.list_opportunities(source_names=mine, backfill=False)), 2)
+        self.assertEqual([o["id"] for o in store.list_opportunities(source_names=mine, backfill=True)], [old])
 
 
 if __name__ == "__main__":
