@@ -32,14 +32,21 @@ Tests missed every real problem so far; look at the user's actual feed
   the friend's feed (likely installed-app storage; `#token=` link fixes it).
 - T11 hardening stays deferred.
 
-Found by the read-only walkthrough (2026-10-02 ~15:45 UTC), not yet root-caused:
-- **Old postings leak into New, mostly via `ats.oracle`:** 296 of its 398 non-seed sightings
-  were posted >7 days before they were found (greenhouse 8/13, eightfold 5/10, Simplify 21/34
-  too). 16 of the owner's 33 New were posted >7 days ago; 41 of the friend's 60 New are Oracle.
-- A duplicate in the owner's New: GM financial "Software Development Engineer Intern",
-  Arlington TX, twice (same date, same two sources).
-- `is_us_location("Zaragoza, Aragon, ESP")` is unknown, so it passes "United States".
-- A 2025-10-31 Point72 Story sits in the owner's New.
+Found by the read-only walkthrough (2026-10-02 ~15:45 UTC); first three fixed in code (cc7de18), not yet deployed:
+- **Old postings in New** (352 sightings): 296 of the 398 non-seed Oracle ones came from one event,
+  the 06:12 UTC deploy that widened Oracle's searches from 2 keywords to 4 -- each board found
+  postings its baseline had never searched for and called them drops. The other ~55 are title
+  edits that newly match the early-career filter (Greenhouse "2027 Start"), Simplify rows added
+  late, Eightfold/Google. Fix: `radar/pipeline` stores a posting dated >7 days before it was seen
+  as backfill (`STALE_AFTER`). Live repair (needs the owner's yes, backup first): the same rule
+  as one UPDATE over `items`; simulated on a copy, New goes 37->22 (owner) and 61->28 (friend).
+  Widening a source's queries later will repeat the burst unless the new postings are old.
+- `is_us_location("Zaragoza, Aragon, ESP")` was unknown, so it passed "United States": a trailing
+  ISO alpha-3 code now names the country. Fixed.
+- Not bugs: the GM financial "duplicate" is three real requisitions (260818, 260795, 260943);
+  the Point72 Story is today's (15:08 UTC) and merged into a 2025-10-31 Greenhouse posting, so the
+  feed shows that older date. 568 extra rows share company+title+location (Nokia x16): real
+  separate openings; grouping them in the feed row is a T15 UI idea, not a data fix.
 - The friend's profile has no `locations` (Seoul, Paris, Colombo, Bogota pushed); `risk`
   matches security-engineer roles; Citi "Summer Associate" is MBA-level. Their call, not a bug.
 - The 282-row legacy tracker was never imported on the box (oldest `first_seen` is the
