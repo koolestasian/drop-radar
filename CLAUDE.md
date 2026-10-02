@@ -13,9 +13,8 @@ Plan and contracts: `docs/specs/`.
   are live. The relay runs on the Mac as the LaunchAgent `com.dropradar.instagram-relay` (every
   300s while the Mac is awake; logs in `~/Library/Logs/DropRadar/`). Its first run backfilled 39
   Stories silently. The VM OCRs each new Story in 4-7s, using `OMP_THREAD_LIMIT=1` from
-  `radar.service` (~25s without). New Stories get the legacy title rule. **Pending the user:** the
-  39 backfilled Stories still carry "Visit Link"/alt-text titles, because a one-off retitle of the
-  live DB was blocked by the permission classifier. The owner's topic is staged in
+  `radar.service` (~25s without). Stories get the legacy title rule; the 39 backfilled
+  ones were retitled with the user's OK (backup `radar-20261002T100936Z.db`). The owner's topic is staged in
   `/opt/radar/alert-cutover.env`; the friend's separate topic is enabled (they subscribe in their
   Settings). No device receipt verified. Legacy pushes stay on until the full-day cutover. T11 stays deferred.
 

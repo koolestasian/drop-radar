@@ -118,8 +118,8 @@ Implementation complete and live (2026-10-02, ~10:00 UTC).
   - Story titles came out as Instagram's "Visit Link" sticker label or its alt
     text. They now use the legacy tracker's title rule (link slug, else the best
     opportunity line, else category/role/season), which improved all 39 live titles.
-    The 39 already-stored Stories keep their old titles: a one-off retitle was
-    blocked by the permission classifier and is left for the user.
+    With the user's OK, the 39 already-stored Stories were retitled (backup
+    `radar-20261002T100936Z.db`); 9 merged into job-board postings keep the board's title.
 - One server-side Python 3.12 test hit its 10s process-start deadline while the VM
   was busy; the same full suite passes in the isolated 3.12 environment. Do not
   run the full test suite alongside first-backfill OCR on this small production VM.
