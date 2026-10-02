@@ -32,14 +32,14 @@ Tests missed every real problem so far; look at the user's actual feed
   the friend's feed (likely installed-app storage; `#token=` link fixes it).
 - T11 hardening stays deferred.
 
-Found by the read-only walkthrough (2026-10-02 ~15:45 UTC); first three fixed in code (cc7de18), not yet deployed:
+Found by the read-only walkthrough (2026-10-02 ~15:45 UTC); fixed and deployed 2026-10-02 (cc7de18, e6a92f1):
 - **Old postings in New** (352 sightings): 296 of the 398 non-seed Oracle ones came from one event,
   the 06:12 UTC deploy that widened Oracle's searches from 2 keywords to 4 -- each board found
   postings its baseline had never searched for and called them drops. The other ~55 are title
   edits that newly match the early-career filter (Greenhouse "2027 Start"), Simplify rows added
   late, Eightfold/Google. Fix: `radar/pipeline` stores a posting dated >7 days before it was seen
-  as backfill (`STALE_AFTER`). Live repair (needs the owner's yes, backup first): the same rule
-  as one UPDATE over `items`; simulated on a copy, New goes 37->22 (owner) and 61->28 (friend).
+  as backfill (`STALE_AFTER`). Live repair run 16:2x UTC (backup `radar-20261002T160816Z.db`): the same rule
+  as one UPDATE over `items`, 352 rows; New went 37->21 (owner) and 61->29 (friend).
   Widening a source's queries later will repeat the burst unless the new postings are old.
 - `is_us_location("Zaragoza, Aragon, ESP")` was unknown, so it passed "United States": a trailing
   ISO alpha-3 code now names the country. Fixed.
@@ -49,8 +49,14 @@ Found by the read-only walkthrough (2026-10-02 ~15:45 UTC); first three fixed in
   separate openings; grouping them in the feed row is a T15 UI idea, not a data fix.
 - The friend's profile has no `locations` (Seoul, Paris, Colombo, Bogota pushed); `risk`
   matches security-engineer roles; Citi "Summer Associate" is MBA-level. Their call, not a bug.
-- The 282-row legacy tracker was never imported on the box (oldest `first_seen` is the
-  deploy; 0 migrated rows): its history lives only in the xlsx/Sheet.
+- The 282-row legacy tracker was not on the box. Imported 2026-10-02 16:19 UTC (backup
+  `radar-20261002T161857Z.db`): 212 opportunities, 70 skipped because a board already holds the
+  link, all marked seed so none is a drop. The workbook (Sep 18-30, all zero2sudo Stories) had no
+  Actioned? or Notes at all, so nothing of the owner's was missing; the Google Sheet could hold
+  edits the xlsx doesn't (unchecked, needs the GitHub secret). Imported rows have no location
+  (blank locations in All matches 18 -> 147).
+- Story titles that are just a category: "Other Opportunity · 2026", "Technical Program Management
+  New Grad · 2026" sit in the owner's New. Open: the legacy title rule's last fallback.
 - `radar-backup.timer` has not fired yet (first run 2026-10-03 03:30 UTC); the 7 backups are manual.
 
 ## Rules
