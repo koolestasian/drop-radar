@@ -34,9 +34,12 @@ log = logging.getLogger(__name__)
 APIFY_FALLBACK_COOLDOWN_S = 900.0  # 1 run / 15 min, per spec
 
 
-def _title(text, username):
-    first_line = next((line.strip() for line in text.splitlines() if line.strip()), "")
-    return first_line[:120] or f"Instagram Story: @{username}"
+def _title(text, username, link=""):
+    """The legacy tracker's Story title: the link's slug, else the best opportunity line, else
+    category/role/season. A Story's first line is Instagram's "Visit Link" sticker label or alt text."""
+    season = legacy.extract_season(legacy.DEADLINE_RE.sub(" ", text))
+    title = legacy.opportunity_title("", legacy.extract_category(text), legacy.extract_roles(text), text, link, season)
+    return title[:120] or f"Instagram Story: @{username}"
 
 
 def _parse_posted_at(raw):
@@ -90,7 +93,7 @@ async def _build_item(username, raw, now, text_cache=None) -> Item | None:
         source=f"instagram.{username}",
         external_id=external_id,
         url=application_links[0] if application_links else permalink,
-        title=_title(text, username),
+        title=_title(text, username, application_links[0] if application_links else ""),
         text=text,
         published_at=_parse_posted_at(raw),
         seen_at=now,

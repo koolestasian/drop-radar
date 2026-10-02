@@ -150,6 +150,20 @@ class IdentityTests(unittest.IsolatedAsyncioTestCase):
         item = await instagram_source._build_item("zero2sudo", raw, now)
         self.assertEqual(item.url, f"https://www.instagram.com/stories/zero2sudo/{PK}/")
 
+    async def test_title_is_the_opportunity_not_the_sticker_label_or_alt_text(self):
+        # Real 2026-10-02 Stories: Instagram's default link-sticker label comes first, the
+        # role is in the OCR'd overlay; Stories without a link carry only Instagram's alt text.
+        link = {"pk": PK, "links": ["https://apply.careers.microsoft.com/careers/job/1970393557002476"]}
+        ocr = ("Visit Link\napply.careers.microsoft.com/careers/job/1970393557002476\nfe) a@ Microsoft Sign in\n"
+               "Careers ~\nApply now\nNew Microsoft Redmond SWE Intern role!")
+        with patch.object(instagram_source.legacy, "item_text", return_value=ocr):
+            item = await instagram_source._build_item("zero2sudo", link, utcnow())
+        self.assertEqual(item.title, "New Microsoft Redmond SWE Intern role!")
+        alt = "Photo by Sudomarith 📍Seattle, NYC on October 01, 2026. May be an illustration of screen and text."
+        with patch.object(instagram_source.legacy, "item_text", return_value=alt):
+            item = await instagram_source._build_item("zero2sudo", {"pk": PK}, utcnow())
+        self.assertFalse(item.title.startswith("Photo by"))
+
     async def test_ocr_runs_once_per_external_id_with_a_shared_cache(self):
         now = utcnow()
         raw = {"pk": PK, "image_url": "https://scontent.cdninstagram.com/v/a.jpg", "text": "hi"}
