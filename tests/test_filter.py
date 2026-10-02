@@ -82,7 +82,7 @@ class KevinProfileTests(unittest.TestCase):
 
 
 class FriendProfileTests(unittest.TestCase):
-    """The shipped config/friend/profile.yaml: Berkeley Haas -- finance, consulting, strategy, PM."""
+    """The shipped config/friend/profile.yaml: finance, consulting, strategy, PM."""
 
     def setUp(self):
         self.profile = load_profile(ROOT / "config" / "friend" / "profile.yaml")

@@ -101,7 +101,7 @@ Exceptions:
 
 ## Working rules
 - Do not Read generated data whole: `LATEST.md`, `*.xlsx`, `monitor_*.json`,
-  `enrichment_cache.json`, `QA_TEST_REPORT.md`, `graphify-out/`. When a spec needs
+  `enrichment_cache.json`, `graphify-out/`. When a spec needs
   their format, sample with code (`head -c`, `jq 'keys'`, openpyxl, `cmp`).
 - Never push to a branch other than the one the session assigns. Do not open a PR
   unless asked.

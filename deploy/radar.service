@@ -27,8 +27,8 @@ TimeoutStopSec=45
 
 # Hardening: the git checkout stays read-only (redeployed with `git pull`); only
 # /opt/radar/data (the db + backups) and /opt/radar/config (live-edited by the
-# API's PUT endpoints) need to be writable -- see README.md's "why config and
-# data live outside the repo" for why RADAR_CONFIG_DIR/RADAR_DB_PATH point there.
+# API's PUT endpoints) need to be writable -- see "Layout" in deploy/README.md for why
+# RADAR_CONFIG_DIR/RADAR_DB_PATH point there.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
