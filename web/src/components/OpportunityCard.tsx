@@ -27,7 +27,7 @@ export function OpportunityCard({ opportunity: o, onStatus }: { opportunity: Opp
         {due && <Badge tone={DEADLINE_TONE[due.tone]}>{due.label}</Badge>}
       </div>
       <p className="mt-1.5 font-mono text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-        {[shortLocation(o.location), o.sources.map(sourceLabel).join(", "), posted(o.published_at), `found ${ago(o.first_seen)}`].filter(Boolean).join(" · ")}
+        {[shortLocation(o.location), posted(o.published_at)].filter(Boolean).join(" · ")}
       </p>
       <div className="mt-3 flex items-center gap-2">
         {o.url ? (
@@ -42,6 +42,7 @@ export function OpportunityCard({ opportunity: o, onStatus }: { opportunity: Opp
         ) : (
           <span className="text-xs text-zinc-500">No link yet</span>
         )}
+        <span className="font-mono text-[11px] text-zinc-400 dark:text-zinc-500">found {ago(o.first_seen)} · {o.sources.map(sourceLabel).join(", ")}</span>
         <label className="ml-auto flex items-center gap-1.5 text-xs text-zinc-500">
           <span className="sr-only">Status for {title}</span>
           <select

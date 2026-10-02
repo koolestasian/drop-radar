@@ -1000,7 +1000,7 @@
             }
           },
           {
-            "description": "words that each start a word in the title, company or location",
+            "description": "words that each start a word in the title or company",
             "in": "query",
             "name": "q",
             "required": false,
@@ -1013,8 +1013,26 @@
                   "type": "null"
                 }
               ],
-              "description": "words that each start a word in the title, company or location",
+              "description": "words that each start a word in the title or company",
               "title": "Q"
+            }
+          },
+          {
+            "description": "words that each start a word in the location ('seattle', 'ny')",
+            "in": "query",
+            "name": "location",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "words that each start a word in the location ('seattle', 'ny')",
+              "title": "Location"
             }
           },
           {

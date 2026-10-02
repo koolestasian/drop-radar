@@ -11,6 +11,7 @@ import { Sources } from "./screens/Sources";
 
 const ROUTES = [
   { id: "feed", label: "Feed", icon: "◉" },
+  { id: "jobs", label: "All jobs", icon: "☰" },
   { id: "board", label: "Board", icon: "▦" },
   { id: "sources", label: "Sources", icon: "≋" },
   { id: "settings", label: "Settings", icon: "⚙" },
@@ -84,7 +85,7 @@ export function App() {
           key={r.id}
           href={`#/${r.id}`}
           aria-current={route === r.id ? "page" : undefined}
-          className={`flex flex-1 flex-col items-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-medium sm:flex-row sm:gap-1.5 sm:text-sm ${
+          className={`flex flex-1 flex-col items-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap sm:flex-row sm:gap-1.5 sm:text-sm ${
             route === r.id
               ? "text-zinc-950 sm:bg-zinc-950 sm:text-white dark:text-white sm:dark:bg-white sm:dark:text-zinc-950"
               : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -125,6 +126,7 @@ export function App() {
           </p>
         )}
         {route === "feed" && <Feed incoming={incoming} clearIncoming={() => setIncoming([])} />}
+        {route === "jobs" && <Feed key="jobs" screen="jobs" />}
         {route === "board" && <Board />}
         {route === "sources" && <Sources />}
         {route === "settings" && <Settings onSignOut={signOut} />}

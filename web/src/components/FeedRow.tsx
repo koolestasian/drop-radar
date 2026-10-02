@@ -34,8 +34,7 @@ export const FeedRow = forwardRef<HTMLElement, Props>(function FeedRow({ opportu
     }
   }
 
-  const meta = [shortLocation(o.location), o.sources.map(sourceLabel).join(", "), posted(o.published_at), `found ${ago(o.first_seen)}`].filter(Boolean);
-  if (o.backfill) meta.push("already open");
+  const meta = [shortLocation(o.location), posted(o.published_at)].filter(Boolean);
 
   return (
     <article
@@ -100,6 +99,9 @@ export const FeedRow = forwardRef<HTMLElement, Props>(function FeedRow({ opportu
             {status === "ignored" ? "Unignore" : "Ignore"}
           </button>
           {shareStatus && <span role="status" className="ml-1">{shareStatus}</span>}
+          <span className="ml-auto font-mono text-[11px] text-zinc-400 dark:text-zinc-500">
+            found {ago(o.first_seen)} · {o.sources.map(sourceLabel).join(", ")}
+          </span>
         </div>
       </div>
     </article>

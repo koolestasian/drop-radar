@@ -77,15 +77,11 @@ export function shortLocation(location: string): string {
   return first.length > 48 ? `${first.slice(0, 46)}…` : first || "Location not listed";
 }
 
-/** When the employer posted it, as distinct from when we found it. Date-only postings
- * (stored as midnight UTC) read "posted today" / "posted Sep 5", never "posted 8h ago". */
+/** When the employer posted it, as distinct from when we found it: "posted 5m ago" / "3h ago" / "2d ago".
+ * Date-only postings (stored as midnight UTC) count whole days, "<1d" for today, never a made-up hour. */
 export function posted(iso: string | null | undefined, now = Date.now()): string | null {
   if (!iso) return null;
   if (!/T00:00:00(\.0+)?(\+00:00|Z)$/.test(iso)) return `posted ${ago(iso, now)}`;
-  const day = iso.slice(0, 10);
-  const today = new Date(now).toISOString().slice(0, 10);
-  const yesterday = new Date(now - DAY).toISOString().slice(0, 10);
-  if (day === today) return "posted today";
-  if (day === yesterday) return "posted yesterday";
-  return `posted ${new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })}`;
+  const days = Math.floor((Date.parse(new Date(now).toISOString().slice(0, 10)) - Date.parse(iso.slice(0, 10))) / DAY);
+  return days < 1 ? "posted <1d ago" : `posted ${days}d ago`;
 }

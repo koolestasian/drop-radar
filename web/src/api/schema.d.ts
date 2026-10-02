@@ -736,8 +736,10 @@ export interface operations {
             query?: {
                 /** @description matches: what would alert you; all: everything your sources found */
                 include?: string;
-                /** @description words that each start a word in the title, company or location */
+                /** @description words that each start a word in the title or company */
                 q?: string | null;
+                /** @description words that each start a word in the location ('seattle', 'ny') */
+                location?: string | null;
                 /** @description only postings whose location is confirmed US (blank and location-less 'Remote' are left out) */
                 us_only?: boolean;
                 company?: string | null;

@@ -99,8 +99,9 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   await expect(page.getByRole("heading", { name: "2 new roles" })).toBeVisible();
   await expect(page.getByText("due in 2d")).toBeVisible();
   // posted (by the employer) and found (by us) are two different clocks
-  await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("posted 1h ago · found 1h ago");
-  await expect(page.getByRole("article", { name: /^NVIDIA/ })).toContainText("posted today · found 1h ago");
+  await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("San Francisco, CA · posted 1h ago");
+  await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("found 1h ago · Greenhouse");
+  await expect(page.getByRole("article", { name: /^NVIDIA/ })).toContainText("posted <1d ago"); // date only: whole days
   await expect(page.getByRole("region", { name: "Internships" }).getByRole("article")).toContainText("Stripe");
   await expect(page.getByRole("region", { name: "New grad" }).getByRole("article")).toContainText("NVIDIA");
   await page.screenshot({ path: `test-results/feed-${info.project.name}.png`, fullPage: true });
@@ -110,9 +111,9 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   await expect(page.getByRole("article").first()).toContainText("Ramp");
   await expect(page.getByRole("button", { name: /new drop/ })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Already open" }).click();
-  await expect(page.getByRole("article")).toHaveCount(1);
-  await expect(page.getByRole("article")).toContainText("already open");
+  await page.getByRole("button", { name: "All matches" }).click(); // new and already-open alike
+  await expect(page.getByRole("article")).toHaveCount(4);
+  await expect(page.getByRole("article", { name: /^Airbnb/ })).toBeVisible();
   await page.getByRole("button", { name: "New", exact: true }).click();
 
   await page.getByRole("article").first().getByRole("button", { name: "Save" }).click();
@@ -125,7 +126,7 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   await expect(page.getByLabel("Applied column").getByRole("article")).toContainText("Ramp");
   await page.screenshot({ path: `test-results/board-${info.project.name}.png`, fullPage: true });
 
-  for (const screen of ["feed", "board", "sources", "settings"]) {
+  for (const screen of ["feed", "jobs", "board", "sources", "settings"]) {
     await page.goto(`/#/${screen}`);
     await page.reload();
     await expect(page.locator("main").first()).toBeVisible();
@@ -151,20 +152,20 @@ test("dark mode renders", async ({ page }, info) => {
   await page.screenshot({ path: `test-results/feed-dark-${info.project.name}.png`, fullPage: true });
 });
 
-test("an empty New feed points at what was already open, without a live-drop button", async ({ page }) => {
+test("an empty New feed points at all matches, without a live-drop button", async ({ page }) => {
   await mockApi(page);
   await page.route("**/api/opportunities?*", (route) => route.fulfill({
     contentType: "application/json",
-    body: JSON.stringify({ items: new URL(route.request().url()).searchParams.get("backfill") === "true"
+    body: JSON.stringify({ items: new URL(route.request().url()).searchParams.get("backfill") !== "false"
       ? [opp("old", "Stripe", "Software Engineer Intern", { backfill: true })] : [], next_cursor: null }),
   }));
   await page.route("**/api/stream", (route) => route.fulfill({ contentType: "text/event-stream", body: "retry: 5000\n\n" }));
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
   await page.goto("/");
   await expect(page.getByText("No new roles yet")).toBeVisible();
-  await page.getByRole("button", { name: "See what's already open" }).click();
+  await page.getByRole("button", { name: "See all matches" }).click();
   await expect(page.getByRole("article")).toHaveCount(1);
-  await expect(page.getByRole("article")).toContainText("already open");
+  await expect(page.getByRole("article")).toContainText("Stripe");
   await expect(page.getByRole("button", { name: /new drop/ })).toHaveCount(0);
 });
 
@@ -227,7 +228,7 @@ test("a #token= link signs the device in and leaves the address bar", async ({ p
   expect(await page.evaluate(() => localStorage.getItem("radar.token"))).toBe(TOKEN);
 });
 
-test("a logo that fails to load becomes a letter; US only, search and sort reach the server", async ({ page }) => {
+test("a logo that fails to load becomes a letter; filters and sort reach the server; All jobs has everything", async ({ page }) => {
   await mockApi(page);
   // Google's "no icon": a 16px globe with status 404, which the browser still draws
   await page.route("**/s2/favicons**", (route) => route.fulfill({ status: 404, contentType: "image/png", body: GLOBE })); // registered last, wins
@@ -241,8 +242,14 @@ test("a logo that fails to load becomes a letter; US only, search and sort reach
 
   await page.getByRole("button", { name: "US only" }).click();
   await expect.poll(() => asked.some((u) => u.searchParams.get("us_only") === "true")).toBe(true);
-  await page.getByLabel("Search title, company or location").fill("intern san francisco");
-  await expect.poll(() => asked.some((u) => u.searchParams.get("q") === "intern san francisco")).toBe(true);
+  await page.getByLabel("Search role or company").fill("intern");
+  await page.getByLabel("Location").fill("san francisco");
+  await expect.poll(() => asked.some((u) => u.searchParams.get("q") === "intern" && u.searchParams.get("location") === "san francisco")).toBe(true);
   await page.getByLabel("Sort").selectOption("prestige");
   await expect.poll(() => asked.some((u) => u.searchParams.get("sort") === "prestige")).toBe(true);
+
+  await page.getByRole("link", { name: /All jobs/ }).last().click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("jobs");
+  await expect(page.getByRole("button", { name: "All matches" })).toHaveCount(0); // no profile tabs here
+  await expect.poll(() => asked.some((u) => u.searchParams.get("include") === "all" && !u.searchParams.has("backfill"))).toBe(true);
 });

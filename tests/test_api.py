@@ -310,14 +310,15 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
                          [self.ids[e] for e in ("undated-backfill", "old", "timed", "dateonly", "undated")])
 
 
-    async def test_search_terms_cover_location_and_us_only_needs_a_confirmed_us_place(self):
+    async def test_search_and_location_terms_and_us_only_needs_a_confirmed_us_place(self):
         for eid, location in (("sv", "Sunnyvale, CA"), ("to", "Toronto, ON, Canada"), ("blank", "")):
             self.ids[eid], _ = self.store.upsert_item(Item(
                 source="ats.greenhouse.airbnb", external_id=eid, url=f"https://x.example/{eid}",
                 title="Software Engineer Intern", company="Airbnb", location=location, seen_at=T0))
-        # every word must start a word somewhere: "ny" is New York's NY, not Sunnyvale's "nny"
-        self.assertEqual(await self.ids_of(KEVIN, include="all", q="intern ny"), self.names("swe", "tax"))
-        self.assertEqual(await self.ids_of(KEVIN, include="all", q="airbnb toronto"), self.names("to"))
+        # every word must start a word: "ny" is New York's NY, not Sunnyvale's "nny"
+        self.assertEqual(await self.ids_of(KEVIN, include="all", q="intern", location="ny"), self.names("swe", "tax"))
+        self.assertEqual(await self.ids_of(KEVIN, include="all", q="airbnb", location="toronto"), self.names("to"))
+        self.assertEqual(await self.ids_of(KEVIN, include="all", q="toronto"), set())  # search is role/company only
         self.assertEqual(await self.ids_of(KEVIN, include="all", us_only="true"), self.names("swe", "tax", "ng", "sv"))
 
     async def test_prestige_sorts_by_tier_then_newest_posted_across_pages(self):

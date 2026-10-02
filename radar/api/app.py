@@ -214,7 +214,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         user: User = Depends(current_user),
         include: str = Query("matches", pattern="^(matches|all)$",
                              description="matches: what would alert you; all: everything your sources found"),
-        q: str | None = Query(None, description="words that each start a word in the title, company or location"),
+        q: str | None = Query(None, description="words that each start a word in the title or company"),
+        location: str | None = Query(None, description="words that each start a word in the location ('seattle', 'ny')"),
         us_only: bool = Query(False, description="only postings whose location is confirmed US (blank and "
                                                   "location-less 'Remote' are left out)"),
         company: str | None = None,
@@ -238,13 +239,15 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         after = _decode_cursor(cursor) if cursor else None
         today = now().date()
         items, keys, more = [], [], None
-        terms = (q or "").split()
+        terms, places = (q or "").split(), (location or "").split()
         for row in store.list_opportunities(status=status, since=since, source_names=owned(user),
                                               backfill=backfill, sort=sort, ranks=_ranks(user)):
             if after and (row["sort_key"], row["id"]) >= after:
                 continue
             # filters the row alone can answer run before the per-row fetch below
-            if terms and not _has_terms(f"{row['title']} {row['company']} {row['location']}", terms):
+            if terms and not _has_terms(f"{row['title']} {row['company']}", terms):
+                continue
+            if places and not _has_terms(row["location"], places):
                 continue
             if company and company.lower() not in row["company"].lower():
                 continue
