@@ -202,6 +202,40 @@ for a full day with no `systemctl status` restarts. Before that cutover:
   (keep `workflow_dispatch` and the `push` trigger -- tests and lint now run
   independently of this file, in `../.github/workflows/ci.yml`).
 
+## What the first live deploy did (Oracle Cloud Always Free, 2026-10-02)
+
+Where reality differed from the steps above, on a `VM.Standard.E2.1.Micro`
+(1 GB RAM) running Ubuntu 24.04:
+
+- **Drive it from the OCI CLI** (`brew install oci-cli`, API key under
+  "My profile → Tokens and keys"), not the console. The console wizard silently
+  dropped the public IP and defaulted to the wrong image. Launch with
+  `oci compute instance launch ... --assign-public-ip true
+  --ssh-authorized-keys-file ~/.ssh/<key>.pub`. Keep the SSH key and the OCI
+  API key separate.
+- **Two firewalls.** Opening 80/443 needs an ingress rule in the VCN's
+  default security list *and* in the image's own iptables, which ends in a
+  catch-all `REJECT`: `iptables -I INPUT 5 -p tcp --dport 80 -m state --state
+  NEW -j ACCEPT`, the same for 443, then `netfilter-persistent save`.
+- **Add a 2 GB swapfile** before `pip install`. At runtime the app uses about
+  190 MB, so 1 GB is otherwise fine.
+- **The repo is private**, so step 1's `git clone` would need GitHub
+  credentials on the box. Instead, rsync the checkout from a dev machine and
+  build `web/dist` there (no Node on the server):
+  `rsync -az --delete --rsync-path="sudo -u radar rsync" --exclude .venv
+  --exclude .git --exclude /data --exclude web/node_modules ./
+  <host>:/opt/radar/zero2sudo-opportunity-monitor/`, then
+  `sudo systemctl restart radar`.
+- **`/opt/radar` is the `radar` user's home folder (mode 750)**, so `cd`
+  into it as `ubuntu` fails. Run setup as `sudo -u radar bash -c "..."`.
+- **HTTPS without a domain:** `<ip-with-dashes>.nip.io` in the `Caddyfile`
+  worked. Ubuntu's own `caddy` package (2.6) got a Let's Encrypt cert on the
+  first try.
+- **Getting `GH_TOKEN` onto the box without it appearing in a terminal or
+  log:** use a classic token with no scopes, then
+  `pbpaste | ssh <host> "sudo -u radar bash -c '...T=\$(cat)...'"`. Read it
+  from stdin and rewrite `radar.env` with `umask 077`.
+
 ## Deferred
 
 Docker/compose, Fly.io, S3 uploads, Postgres/Redis, sharding, and anything

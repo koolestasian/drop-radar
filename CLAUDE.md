@@ -5,31 +5,34 @@ community lists) and alerts the owner. Currently an hourly GitHub Actions job
 (`opportunity_monitor.py`); being rebuilt as "Drop Radar", an always-on service.
 Plan and contracts: `docs/specs/`.
 
-## Session handoff (2026-10-01)
+## Session handoff (2026-10-02)
 
 - Branch: `claude/trim-drop-radar-plan`. T0-T10 are all `done`; only T11
-  (hardening) remains, and it's explicitly `deferred` until the service has
-  run live for a few weeks. T9 web shipped in `472b172` (reviewed Codex's
-  handoff of it in `4fc6425`); T10 deploy shipped this session (see
-  `docs/specs/PROGRESS.md`'s T10 row for the full list).
-- T10 highlights: `serve`'s shutdown is now actually graceful even with an
-  open `/api/stream` (SSE) connection (`--graceful-timeout`, real-subprocess
-  tested); a crashed scheduler task takes the whole process down so
-  systemd's `Restart=always` fires instead of uvicorn quietly serving a
-  process that stopped polling; `HEARTBEAT_URL` + `python -m radar backup`
-  for the dead-man switch and nightly backups; `deploy/` has the systemd
-  units, a `Caddyfile` for HTTPS, and a `README.md` covering VPS setup,
-  restore-from-backup, and the hourly-GitHub-Actions cutover (double-push
-  gating, when a cursor reseed is/isn't needed, the one-time Instagram
-  re-push). None of `deploy/README.md` was exercised on a real VPS.
-- **Not done yet, if the user wants remote friend access next:** no box has
-  actually been provisioned. `deploy/README.md` replaces the earlier ad hoc
-  ngrok suggestion with a real plan (systemd + Caddy + the friend's own
-  `API_TOKENS` entry), but someone still has to run through it on a real
-  host before the friend can use this remotely.
-- Do not remove `hourly.yml`'s `schedule:` trigger until `radar.service` has
-  actually run live for a day with no restarts -- that's still true and
-  still not done (nothing has been deployed yet this session).
+  (hardening) remains, explicitly `deferred` until the service has run live
+  for a few weeks. `AGENTS.md` is a symlink to this file, so Codex and Claude
+  read the same instructions.
+- **Live since 2026-10-02 ~05:00 UTC** on an Oracle Cloud Always Free VM.
+  Reach it with the `drop-radar` alias in `~/.ssh/config` on Kevin's Mac
+  (OCI CLI auth is in `~/.oci/`). The public HTTPS address is the box's
+  `<ip-with-dashes>.nip.io` hostname, served by Caddy. Both users log in with
+  their own token from `/opt/radar/radar.env`; never commit the tokens or the
+  IP. Layout and redeploy steps: `deploy/README.md`, especially "What the
+  first live deploy did". Verified live: see the T10 row in
+  `docs/specs/PROGRESS.md`.
+- Deliberately off on the box: `NTFY_TOPIC` (hourly.yml still pushes, so
+  enabling both would double-alert), `IG_SESSIONID`, `ANTHROPIC_API_KEY`,
+  `HEARTBEAT_URL`. `GH_TOKEN` is set (classic, no scopes, read-only).
+- **Next, when the user asks: the alert cutover.** It's safe from about
+  2026-10-03 (one day live, no unplanned restarts; the one counted restart
+  was a deliberate SIGKILL test). Steps:
+  1. Get the user's ntfy topic and add `NTFY_TOPIC` (plus `NTFY_TOPIC_FRIEND`
+     if the friend wants pushes) to `radar.env`, then restart `radar`.
+  2. Set the GitHub repo variable `LEGACY_ALERTS_ENABLED=false`, which gates
+     hourly.yml's own push step.
+  3. Later, drop hourly.yml's `schedule:`.
+
+  Expect a one-time push burst for any zero2sudo Story still up when
+  Instagram is first enabled; see the cutover notes in `deploy/README.md`.
 
 ## When the user says "start" (or "continue", "next")
 
@@ -100,5 +103,5 @@ Exceptions:
   remote friend access) and `deploy/README.md` (full VPS setup, backup/restore, and the hourly-GitHub-Actions cutover
   checklist). `HEARTBEAT_URL` (env) gets a debounced GET from the scheduler (at most once a minute, not once a loop
   tick) for a dead-man switch (e.g. healthchecks.io). A crashed scheduler task now takes the whole `serve` process down
-  with it, so `Restart=always` actually fires. `hourly.yml` itself is untouched; its schedule stays live until
+  with it, so `Restart=always` actually fires. `hourly.yml` only gained an `if:` gate on its push step (`LEGACY_ALERTS_ENABLED`, a no-op until set); its schedule stays live until
   `radar.service` has run a full day -- see `deploy/README.md` for the alert-double-push gate and reseed notes.
