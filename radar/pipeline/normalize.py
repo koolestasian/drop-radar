@@ -38,7 +38,8 @@ def canonical_url(url: str) -> str:
         params = dict(query)
         if path == "/embed/job_app" and params.get("for") and params.get("token"):
             path, query = f"/{params['for']}/jobs/{params['token']}", []
-        query = [(k, v) for k, v in query if k != "gh_jid"]  # repeats the id already in the path
+        if re.fullmatch(r"/[^/]+/jobs/\d+", path):  # gh_jid only repeats the id in the path; else it IS the id
+            query = [(k, v) for k, v in query if k != "gh_jid"]
     elif host == "jobs.lever.co":
         path = path.removesuffix("/apply")
     elif host == "jobs.ashbyhq.com":

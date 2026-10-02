@@ -39,6 +39,11 @@ class AtsLinkShapeTests(unittest.TestCase):
         self.same("https://jobs.smartrecruiters.com/Visa/744000016293725",
                   "https://jobs.smartrecruiters.com/Visa/744000016293725-software-engineer-intern")
 
+    def test_gh_jid_kept_when_the_path_has_no_job_id(self):
+        """Dropping it there would merge two postings into one, and the second would never alert."""
+        self.assertNotEqual(canonical_url("https://boards.greenhouse.io/acme?gh_jid=1"),
+                            canonical_url("https://boards.greenhouse.io/acme?gh_jid=2"))
+
     def test_gh_jid_kept_off_greenhouse(self):
         """On a company's own careers page gh_jid IS the posting's identity."""
         self.assertNotEqual(canonical_url("https://stripe.com/jobs/search?gh_jid=1"),
