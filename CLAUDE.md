@@ -45,9 +45,27 @@ Plan and contracts: `docs/specs/`.
   canonical_url ATS link shapes + startup re-canonicalize (`Runtime.__init__`), new sources (oracle,
   eightfold, amazon, google, apple, avature, sitemap, workable; search-based ones subclass
   `ats.WindowedSource`), Instagram `user_id` (skips `web_profile_info`). All deployed.
-- **Instagram:** `IG_SESSIONID` is set on the box (since 06:25 UTC). Its first poll got 429 from the
-  profile lookup, now skipped; the first poll with the stored id (~06:55 UTC) was not yet verified.
-  If 429s persist, next free step: poll Instagram from the owner's Mac (home IP) and relay to the box.
+- **Instagram:** `IG_SESSIONID` is set on the box, but its native poll got 429 (06:25 UTC, checked again
+  07:44: 7 failures, never a success), so `IG_RELAY_ENABLED=1` now skips it. Stories arrive only through
+  the Mac relay (`deploy/instagram-relay.py` -> `/api/instagram/relay`), which is not running yet.
+- **Feed/data pass (Claude, 2026-10-02, commits `6c25d4d..e34d6bf`, all deployed; the box matches `e34d6bf`):**
+  digest-style feed after boardsweep.io (New / All matches tabs, separate All jobs page), posted-vs-found
+  dates, sorts (newest posted default, newest found, prestige by company tier), search + Location box +
+  US only, company logos (`radar/logos.py`), `#token=` one-tap sign-in. Data fixes: SmartRecruiters now
+  carries location, trailing-country rule and US-namesake towns in `is_us_location`, Simplify `</br>`
+  separators, 4 mislabeled boards renamed. One-off repairs run on the box (backups
+  `radar-20261002T081639Z.db`, `radar-20261002T092849Z.db`; live watchlist kept as
+  `watchlist.yaml.bak-20261002T0817`): 1,624 SmartRecruiters locations filled, company names fixed,
+  53 glued Simplify locations re-separated, 912 logo domains pre-resolved. Kevin's matches: 1,421.
+- **Two agents deploy to the same box.** Claude's restarts on 2026-10-02 interrupted Codex's live relay
+  test. Before deploying: read this handoff, check `systemctl show radar -p ActiveEnterTimestamp`, and
+  dry-run the rsync (`-n --itemize-changes`) -- `--delete` replaces the box's tree with yours.
+- **Offered to the user, not started:** (1) salary sort -- pay is listed on few postings (368 of 1,404
+  matches even come from boards that can carry it); the real fix is fetching each matched job's page and
+  parsing the pay-transparency range. (2) A prestige list in `profile.company_tiers` (Meta, OpenAI, HRT,
+  Jump, Optiver rank B today; no UI edits `company_tiers`). (3) Citadel's sitemap jobs have no location,
+  so "... Intern Europe" passes the profile filter. (4) Unconfirmed: the owner once saw the friend's feed
+  in his browser (likely an installed-app window with its own storage); the `#token=` link fixes it.
 - **Next, when the user asks: the alert cutover.** It's safe from about
   2026-10-03 (one day live, no unplanned restarts; the one counted restart
   was a deliberate SIGKILL test). Steps:
