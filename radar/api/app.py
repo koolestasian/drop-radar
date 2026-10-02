@@ -23,6 +23,7 @@ import os
 import re
 import signal
 import tempfile
+import time
 from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
@@ -36,7 +37,7 @@ from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
 from radar.api import events
 from radar.api.models import (Action, ActionPatch, InstagramRelay, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
                               SourceHealth, SourceLatency, WatchlistConfig)
-from radar.config import User, load_settings, parse_profile, parse_watchlist
+from radar.config import GUEST_ID, User, Watchlist, load_guest_profile, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
 from radar.logos import LogoResolver
 from radar.models import utcnow
@@ -142,7 +143,31 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             raise HTTPException(401, "missing or invalid bearer token", headers={"WWW-Authenticate": "Bearer"})
         return user
 
+    guest = User(id=GUEST_ID, watchlist=Watchlist(), profile=load_guest_profile())
+    hits, cached = {}, {}  # guest rate limit (ip -> request times) and 60s response cache (query -> (time, page))
+
+    def _client_ip(request):
+        # the app listens on localhost behind Caddy, which appends the address it saw: the last entry is its own
+        return request.headers.get("x-forwarded-for", "").split(",")[-1].strip() or (request.client.host if request.client else "?")
+
+    async def viewer(request: Request, authorization: str = Header(default="")) -> User:
+        """The logged-in user, or the read-only guest when no token is sent. A token that is sent
+        and wrong is still a 401, so a signed-out or stale device is told to sign in again."""
+        if authorization.strip():
+            return await current_user(authorization)
+        now_s, ip = time.monotonic(), _client_ip(request)
+        recent = [t for t in hits.get(ip, ()) if now_s - t < 60]
+        if len(recent) >= 60:
+            raise HTTPException(429, "too many requests; sign in or slow down", headers={"Retry-After": "60"})
+        hits[ip] = recent + [now_s]
+        if len(hits) > 2000:  # an attacker rotating addresses can't grow this without bound
+            for k in [k for k, v in hits.items() if not v or now_s - v[-1] >= 60]:
+                del hits[k]
+        return guest
+
     def owned(user):
+        if user.id == GUEST_ID:  # visitors see everything any user's sources found
+            return frozenset().union(*getattr(runtime, "owned", {}).values())
         return runtime.owned.get(user.id, frozenset())
 
     def serialize(opp, user):
@@ -174,7 +199,9 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         return {"ok": True}
 
     @app.get("/api/me", response_model=Me)
-    async def me(user: User = Depends(current_user)):
+    async def me(user: User = Depends(viewer)):
+        if user.id == GUEST_ID:
+            return Me(user=GUEST_ID, sources=len(owned(user)), alerts_enabled=False, notification_url=None, guest=True)
         pipeline = getattr(runtime, "pipeline", None)
         dispatchers = getattr(getattr(pipeline, "alerter", None), "dispatchers", {})
         channels = getattr(dispatchers.get(user.id), "channels", [])
@@ -214,7 +241,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
 
     @app.get("/api/opportunities", response_model=Page)
     async def list_opportunities(
-        user: User = Depends(current_user),
+        request: Request,
+        user: User = Depends(viewer),
         include: str = Query("matches", pattern="^(matches|all)$",
                              description="matches: what would alert you; all: everything your sources found"),
         q: str | None = Query(None, description="words that each start a word in the title or company"),
@@ -239,6 +267,12 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     ):
         # ponytail: scores every candidate in Python per request (one row fetch each);
         # fine for two users and thousands of rows -- precompute per-user matches if it slows.
+        is_guest = user.id == GUEST_ID
+        if is_guest:  # every visitor's page is the same: cap it, ignore personal filters, reuse it for a minute
+            limit, action = min(limit, 50), None
+            hit = cached.get(request.url.query)
+            if hit and time.monotonic() - hit[0] < 60:
+                return hit[1]
         after = _decode_cursor(cursor) if cursor else None
         today = now().date()
         items, keys, more = [], [], None
@@ -281,10 +315,15 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             items.append(out)
             keys.append((row["sort_key"], row["id"]))
         next_cursor = _encode_cursor(more) if more else None
-        return Page(items=items, next_cursor=next_cursor)
+        page = Page(items=items, next_cursor=next_cursor)
+        if is_guest:
+            if len(cached) >= 256:
+                cached.clear()
+            cached[request.url.query] = (time.monotonic(), page)
+        return page
 
     @app.get("/api/opportunities/{opp_id}", response_model=Opportunity)
-    async def get_opportunity(opp_id: str, user: User = Depends(current_user)):
+    async def get_opportunity(opp_id: str, user: User = Depends(viewer)):
         return serialize(visible_opportunity(opp_id, user), user)
 
     @app.patch("/api/opportunities/{opp_id}", response_model=Opportunity)

@@ -203,6 +203,12 @@
             "title": "Alerts Enabled",
             "type": "boolean"
           },
+          "guest": {
+            "default": false,
+            "description": "true for a visitor who is not logged in: read-only, default profile",
+            "title": "Guest",
+            "type": "boolean"
+          },
           "notification_url": {
             "anyOf": [
               {

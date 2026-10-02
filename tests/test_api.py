@@ -144,12 +144,57 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
     def names(self, *eids):
         return {self.ids[e] for e in eids}
 
-    async def test_every_api_route_needs_a_valid_token(self):
-        for headers in ({}, {"Authorization": "Bearer nope"}, {"Authorization": KEVIN}):
-            with self.subTest(headers=headers):
-                r = await self.client.get("/api/opportunities", headers=headers)
-                self.assertEqual(r.status_code, 401)
+    async def test_a_wrong_token_is_always_refused_and_only_reading_works_without_one(self):
+        for headers in ({"Authorization": "Bearer nope"}, {"Authorization": KEVIN}):
+            for path in ("/api/opportunities", "/api/me", "/api/config/profile"):
+                with self.subTest(headers=headers, path=path):
+                    self.assertEqual((await self.client.get(path, headers=headers)).status_code, 401)
         self.assertEqual((await self.get("/api/me")).json()["user"], "kevin")
+
+    async def guest_get(self, path, **params):
+        return await self.client.get(path, params=params)
+
+    async def test_a_visitor_without_a_token_reads_everything_found_with_the_default_profile(self):
+        r = await self.guest_get("/api/opportunities", include="all")
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual({o["id"] for o in r.json()["items"]}, self.names("swe", "ib", "ng", "tax"))
+        feed = {o["id"] for o in (await self.guest_get("/api/opportunities")).json()["items"]}
+        self.assertEqual(feed, self.names("swe", "ib", "ng"))  # default profile: tech and business, not "Tax Intern"
+        me = (await self.guest_get("/api/me")).json()
+        self.assertEqual((me["user"], me["guest"], me["alerts_enabled"], me["sources"]), ("guest", True, False, 3))
+        self.assertEqual((await self.guest_get(f"/api/opportunities/{self.ids['ib']}")).status_code, 200)
+
+    async def test_a_visitor_never_sees_anyones_status_or_notes(self):
+        swe = self.ids["swe"]
+        await self.client.patch(f"/api/opportunities/{swe}", headers=auth(KEVIN),
+                                json={"status": "saved", "notes": "recruiter said call Tuesday"})
+        r = await self.guest_get("/api/opportunities", include="all", action="saved")
+        self.assertNotIn("Tuesday", r.text)
+        self.assertTrue(all(o["action"] is None for o in r.json()["items"]))
+        self.assertIsNone((await self.guest_get(f"/api/opportunities/{swe}")).json()["action"])
+
+    async def test_a_visitor_cannot_write_or_read_account_routes(self):
+        swe = self.ids["swe"]
+        checks = [
+            self.client.patch(f"/api/opportunities/{swe}", json={"status": "saved"}),
+            self.client.put("/api/config/profile", json={"roles": ["x"], "keywords": ["y"]}),
+            self.client.put("/api/config/watchlist", json={}),
+            self.client.get("/api/config/profile"), self.client.get("/api/config/watchlist"),
+            self.client.post("/api/instagram/relay", json={"username": "zero2sudo", "stories": []}),
+            self.client.get("/api/sources/health"), self.client.get("/api/metrics"), self.client.get("/api/stream"),
+        ]
+        for response in checks:
+            r = await response
+            self.assertEqual(r.status_code, 401, r.request.url)
+        self.assertIsNone((await self.get(f"/api/opportunities/{swe}", KEVIN)).json()["action"])  # nothing was saved
+
+    async def test_visitors_are_rate_limited_and_get_small_cached_pages(self):
+        r = await self.guest_get("/api/opportunities", include="all", limit=200)
+        self.assertEqual(r.status_code, 200)
+        for _ in range(60):
+            r = await self.guest_get("/api/me")
+        self.assertEqual(r.status_code, 429)
+        self.assertEqual((await self.get("/api/me")).status_code, 200)  # logged-in users are not limited
 
     async def test_each_user_sees_matches_from_their_own_sources_only(self):
         self.assertEqual(await self.ids_of(KEVIN), self.names("swe", "ng"))
@@ -173,7 +218,10 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(r.json()["notification_url"], f"https://ntfy.sh/{topic}")
                 self.assertNotIn(other, r.text)
                 self.assertNotIn("never-expose", r.text)
-            self.assertEqual((await client.get("/api/me")).status_code, 401)
+            guest = (await client.get("/api/me")).json()
+            self.assertTrue(guest["guest"])
+            self.assertIsNone(guest["notification_url"])
+            self.assertNotIn("private-", json.dumps(guest))
 
     async def test_missing_phone_channel_is_explicitly_disabled(self):
         body = (await self.get("/api/me")).json()

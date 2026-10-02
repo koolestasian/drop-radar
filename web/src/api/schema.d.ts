@@ -285,6 +285,12 @@ export interface components {
              */
             alerts_enabled: boolean;
             /**
+             * Guest
+             * @description true for a visitor who is not logged in: read-only, default profile
+             * @default false
+             */
+            guest: boolean;
+            /**
              * Notification Url
              * @description this user's private ntfy subscription URL; no API token
              */

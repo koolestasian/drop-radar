@@ -3,7 +3,7 @@ import { ApiError, token, type Me } from "../api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function Login({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
+export function Login({ onSignedIn, onGuest, gated = false }: { onSignedIn: (me: Me) => void; onGuest: () => void; gated?: boolean }) {
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -34,6 +34,7 @@ export function Login({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
           <p className="text-sm text-muted-foreground">New roles, the moment they go live.</p>
         </div>
       </div>
+      {gated && <p className="text-sm font-medium">That part of Drop Radar is for signed-in users: your own feed, saved roles and alerts.</p>}
       <form onSubmit={submit} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
         <label htmlFor="token" className="text-sm font-semibold">
           Your access token
@@ -56,6 +57,9 @@ export function Login({ onSignedIn }: { onSignedIn: (me: Me) => void }) {
           {busy ? "Checking…" : "Sign in"}
         </Button>
       </form>
+      <Button type="button" variant="outline" size="lg" onClick={onGuest}>
+        Keep browsing as a guest
+      </Button>
       <p className="text-sm text-muted-foreground">
         No token? Ask whoever invited you for your personal link: opening it signs you in. The token stays on this device.
       </p>

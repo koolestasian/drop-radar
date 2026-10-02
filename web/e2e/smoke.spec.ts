@@ -45,10 +45,14 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
   await page.route("**/s2/favicons**", (route) => route.fulfill({ contentType: "image/png", body: PNG }));
   await page.route("**/api/**", async (route) => {
     const req = route.request();
-    if (req.headers()["authorization"] !== `Bearer ${TOKEN}`) return json(route, { detail: "missing or invalid bearer token" }, 401);
     const url = new URL(req.url());
     const path = url.pathname;
-    if (path === "/api/me") return json(route, { user: "kevin", sources: 3, alerts_enabled: false, notification_url: null });
+    const given = req.headers()["authorization"];
+    // like the server: no token reads as the read-only guest; a wrong token is refused; writes and account routes need a real one
+    const guest = !given && req.method() === "GET" && (path === "/api/me" || path.startsWith("/api/opportunities"));
+    if (!guest && given !== `Bearer ${TOKEN}`) return json(route, { detail: "missing or invalid bearer token" }, 401);
+    if (path === "/api/me" && guest) return json(route, { user: "guest", sources: 3, alerts_enabled: false, notification_url: null, guest: true });
+    if (path === "/api/me") return json(route, { user: "kevin", sources: 3, alerts_enabled: false, notification_url: null, guest: false });
     if (path === "/api/stream")
       return route.fulfill({
         status: 200,
@@ -90,7 +94,7 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
 
 test("sign in, catch a live drop, save it, move it along the board", async ({ page }, info) => {
   const mock = await mockApi(page);
-  await page.goto("/");
+  await page.goto("/#/login");
   await page.getByLabel("Your access token").fill("wrong-token-0123456789xx");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("alert")).toContainText("wasn't accepted");
@@ -345,4 +349,29 @@ test("compact rows keep every action and are remembered", async ({ page }) => {
   expect(width[0], "compact feed scrolls sideways").toBeLessThanOrEqual(width[1]);
   await page.reload();
   await expect(page.getByRole("button", { name: "Compact rows" })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("a visitor without a token browses read-only and is sent to sign in for the rest", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Start browsing" })).toHaveCount(0);
+  await page.getByRole("dialog").getByRole("button", { name: "Keep browsing as a guest" }).click();
+  await expect(page.getByRole("article", { name: /^Stripe/ })).toBeVisible();
+  await expect(page.getByText("You are browsing as a guest")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Ignore" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Main" }).filter({ visible: true }).getByRole("link", { name: /Board|Sources|Settings/ })).toHaveCount(0);
+  await page.getByRole("article", { name: /^Stripe/ }).getByRole("button", { name: /Software Engineer/ }).click();
+  await expect(page.getByText("to save this role, keep notes and get alerts").first()).toBeVisible();
+  await page.keyboard.press("s"); // the save shortcut does nothing for a guest
+  await page.goto("/#/board");
+  await expect(page.getByText("That part of Drop Radar is for signed-in users")).toBeVisible();
+  await page.getByRole("button", { name: "Keep browsing as a guest" }).click();
+  await expect(page.getByRole("article", { name: /^Stripe/ })).toBeVisible();
+  await page.getByRole("link", { name: "Sign in" }).first().click();
+  await page.getByLabel("Your access token").fill(TOKEN);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("button", { name: /^Account/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save" }).first()).toBeVisible();
+  await expect(page.getByText("You are browsing as a guest")).toHaveCount(0);
 });

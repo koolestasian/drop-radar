@@ -28,7 +28,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
 }
 
 /** Everything the radar knows about one posting, plus its status and your notes. Used in the desktop pane and the phone sheet. */
-export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus: (status: ActionStatus) => void; onNotes: (notes: string) => void }) {
+export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus?: (status: ActionStatus) => void; onNotes?: (notes: string) => void }) {
   const status = o.action?.status ?? "new";
   const stock = stockOf(o);
   const due = deadline(o.deadline);
@@ -66,6 +66,11 @@ export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus: (st
         <p className="text-sm text-muted-foreground">No apply link yet.</p>
       )}
 
+      {!onStatus || !onNotes ? (
+        <p className="rounded-xl border border-border bg-muted px-3.5 py-3 text-sm">
+          <a href="#/login" className="font-medium underline">Sign in</a> to save this role, keep notes and get alerts for roles like it.
+        </p>
+      ) : (
       <section aria-labelledby="your-status" className="flex flex-col gap-2">
         <h3 id="your-status" className="text-sm font-semibold">
           Your status
@@ -74,7 +79,7 @@ export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus: (st
           type="single"
           variant="outline"
           value={TRACKED.some((t) => t.status === status) ? status : ""}
-          onValueChange={(v) => onStatus((v || "new") as ActionStatus)}
+          onValueChange={(v) => onStatus?.((v || "new") as ActionStatus)}
           className="grid w-full grid-cols-3 gap-1.5"
         >
           {TRACKED.map((t) => (
@@ -90,11 +95,12 @@ export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus: (st
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          onBlur={() => notes !== (o.action?.notes ?? "") && onNotes(notes)}
+          onBlur={() => notes !== (o.action?.notes ?? "") && onNotes?.(notes)}
           placeholder="Referral, recruiter, what to prep. Saved when you leave the box."
           className="min-h-24"
         />
       </section>
+      )}
 
       <section aria-labelledby="why" className="flex flex-col gap-2">
         <h3 id="why" className="text-sm font-semibold">
@@ -132,10 +138,12 @@ export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus: (st
             Share
           </Button>
         )}
-        <Button variant="outline" onClick={() => onStatus(status === "ignored" ? "new" : "ignored")}>
-          {status === "ignored" ? <Eye data-icon="inline-start" /> : <EyeOff data-icon="inline-start" />}
-          {status === "ignored" ? "Unignore" : "Ignore"}
-        </Button>
+        {onStatus && (
+          <Button variant="outline" onClick={() => onStatus(status === "ignored" ? "new" : "ignored")}>
+            {status === "ignored" ? <Eye data-icon="inline-start" /> : <EyeOff data-icon="inline-start" />}
+            {status === "ignored" ? "Unignore" : "Ignore"}
+          </Button>
+        )}
         {shareStatus && (
           <span role="status" className="text-xs text-muted-foreground">
             {shareStatus}

@@ -82,7 +82,7 @@ class ServeShutdownTests(unittest.TestCase):
         # real database.
         me = httpx.get(f"{base}/api/me", headers=headers, timeout=5)
         self.assertEqual(me.status_code, 200)
-        self.assertEqual(me.json(), {"user": "kevin", "sources": 0, "alerts_enabled": False, "notification_url": None})
+        self.assertEqual(me.json(), {"user": "kevin", "sources": 0, "alerts_enabled": False, "notification_url": None, "guest": False})
         self.assertTrue((self.tmp / "radar.db").exists())
 
         url = f"{base}/api/stream"

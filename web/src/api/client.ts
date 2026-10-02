@@ -67,7 +67,8 @@ export function signalUnauthorized() {
 }
 
 export function authHeaders(): Record<string, string> {
-  return { Authorization: `Bearer ${token.get() ?? ""}` };
+  const t = token.get(); // no token: the server serves the read-only guest view
+  return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {

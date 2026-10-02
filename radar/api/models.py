@@ -52,6 +52,7 @@ class Me(BaseModel):
     sources: int
     alerts_enabled: bool = Field(description="a delivery channel is configured; device receipt is not verified")
     notification_url: str | None = Field(description="this user's private ntfy subscription URL; no API token")
+    guest: bool = Field(False, description="true for a visitor who is not logged in: read-only, default profile")
 
 
 class InstagramRelay(BaseModel):

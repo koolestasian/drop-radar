@@ -260,6 +260,14 @@ def parse_profile(data: dict, path) -> Profile:
     )
 
 
+GUEST_ID = "guest"  # the API's built-in read-only visitor; never a configured user
+GUEST_PROFILE = Path(__file__).with_name("guest_profile.yaml")
+
+
+def load_guest_profile() -> Profile:
+    return load_profile(GUEST_PROFILE)
+
+
 def load_users(path=None) -> tuple[User, ...]:
     """Each user names their own watchlist/profile files, relative to users.yaml
     (not a 'config/<id>/' convention: the first user's files predate this and
@@ -281,6 +289,8 @@ def load_users(path=None) -> tuple[User, ...]:
             watchlist_path=watchlist_path, profile_path=profile_path,
         ))
     ids = [u.id for u in users]
+    if GUEST_ID in ids:
+        raise ConfigError(f"{path}: {GUEST_ID!r} is reserved for visitors who are not logged in")
     if len(ids) != len(set(ids)):
         raise ConfigError(f"{path}: duplicate user id(s): {sorted({i for i in ids if ids.count(i) > 1})}")
     return tuple(users)

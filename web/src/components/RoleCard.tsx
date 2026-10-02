@@ -29,7 +29,7 @@ type Props = {
   selected?: boolean;
   fresh?: boolean;
   compact?: boolean;
-  onStatus: (status: ActionStatus) => void;
+  onStatus?: (status: ActionStatus) => void; // absent for a guest: no Save or Ignore
   onOpen?: () => void;
 };
 
@@ -78,15 +78,17 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
         )}
         <WorkModelBadge o={o} className="hidden bg-background/60 md:inline-flex" />
         {due && <span className={cn("stamp hidden font-medium sm:inline", DEADLINE_TONE[due.tone])}>{due.label}</span>}
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-pressed={status === "saved"}
-          aria-label={status === "saved" ? "Saved: tap to unsave" : "Save"}
-          onClick={stop(() => onStatus(status === "saved" ? "new" : "saved"))}
-        >
-          {status === "saved" ? <BookmarkCheck /> : <Bookmark />}
-        </Button>
+        {onStatus && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-pressed={status === "saved"}
+            aria-label={status === "saved" ? "Saved: tap to unsave" : "Save"}
+            onClick={stop(() => onStatus(status === "saved" ? "new" : "saved"))}
+          >
+            {status === "saved" ? <BookmarkCheck /> : <Bookmark />}
+          </Button>
+        )}
         {o.url && (
           <Button asChild size="icon" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <a href={o.url} target="_blank" rel="noopener noreferrer" aria-label={`Apply: ${o.company ? `${o.company}, ` : ""}${title}`}>
@@ -144,6 +146,7 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
         <WorkModelBadge o={o} className="bg-background/60" />
         {due && <span className={cn("stamp font-medium", DEADLINE_TONE[due.tone])}>{due.label}</span>}
         <span className="stamp min-w-0 truncate text-muted-foreground">found {ago(o.first_seen)}</span>
+        {onStatus && (
         <div className="ml-auto flex items-center">
           <Button
             variant="ghost"
@@ -163,6 +166,7 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
             {status === "ignored" ? <Eye /> : <EyeOff />}
           </Button>
         </div>
+        )}
       </div>
       {o.url && (
         <Button asChild size="lg" className="w-full sm:hidden" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
