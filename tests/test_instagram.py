@@ -1,6 +1,5 @@
 import time
 import unittest
-from unittest.mock import patch
 
 from radar.legacy import instagram_scraper as ig
 from radar.legacy import opportunity_monitor as monitor
@@ -76,24 +75,6 @@ class ScraperTests(unittest.TestCase):
         self.assertEqual(len(client.stories("zero2sudo", user_id=USER_ID)), 1)
         self.assertEqual([url for url, _ in client.session.calls], [ig.BASE + "/api/v1/feed/reels_media/"])
 
-    def test_native_and_apify_items_for_one_story_share_an_id(self):
-        client = self.client({
-            "/api/v1/users/web_profile_info/": profile(),
-            "/api/v1/feed/reels_media/": Response(payload={"reels_media": [{"id": USER_ID, "items": [STORY]}]}),
-        })
-        native = client.stories("zero2sudo")[0]
-        apify = {
-            "id": "something-else",
-            "text": STORY["accessibility_caption"],
-            "image": "https://scontent-lax.cdninstagram.com/v/a.jpg?ig_cache_key=Mzk4ODE1MjYyNzE1MzYyOTU0Mg%3D%3D.3-ccb7-5",
-            "link": "https://jobs.lever.co/palantir/abc",
-        }
-        with patch.object(monitor, "ocr_image", return_value=""):
-            native_row = monitor.normalize_item(native, "Story")
-            apify_row = monitor.normalize_item(apify, "Story")
-        self.assertEqual(native_row["ID"], apify_row["ID"])
-        self.assertEqual(monitor.find_new_rows([apify_row], [native_row]), [])
-        self.assertEqual(native_row["Application / Registration Link"], "https://jobs.lever.co/palantir/abc")
 
     def test_posts_skip_pinned_and_old(self):
         now = int(time.time())
@@ -124,43 +105,6 @@ class ScraperTests(unittest.TestCase):
     def test_stories_need_a_session(self):
         with self.assertRaises(ig.InstagramAuthError):
             self.client({}, sessionid="").stories("zero2sudo")
-
-
-class ScraperSelectionTests(unittest.TestCase):
-    def setUp(self):
-        patcher = patch.object(monitor, "SCRAPE_REPORT", {"scrapers": {}, "warnings": []})
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
-    def run_scrape(self, scraper, session, token, native, apify):
-        with patch.object(monitor, "SCRAPER", scraper), patch.object(monitor, "IG_SESSIONID", session), \
-                patch.object(monitor, "APIFY_TOKEN", token):
-            return monitor.scrape("Stories", native, apify)
-
-    def expired(self):
-        raise ig.InstagramAuthError("session expired")
-
-    def test_auto_falls_back_to_apify_and_warns(self):
-        items = self.run_scrape("auto", "sid", "tok", self.expired, lambda: ["apify-item"])
-        self.assertEqual(items, ["apify-item"])
-        self.assertEqual(monitor.SCRAPE_REPORT["scrapers"]["Stories"], "apify (fallback)")
-        self.assertIn("session expired", monitor.SCRAPE_REPORT["warnings"][0])
-
-    def test_auto_prefers_native(self):
-        items = self.run_scrape("auto", "sid", "tok", lambda: ["native"], lambda: self.fail("apify called"))
-        self.assertEqual(items, ["native"])
-
-    def test_auto_without_session_uses_apify_for_stories(self):
-        items = self.run_scrape("auto", "", "tok", lambda: self.fail("native called"), lambda: ["apify"])
-        self.assertEqual(items, ["apify"])
-
-    def test_native_only_does_not_fall_back(self):
-        with self.assertRaisesRegex(RuntimeError, "session expired"):
-            self.run_scrape("native", "sid", "tok", self.expired, lambda: self.fail("apify called"))
-
-    def test_nothing_configured_explains_itself(self):
-        with self.assertRaisesRegex(RuntimeError, "IG_SESSIONID"):
-            self.run_scrape("auto", "", "", lambda: [], lambda: [])
 
 
 class MediaIdTests(unittest.TestCase):

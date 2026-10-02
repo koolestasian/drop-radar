@@ -1,12 +1,9 @@
-#!/usr/bin/env python3
-import argparse
 import base64
 import hashlib
 import json
 import os
 import re
 import tempfile
-from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import parse_qsl, unquote, urlencode, urlparse, urlunparse
@@ -18,9 +15,6 @@ from openpyxl.utils import get_column_letter
 from PIL import Image
 import pytesseract
 
-from radar.legacy import instagram_scraper
-from radar.legacy import job_pages
-
 try:  # Some Story media is HEIC, which Pillow cannot open on its own.
     from pillow_heif import register_heif_opener
 
@@ -31,39 +25,19 @@ except ImportError:
 USERNAME = os.getenv("IG_USERNAME", "zero2sudo").lstrip("@")
 APIFY_TOKEN = os.environ.get("APIFY_TOKEN", "").strip()
 TRACKER_PATH = Path(os.getenv("TRACKER_PATH", "Zero2Sudo_Opportunity_Tracker.xlsx"))
-STATUS_PATH = Path(os.getenv("STATUS_PATH", "monitor_status.json"))
-STATE_PATH = Path(os.getenv("STATE_PATH", "monitor_state.json"))
 LIVE_VIEW_PATH = Path(os.getenv("LIVE_VIEW_PATH", "LATEST.md"))
 
 ENRICHMENT_PATH = Path(os.getenv("ENRICHMENT_PATH", "enrichment_cache.json"))
 
-# "auto": native scraper first, Apify as fallback; "native" or "apify" force one.
-SCRAPER = os.getenv("SCRAPER", "auto").strip().lower() or "auto"
-IG_SESSIONID = os.getenv("IG_SESSIONID", "").strip()
-POST_LOOKBACK_DAYS = int(os.getenv("POST_LOOKBACK_DAYS", "3"))
 
-JOB_PAGES_ENABLED = os.getenv("JOB_PAGES", "on").strip().lower() not in {"0", "off", "false", "no"}
-PAGE_CHECKS_PER_RUN = int(os.getenv("PAGE_CHECKS_PER_RUN", "80"))
-PAGE_RECHECK_HOURS = int(os.getenv("PAGE_RECHECK_HOURS", "24"))
 LLM_ENABLED = bool(
     os.getenv("ANTHROPIC_API_KEY", "").strip() or os.getenv("ANTHROPIC_AUTH_TOKEN", "").strip()
 ) and os.getenv("LLM_EXTRACTION", "on").strip().lower() not in {"0", "off", "false", "no"}
-LLM_BACKFILL_PER_RUN = int(os.getenv("LLM_BACKFILL_PER_RUN", "25"))
-LLM_DROP_CONFIDENCE = float(os.getenv("LLM_DROP_CONFIDENCE", "0.8"))
 
 STORY_ACTOR = os.getenv("STORY_ACTOR", "data-slayer/instagram-stories-scraper")
-POST_ACTOR = os.getenv("POST_ACTOR", "apify/instagram-scraper")
 
-GITHUB_TOKEN = os.getenv("GH_TOKEN", "").strip()
 GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY", "").strip()
-NTFY_TOPIC = os.getenv("NTFY_TOPIC", "").strip()
-NTFY_SERVER = os.getenv("NTFY_SERVER", "https://ntfy.sh").strip() or "https://ntfy.sh"
-NTFY_TOKEN = os.getenv("NTFY_TOKEN", "").strip()
-GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "").strip()
-GOOGLE_SYNC_REQUIRED = os.getenv("GOOGLE_SYNC_REQUIRED", "false").strip().lower() in {
-    "1", "true", "yes"
-}
 
 REQUEST_TIMEOUT = 180
 
@@ -95,11 +69,6 @@ ACTION_RE = re.compile(
     re.I,
 )
 
-NOISE_RE = re.compile(
-    r"\b(resume tips?|interview tips?|leetcode tips?|career advice|motivation|day in the life|"
-    r"salary transparency|story time|q&a|ama)\b",
-    re.I,
-)
 
 NEGATIVE_CONTEXT_RE = re.compile(
     r"\b(got|received|accepted|landed)\s+(?:an?\s+)?(?:intern(?:ship)?\s+)?offer\b|"
@@ -110,12 +79,6 @@ NEGATIVE_CONTEXT_RE = re.compile(
     re.I,
 )
 
-STRONG_ACTION_RE = re.compile(
-    r"\b(apply now|apply here|applications? (?:are )?(?:open|live)|"
-    r"registration (?:is )?open|register now|register here|rsvp|"
-    r"sign[- ]?up|deadline|apply by|register by|submissions? (?:are )?open)\b",
-    re.I,
-)
 
 ROLE_PATTERNS = [
     ("Software Engineering", r"\b(?:swe|software engineer(?:ing)?)\b"),
@@ -251,15 +214,6 @@ ATS_SUBDOMAIN_SUFFIXES = (
     "breezy.hr", "teamtailor.com", "pinpointhq.com",
 )
 
-DEFAULT_HIGH_PRIORITY_ORGS = [
-    "Palantir", "Anduril", "Scale AI", "Primer", "Vannevar Labs", "Shield AI",
-    "OpenAI", "Anthropic", "Databricks",
-]
-HIGH_PRIORITY_ORGS = [
-    name.strip()
-    for name in (os.getenv("HIGH_PRIORITY_ORGS") or ",".join(DEFAULT_HIGH_PRIORITY_ORGS)).split(",")
-    if name.strip()
-]
 
 DOMAIN_ORGS = {
     "microsoft.com": "Microsoft",
@@ -340,70 +294,6 @@ def run_actor(actor_id, payload):
         raise RuntimeError(f"Actor {actor_id} returned a non-object dataset item.")
     return data
 
-SCRAPE_REPORT = {"scrapers": {}, "warnings": []}
-ENRICHMENT_REPORT = {"pages_checked": 0, "postings_closed": 0, "filtered_by_llm": 0}
-_native_client = None
-
-def native_client():
-    global _native_client
-    if _native_client is None:
-        _native_client = instagram_scraper.InstagramClient(IG_SESSIONID)
-    return _native_client
-
-def apify_stories():
-    return run_actor(STORY_ACTOR, {"usernames": [USERNAME]})
-
-def apify_posts():
-    payload = {
-        "directUrls": [f"https://www.instagram.com/{USERNAME}/"],
-        "resultsType": "posts",
-        "resultsLimit": 10,
-        "onlyPostsNewerThan": f"{POST_LOOKBACK_DAYS} days",
-        "skipPinnedPosts": True,
-    }
-    return run_actor(POST_ACTOR, payload)
-
-def scrape(kind, native, apify):
-    """Run the native scraper, falling back to Apify, per SCRAPER.
-
-    A fallback is logged as a warning (it usually means IG_SESSIONID expired)
-    rather than failing the check, because a missed Story is gone for good.
-    """
-    errors = []
-    native_possible = kind != "Stories" or bool(IG_SESSIONID)
-    if SCRAPER in {"auto", "native"} and (native_possible or SCRAPER == "native"):
-        try:
-            items = native()
-            SCRAPE_REPORT["scrapers"][kind] = "native"
-            return items
-        except instagram_scraper.InstagramError as exc:
-            errors.append(f"native: {exc}")
-    if SCRAPER in {"auto", "apify"} and APIFY_TOKEN:
-        try:
-            items = apify()
-            SCRAPE_REPORT["scrapers"][kind] = "apify (fallback)" if errors else "apify"
-            for error in errors:
-                warning = f"{kind}: {error}; used Apify instead."
-                SCRAPE_REPORT["warnings"].append(warning)
-                print(f"::warning::{warning}")
-            return items
-        except Exception as exc:
-            errors.append(f"apify: {exc}")
-    if not errors:
-        errors.append(
-            "no scraper is configured (set IG_SESSIONID for the native scraper and/or APIFY_TOKEN)"
-        )
-    raise RuntimeError(f"{kind} scrape failed; this check is incomplete. " + " | ".join(errors))
-
-def fetch_stories():
-    return scrape("Stories", lambda: native_client().stories(USERNAME), apify_stories)
-
-def fetch_posts():
-    return scrape(
-        "Posts",
-        lambda: native_client().recent_posts(USERNAME, POST_LOOKBACK_DAYS),
-        apify_posts,
-    )
 
 def pick(item, *keys):
     for key in keys:
@@ -552,19 +442,6 @@ def item_text(item):
     parts.extend(normalize_links(item))
     return re.sub(r"\n{3,}", "\n\n", "\n".join(x.strip() for x in parts if x and x.strip())).strip()
 
-def looks_actionable(text, links):
-    if not text:
-        return False
-    opportunity = bool(OPPORTUNITY_RE.search(text))
-    external = bool(external_links(links))
-    strong_action = bool(STRONG_ACTION_RE.search(text))
-    if NEGATIVE_CONTEXT_RE.search(text) and not external:
-        return False
-    if NOISE_RE.search(text) and not external and not strong_action:
-        return False
-    if external:
-        return opportunity or bool(ACTION_RE.search(text))
-    return opportunity and strong_action
 
 def org_key(value):
     return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
@@ -855,18 +732,6 @@ def extract_deadline(text, reference=None):
         return parsed.isoformat()
     return ""
 
-def extract_status(text, deadline="", today=None):
-    today = today or datetime.now(timezone.utc).date()
-    deadline_date = parse_deadline(deadline)
-    if deadline_date and deadline_date < today:
-        return "Expired"
-    if re.search(r"\b(?:closed|deadline passed|no longer accepting|position (?:has been )?filled)\b", text, re.I):
-        return "Closed"
-    if re.search(r"\b(?:reopen(?:ed)?|re-open(?:ed)?)\b", text, re.I):
-        return "Reopened"
-    if re.search(r"\b(?:open(?:ed)?|apply now|applications? (?:are )?live|registration (?:is )?open)\b", text, re.I):
-        return "Open"
-    return "New"
 
 def posted_at(item):
     value = pick(item, "taken_at", "timestamp", "takenAt", "takenAtTimestamp", "takenAtIso", "date", "createdAt")
@@ -879,17 +744,6 @@ def posted_at(item):
     except Exception:
         return str(value)
 
-def source_url(item, source_type):
-    for key in ("url", "postUrl", "post_url"):
-        value = item.get(key)
-        if isinstance(value, str) and value.startswith("http") and is_instagram_url(value):
-            return value
-    shortcode = pick(item, "shortCode", "shortcode")
-    if shortcode:
-        return f"https://www.instagram.com/p/{shortcode}/"
-    if source_type == "Story":
-        return f"https://www.instagram.com/stories/{USERNAME}/"
-    return f"https://www.instagram.com/{USERNAME}/"
 
 TITLE_ROLE_WORDS_RE = re.compile(
     r"\b(?:intern(?:ship)?s?|engineer(?:ing)?|developer|scientist|analyst|manager|associate|"
@@ -1108,32 +962,10 @@ def instagram_media_key(links):
             continue
     return ""
 
-def priority_label(row):
-    return priority_for(row).title()
-
-ENRICHMENT = {"version": 1, "pages": {}, "llm": {}}
-
-def load_enrichment():
-    """Cached job-page facts (by URL) and Claude extractions (by text hash)."""
-    global ENRICHMENT
-    try:
-        data = json.loads(ENRICHMENT_PATH.read_text())
-    except (FileNotFoundError, ValueError):
-        data = {}
-    ENRICHMENT = {"version": 1, "pages": data.get("pages") or {}, "llm": data.get("llm") or {}}
-    return ENRICHMENT
-
-def save_enrichment():
-    ENRICHMENT_PATH.write_text(json.dumps(ENRICHMENT, indent=1, sort_keys=True, ensure_ascii=False) + "\n")
 
 def text_key(text):
     return hashlib.sha256(str(text or "")[:12000].encode("utf-8", errors="ignore")).hexdigest()[:24]
 
-def page_facts(url):
-    return ENRICHMENT["pages"].get(url) or {} if url else {}
-
-def llm_facts(text):
-    return ENRICHMENT["llm"].get(text_key(text)) or {}
 
 def display_org(name):
     """Canonical casing for a known company name; other names pass through."""
@@ -1142,128 +974,6 @@ def display_org(name):
         return ""
     return _known_org(org_key(name)) or name
 
-def clean_page_title(title, organization="", require_role_word=True):
-    """Job title from a page/API title, without site or company decoration.
-
-    Page titles must name a role, because a page can be a search or landing
-    page ("Careers at NVIDIA"); Claude's titles are already specific.
-    """
-    title = " ".join(str(title or "").split())
-    if not title:
-        return ""
-    segments = [segment.strip() for segment in re.split(r"\s+\|\s+", title) if segment.strip()]
-    title = next(
-        (segment for segment in segments if not require_role_word or TITLE_ROLE_WORDS_RE.search(segment)),
-        "",
-    )
-    if organization and title:
-        org = re.escape(organization)
-        title = re.sub(rf"^(?:{org})\s*[-–—:|]\s*", "", title, flags=re.I)
-        title = re.sub(rf"\s*(?:[-–—|@]|\bat)\s*{org}\b.*$", "", title, flags=re.I)
-    if (
-        not title
-        or len(title) > 120
-        or re.match(r"(?:careers?|jobs?|join us|search)\b", title, re.I)
-        or (require_role_word and not TITLE_ROLE_WORDS_RE.search(title))
-    ):
-        return ""
-    return title
-
-def plausible_page_deadline(value, reference):
-    """Page deadlines (JSON-LD validThrough) a year out are ATS defaults."""
-    parsed = parse_deadline(value)
-    if not parsed:
-        return ""
-    base = reference or datetime.now(timezone.utc).date()
-    return parsed.isoformat() if (parsed - base).days <= 150 else ""
-
-def derive_fields(text, links, reference=None, today=None):
-    """Every column that is computed from a post's text and links.
-
-    New items and stored rows (re-processed from their Raw Text on each run)
-    go through this one function, so extraction improvements apply to the
-    whole tracker and an alert always matches what the tracker shows.
-
-    Precedence per field: the live job page (when it could be read), then
-    Claude's extraction (when ANTHROPIC_API_KEY is set), then the regex
-    parsers. Both caches are deterministic between runs, so re-deriving is
-    stable and makes no network calls.
-    """
-    external = external_links(links)
-    destination = external[0] if external else ""
-    page = page_facts(destination)
-    llm = llm_facts(text)
-
-    org = (
-        display_org(llm.get("organization"))
-        or extract_organization(text, links)
-        or display_org(page.get("organization"))
-    )
-    category = llm.get("category") or extract_category(text)
-    role = ", ".join(llm.get("roles") or []) or extract_roles(text)
-    # A year inside "apply by Oct 15, 2026" is the deadline's, not the season's.
-    season = llm.get("season") or extract_season(DEADLINE_RE.sub(" ", text))
-    deadline = (
-        plausible_page_deadline(page.get("deadline"), reference)
-        or llm.get("deadline")
-        or extract_deadline(text, reference)
-    )
-    specific = (
-        clean_page_title(page.get("title"), org)
-        or clean_page_title(llm.get("title"), org, require_role_word=False)
-    )
-    if specific:
-        opportunity = f"{org} — {specific}" if org else specific
-    else:
-        opportunity = opportunity_title(org, category, role, text, destination, season)
-
-    status = extract_status(text, deadline, today)
-    if page.get("status") == "closed":
-        status = "Closed"
-    elif status != "Expired" and llm and not llm.get("is_opportunity", True) \
-            and llm.get("confidence", 0) >= LLM_DROP_CONFIDENCE:
-        status = "Not actionable"
-    elif page.get("status") == "open" and status == "New":
-        status = "Open"
-
-    fields = {
-        "Organization": org,
-        "Opportunity": opportunity,
-        "Category": category,
-        "Role / Track": role,
-        "Season / Year": season,
-        "Location": page.get("location") or llm.get("location") or extract_location(text),
-        "Deadline": deadline,
-        "Application / Registration Link": destination,
-        "Status": status,
-    }
-    fields["Priority"] = priority_label(fields)
-    return fields
-
-def record_id_for(record):
-    return hashlib.sha256(record_semantic_key(record).encode("utf-8")).hexdigest()[:20]
-
-def normalize_item(item, source_type):
-    text = item_text(item)
-    links = normalize_links(item)
-    if not looks_actionable(text, links):
-        return None
-
-    posted = posted_at(item)
-    reference = parse_iso_date(posted)
-    record = {
-        "ID": "",
-        "First Seen": datetime.now(timezone.utc).isoformat(),
-        "Posted At": posted,
-        "Instagram Source": source_url(item, source_type),
-        "Source Type": source_type,
-        "Raw Text": text[:12000],
-        "Actioned?": "No",
-        "Notes": "",
-    }
-    record.update(derive_fields(text, links, reference))
-    record["ID"] = record_id_for(record)
-    return {header: record.get(header, "") for header in HEADERS}
 
 def parse_iso_date(value):
     try:
@@ -1334,9 +1044,6 @@ def write_dashboard(wb, records):
     dashboard.column_dimensions["A"].width = 28
     dashboard.column_dimensions["B"].width = 18
 
-def ensure_workbook():
-    if not TRACKER_PATH.exists():
-        create_workbook(TRACKER_PATH)
 
 def workbook_records(path=None):
     wb = load_workbook(path or TRACKER_PATH, read_only=True, data_only=False)
@@ -1353,8 +1060,6 @@ def workbook_records(path=None):
 def is_yes(value):
     return str(value or "").strip().lower() in {"yes", "y", "true", "x", "✓", "✔", "done", "applied"}
 
-def normalize_actioned(value):
-    return "Yes" if is_yes(value) else "No"
 
 def record_links(record):
     values = [
@@ -1379,113 +1084,6 @@ def record_semantic_key(record):
     raw = normalize_identity_text(record.get("Raw Text", ""))[:1000]
     return f"text:{posted}|{org}|{title}|{raw}"
 
-JOB_ID_QUERY_KEYS = {"gh_jid", "jobid", "job_id", "jid", "token", "jobname", "postingid", "req", "reqid"}
-
-def is_specific_link(url):
-    """True when a URL identifies one posting rather than a generic careers page.
-
-    Two Stories pointing at the same specific posting are the same opportunity
-    reposted; two pointing at a generic careers page may not be.
-    """
-    try:
-        parsed = urlparse(url)
-    except Exception:
-        return False
-    if any(key.lower() in JOB_ID_QUERY_KEYS and value for key, value in parse_qsl(parsed.query)):
-        return True
-    for segment in (part for part in parsed.path.split("/") if part):
-        if re.search(r"\d{5,}", segment):
-            return True
-        if re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", segment, re.I):
-            return True
-        if len([word for word in re.split(r"[-_]+", segment) if re.search(r"[a-z]{2,}", word, re.I)]) >= 4:
-            return True
-    return False
-
-def record_link_key(record):
-    link = str(record.get("Application / Registration Link") or "")
-    return f"link:{link}" if link and is_specific_link(link) else ""
-
-def merge_record(target, source):
-    merged = dict(target)
-    for header in HEADERS:
-        if header in {"Actioned?", "Notes"}:
-            continue
-        if merged.get(header) in (None, "") and source.get(header) not in (None, ""):
-            merged[header] = source[header]
-    if is_yes(source.get("Actioned?")):
-        merged["Actioned?"] = "Yes"
-    notes = []
-    for value in (target.get("Notes"), source.get("Notes")):
-        value = str(value or "").strip()
-        if value and value not in notes:
-            notes.append(value)
-    merged["Notes"] = " | ".join(notes)
-    return merged
-
-def refresh_derived_fields(record, today=None):
-    """Recompute extracted columns from the stored Raw Text.
-
-    Raw Text holds the caption, OCR output and every link that was seen, so
-    re-running extraction over it applies parser fixes retroactively without
-    re-scraping or re-OCRing anything.
-    """
-    text = str(record.get("Raw Text") or "")
-    if not text.strip():
-        return record
-    stored_link = record.get("Application / Registration Link") or ""
-    links = ([stored_link] if stored_link else []) + URL_RE.findall(text)
-    reference = parse_iso_date(record.get("Posted At")) or parse_iso_date(record.get("First Seen"))
-    fields = derive_fields(text, links, reference, today)
-    if stored_link:
-        fields.pop("Application / Registration Link")
-    record.update(fields)
-    return record
-
-def cleanup_records(records, today=None):
-    cleaned = []
-    index_by_key = {}
-    invalid_links_cleared = 0
-    duplicates_removed = 0
-    for original in records:
-        record = {header: original.get(header, "") for header in HEADERS}
-        for header, value in record.items():
-            if value is None:
-                record[header] = ""
-        application = record.get("Application / Registration Link", "") or ""
-        if application:
-            valid_external = external_links([application])
-            if not valid_external:
-                record["Application / Registration Link"] = ""
-                invalid_links_cleared += 1
-            else:
-                record["Application / Registration Link"] = valid_external[0]
-        refresh_derived_fields(record, today)
-        record["Actioned?"] = normalize_actioned(record.get("Actioned?"))
-        # IDs are permanent once assigned: Google Sheets edits and alert
-        # batches are keyed by them.
-        if not record.get("ID"):
-            record["ID"] = record_id_for(record)
-        keys = [key for key in (record_semantic_key(record), record_link_key(record)) if key]
-        position = next((index_by_key[key] for key in keys if key in index_by_key), None)
-        if position is not None:
-            merged = merge_record(cleaned[position], record)
-            # Keep the repost's text too, so fields re-derived from Raw Text on
-            # later runs still see what the merged-away row contributed.
-            texts = [str(cleaned[position].get("Raw Text") or ""), str(record.get("Raw Text") or "")]
-            if texts[1].strip() and texts[1] not in texts[0]:
-                merged["Raw Text"] = "\n\n".join(texts)[:24000]
-            cleaned[position] = refresh_derived_fields(merged, today)
-            duplicates_removed += 1
-        else:
-            position = len(cleaned)
-            cleaned.append(record)
-        for key in keys:
-            index_by_key.setdefault(key, position)
-    return cleaned, {
-        "duplicates_removed": duplicates_removed,
-        "invalid_links_cleared": invalid_links_cleared,
-    }
 
 def save_records(records, path=None):
     path = path or TRACKER_PATH
@@ -1510,64 +1108,6 @@ def save_records(records, path=None):
     write_dashboard(wb, records)
     wb.save(path)
 
-def migrate_workbook(manual_fields=None):
-    """Clean, de-duplicate and re-derive every stored row.
-
-    Google Sheets edits are applied before anything is merged so that a user's
-    Actioned?/Notes values follow a row into whatever it is merged with.
-    """
-    records = workbook_records()
-    stored = [
-        {header: "" if record.get(header) is None else record.get(header) for header in HEADERS}
-        for record in records
-    ]
-    working = [dict(record) for record in stored]
-    if manual_fields:
-        working = apply_manual_fields(working, manual_fields)
-    cleaned, stats = cleanup_records(working)
-    changed = cleaned != stored
-    if changed:
-        save_records(cleaned)
-    stats.update({"before": len(records), "after": len(cleaned), "changed": changed})
-    return stats
-
-def apply_manual_fields(records, manual_fields):
-    for record in records:
-        values = manual_fields.get(str(record.get("ID", "")), {})
-        if values.get("Actioned?") not in (None, ""):
-            record["Actioned?"] = normalize_actioned(values["Actioned?"])
-        if values.get("Notes") not in (None, ""):
-            record["Notes"] = values["Notes"]
-    return records
-
-def existing_ids():
-    wb = load_workbook(TRACKER_PATH, read_only=True)
-    ws = wb["Opportunities"]
-    ids = {str(row[0]) for row in ws.iter_rows(min_row=2, max_col=1, values_only=True) if row[0]}
-    wb.close()
-    return ids
-
-def append_rows(rows):
-    if not rows:
-        return
-    save_records(workbook_records() + list(rows))
-
-def find_new_rows(records, candidates):
-    """Candidates that are neither already tracked nor reposts of a tracked posting."""
-    known = set()
-    for record in records:
-        known.add(record_semantic_key(record))
-        link_key = record_link_key(record)
-        if link_key:
-            known.add(link_key)
-    new_rows = []
-    for record in candidates:
-        keys = {record_semantic_key(record), record_link_key(record)} - {""}
-        if keys & known:
-            continue
-        known.update(keys)
-        new_rows.append(record)
-    return new_rows
 
 def tracker_url():
     if GOOGLE_SHEET_ID:
@@ -1705,320 +1245,6 @@ def write_live_view(records, now=None, path=None):
         lines += ["_Nothing tracked yet. New opportunities appear here after the next check._", ""]
     (path or LIVE_VIEW_PATH).write_text("\n".join(lines).rstrip() + "\n")
 
-def load_state():
-    if not STATE_PATH.exists():
-        return {"version": 1, "pending_batches": [], "delivered_batch_ids": []}
-    state = json.loads(STATE_PATH.read_text())
-    state.setdefault("version", 1)
-    state.setdefault("pending_batches", [])
-    state.setdefault("delivered_batch_ids", [])
-    return state
-
-def save_state(state):
-    STATE_PATH.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n")
-
-def queue_batch(rows):
-    state = load_state()
-    if not rows:
-        save_state(state)
-        return ""
-    batch_id = hashlib.sha256(
-        "|".join(sorted(str(row["ID"]) for row in rows)).encode("utf-8")
-    ).hexdigest()[:20]
-    known = set(state["delivered_batch_ids"])
-    known.update(batch["id"] for batch in state["pending_batches"])
-    if batch_id not in known:
-        state["pending_batches"].append({
-            "id": batch_id,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "rows": rows,
-        })
-        save_state(state)
-    return batch_id
-
-PREFERRED_ROLE_RE = re.compile(
-    r"\b(software engineering|machine learning|artificial intelligence|"
-    r"ai|data engineering|data science)\b",
-    re.I,
-)
-PRIORITY_RANK = {"HIGH": 0, "MEDIUM": 1, "NORMAL": 2}
-
-def priority_for(row):
-    """HIGH for a HIGH_PRIORITY_ORGS company, MEDIUM for SWE / AI / data roles."""
-    org_words = [org_key(word) for word in str(row.get("Organization") or "").split()]
-    org_words = [word for word in org_words if word]
-    for name in HIGH_PRIORITY_ORGS:
-        high_words = [org_key(word) for word in name.split() if org_key(word)]
-        if high_words and org_words[:len(high_words)] == high_words:
-            return "HIGH"
-        if high_words and "".join(org_words) == "".join(high_words):
-            return "HIGH"  # "ScaleAI" vs "Scale AI"
-    text = " ".join(str(row.get(key) or "") for key in ("Opportunity", "Role / Track"))
-    if PREFERRED_ROLE_RE.search(text):
-        return "MEDIUM"
-    return "NORMAL"
-
-def rank_rows(rows):
-    return sorted(rows, key=lambda row: PRIORITY_RANK[priority_for(row)])
-
-def clean_alert_title(row):
-    org = row.get("Organization") or ""
-    opp = row.get("Opportunity") or row.get("Category") or "New opportunity"
-    if org and not opp.lower().startswith(org.lower()):
-        return f"{org} — {opp}"
-    return opp
-
-def _deadline_note(row):
-    parsed = parse_deadline(row.get("Deadline"))
-    if parsed:
-        return f"due {_month_day(parsed)}"
-    return row.get("Deadline") or ""
-
-def ntfy_alert(rows, batch_id=""):
-    if not rows or not NTFY_TOPIC:
-        return True
-
-    ranked = rank_rows(rows)
-    top = ranked[0]
-    priority = priority_for(top)
-    prefix = "🚨" if priority == "HIGH" else "📣"
-    title = f"{prefix} {priority}: {clean_alert_title(top)}"
-    if len(rows) > 1:
-        title += f" (+{len(rows) - 1} more)"
-
-    body_lines = []
-    for row in ranked[:5]:
-        meta = " · ".join(x for x in [row.get("Category", ""), _deadline_note(row)] if x)
-        body_lines.append(f"[{priority_for(row)}] {clean_alert_title(row)}" + (f" — {meta}" if meta else ""))
-        link = row.get("Application / Registration Link") or row.get("Instagram Source") or ""
-        if link:
-            body_lines.append(link)
-        body_lines.append("")
-    if len(ranked) > 5:
-        body_lines.append(f"+ {len(ranked) - 5} more in the tracker: {tracker_url()}")
-
-    # JSON publishing: HTTP header values are latin-1 only, so emoji and
-    # em-dashes in a Title header raise UnicodeEncodeError before sending.
-    payload = {
-        "topic": NTFY_TOPIC,
-        "title": title[:250],
-        "message": "\n".join(body_lines).strip(),
-        "tags": ["rotating_light", "briefcase"] if priority == "HIGH" else ["briefcase"],
-        "priority": 5 if priority == "HIGH" else (4 if priority == "MEDIUM" else 3),
-    }
-    top_link = top.get("Application / Registration Link") or top.get("Instagram Source") or ""
-    if top_link:
-        payload["click"] = top_link
-        payload["actions"] = [{"action": "view", "label": "Apply / Open", "url": top_link, "clear": True}]
-    headers = {"Authorization": f"Bearer {NTFY_TOKEN}"} if NTFY_TOKEN else {}
-
-    response = requests.post(NTFY_SERVER.rstrip("/"), json=payload, headers=headers, timeout=30)
-    if response.status_code >= 300:
-        raise RuntimeError(f"ntfy push failed with status {response.status_code}.")
-    print(f"Sent ntfy push notification for batch {batch_id or '(unbatched)'}.")
-    return True
-
-def github_issue(rows, batch_id=""):
-    if not rows or not GITHUB_TOKEN or not GITHUB_REPOSITORY:
-        return True
-
-    owner = GITHUB_REPOSITORY.split("/", 1)[0]
-    marker = f"<!-- zero2sudo-batch:{batch_id} -->" if batch_id else ""
-    headers = {
-        "Authorization": f"Bearer {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    issue_url = f"https://api.github.com/repos/{GITHUB_REPOSITORY}/issues"
-    if marker:
-        existing = requests.get(
-            issue_url,
-            headers=headers,
-            params={"state": "all", "per_page": 100},
-            timeout=30,
-        )
-        existing.raise_for_status()
-        if any(marker in (issue.get("body") or "") for issue in existing.json()):
-            print(f"GitHub alert already exists for batch {batch_id}.")
-            return True
-
-    ranked = rank_rows(rows)
-    noun = "opportunity" if len(rows) == 1 else "opportunities"
-    lines = [
-        marker,
-        f"@{owner}",
-        "",
-        f"Zero2Sudo shared **{len(rows)} new actionable {noun}**.",
-        "",
-        "| | Opportunity | Type | Deadline | Link |",
-        "|---|---|---|---|---|",
-    ]
-    for row in ranked[:20]:
-        icon = {"HIGH": "🔥", "MEDIUM": "⭐"}.get(priority_for(row), "")
-        link = row.get("Application / Registration Link") or row.get("Instagram Source") or ""
-        link_cell = f"[Apply ↗](<{link}>)" if row.get("Application / Registration Link") else (
-            f"[Story](<{link}>)" if link else "—"
-        )
-        lines.append(
-            f"| {icon} | {_md(clean_alert_title(row))} | {_md(row.get('Category'))} | "
-            f"{_md(_deadline_note(row)) or '—'} | {link_cell} |"
-        )
-
-    if len(rows) > 20:
-        lines.extend(["", f"_Plus {len(rows) - 20} more in the tracker._"])
-
-    lines.extend([
-        "",
-        f"Live tracker: [Open the current tracker]({tracker_url()})",
-        "",
-        f"Excel backup: [Download workbook](https://github.com/{GITHUB_REPOSITORY}/blob/main/{TRACKER_PATH.name})",
-        "",
-        "_Created automatically by the hourly Zero2Sudo monitor._",
-    ])
-
-    top = ranked[0]
-    top_priority = priority_for(top)
-    top_title = clean_alert_title(top)
-    prefix = "🚨" if top_priority == "HIGH" else "📣"
-    if len(rows) == 1:
-        title = f"{prefix} [{top_priority}] {top_title} — APPLY / OPEN"
-    else:
-        title = f"{prefix} [{top_priority}] {top_title} + {len(rows) - 1} more"
-    payload = {"title": title[:250], "body": "\n".join(lines), "assignees": [owner]}
-    response = requests.post(issue_url, headers=headers, json=payload, timeout=30)
-
-    # Some repository permission combinations reject assignment. The @mention in
-    # the body still alerts the owner, so retry without assignees rather than
-    # losing the alert entirely.
-    if response.status_code == 422:
-        payload.pop("assignees", None)
-        response = requests.post(issue_url, headers=headers, json=payload, timeout=30)
-
-    if response.status_code >= 300:
-        raise RuntimeError(f"Could not create GitHub alert issue: {response.status_code}.")
-    print(f"Created alert issue: {response.json().get('html_url', '')}")
-    return True
-
-def deliver_pending_batches():
-    state = load_state()
-    delivered = set(state["delivered_batch_ids"])
-    remaining = []
-    for batch in state["pending_batches"]:
-        batch_id = batch["id"]
-        if batch_id in delivered:
-            continue
-        try:
-            github_issue(batch["rows"], batch_id)
-            ntfy_alert(batch["rows"], batch_id)
-        except Exception as exc:
-            remaining.append(batch)
-            print(f"::warning::Batch {batch_id} remains pending: {exc}")
-            continue
-        delivered.add(batch_id)
-    state["pending_batches"] = remaining
-    state["delivered_batch_ids"] = sorted(delivered)[-500:]
-    save_state(state)
-    if remaining:
-        raise RuntimeError(f"{len(remaining)} notification batch(es) remain pending.")
-    return len(delivered)
-
-def pull_google_manual_fields():
-    if not GOOGLE_SERVICE_ACCOUNT_JSON or not GOOGLE_SHEET_ID:
-        if GOOGLE_SYNC_REQUIRED:
-            raise RuntimeError(
-                "Google Sheets sync is required but GOOGLE_SERVICE_ACCOUNT_JSON "
-                "or GOOGLE_SHEET_ID is missing."
-            )
-        return {}
-    from radar.legacy.google_sheets_sync import fetch_manual_fields
-
-    return fetch_manual_fields(GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_SHEET_ID)
-
-def sync_google_sheet():
-    if not GOOGLE_SERVICE_ACCOUNT_JSON or not GOOGLE_SHEET_ID:
-        if GOOGLE_SYNC_REQUIRED:
-            raise RuntimeError(
-                "Google Sheets sync is required but its repository secrets are missing."
-            )
-        print("Google Sheets is not configured; LATEST.md is the permanent live view.")
-        return False
-    from radar.legacy.google_sheets_sync import sync_records
-
-    records = workbook_records()
-    merged = sync_records(
-        GOOGLE_SERVICE_ACCOUNT_JSON,
-        GOOGLE_SHEET_ID,
-        HEADERS,
-        records,
-        dashboard_metrics,
-    )
-    for record in merged:
-        record["Actioned?"] = normalize_actioned(record.get("Actioned?"))
-    if merged != records:
-        save_records(merged)
-        write_live_view(merged)
-    print(f"Verified {len(merged)} rows in Google Sheets.")
-    return True
-
-def store_page_facts(url, facts):
-    """Merge a fresh check into the cache without losing good data to an error."""
-    old = ENRICHMENT["pages"].get(url) or {}
-    facts = {key: value for key, value in facts.items() if key != "description"}
-    if facts["status"] == "unknown" and old:
-        merged = dict(old)
-        merged["checked_at"] = facts["checked_at"]
-        if facts.get("error"):
-            merged["last_error"] = facts["error"]
-        if facts.get("title") and not merged.get("title"):
-            merged["title"] = facts["title"]
-    elif facts["status"] == "closed":
-        merged = dict(old)
-        merged.update(facts)
-        merged["closed_at"] = old.get("closed_at") or facts["checked_at"]
-    else:
-        merged = facts
-    ENRICHMENT["pages"][url] = merged
-    return merged
-
-def refresh_job_pages(records, force_urls=(), budget=None):
-    """Read job pages for new links and re-check stale ones for takedowns.
-
-    Returns {url: description} for pages read this run, which are only held in
-    memory to give Claude context; the cache keeps the short facts.
-    """
-    if not JOB_PAGES_ENABLED:
-        return {}
-    budget = PAGE_CHECKS_PER_RUN if budget is None else budget
-    now = datetime.now(timezone.utc)
-    stale = []
-    for record in records:
-        url = record.get("Application / Registration Link") or ""
-        if not url or is_yes(record.get("Actioned?")) or record.get("Status") == "Expired":
-            continue
-        entry = ENRICHMENT["pages"].get(url)
-        if entry and entry.get("status") == "closed":
-            continue
-        try:
-            checked = datetime.fromisoformat(entry["checked_at"]) if entry else None
-        except (KeyError, ValueError):
-            checked = None
-        if checked and now - checked < timedelta(hours=PAGE_RECHECK_HOURS):
-            continue
-        stale.append((checked.isoformat() if checked else "", url))
-    urls = list(dict.fromkeys(list(force_urls) + [url for _, url in sorted(stale)][:budget]))
-    if not urls:
-        return {}
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        results = list(pool.map(job_pages.fetch_job_facts, urls))
-    descriptions = {}
-    for url, facts in zip(urls, results):
-        descriptions[url] = facts.get("description", "")
-        before = (ENRICHMENT["pages"].get(url) or {}).get("status")
-        after = store_page_facts(url, facts)["status"]
-        ENRICHMENT_REPORT["pages_checked"] += 1
-        if after == "closed" and before != "closed":
-            ENRICHMENT_REPORT["postings_closed"] += 1
-    return descriptions
 
 _extractor = None
 
@@ -2030,195 +1256,3 @@ def extractor():
         categories = [label for label, _ in CATEGORIES] + ["Other Opportunity"]
         _extractor = Extractor(categories, [label for label, _ in ROLE_PATTERNS])
     return _extractor
-
-def run_llm_extraction(records, budget, descriptions=None):
-    """Claude extraction for rows whose text has not been extracted yet."""
-    if not LLM_ENABLED or budget <= 0:
-        return 0
-    descriptions = descriptions or {}
-    targets, seen = [], set()
-    for record in records:
-        text = str(record.get("Raw Text") or "")
-        key = text_key(text)
-        if text.strip() and key not in ENRICHMENT["llm"] and key not in seen:
-            seen.add(key)
-            targets.append(record)
-    targets = targets[:budget]
-    if not targets:
-        return 0
-
-    def work(record):
-        text = str(record.get("Raw Text") or "")
-        link = record.get("Application / Registration Link") or ""
-        page = dict(page_facts(link))
-        if descriptions.get(link):
-            page["description"] = descriptions[link]
-        posted = str(record.get("Posted At") or record.get("First Seen") or "")[:10]
-        return text_key(text), extractor().extract(text, link, posted, page)
-
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        for key, facts in pool.map(work, targets):
-            if facts:
-                ENRICHMENT["llm"][key] = facts
-    return len(targets)
-
-def enrich_rows(rows):
-    """Read job pages and run Claude for new rows, then re-derive their fields.
-
-    Rows Claude is confident are not opportunities (a meme, advice, an offer
-    celebration) are dropped here so they never alert.
-    """
-    if not rows:
-        return rows
-    links = [row.get("Application / Registration Link") for row in rows]
-    descriptions = refresh_job_pages([], force_urls=[link for link in links if link])
-    run_llm_extraction(rows, len(rows), descriptions)
-    kept = []
-    for row in rows:
-        refresh_derived_fields(row)
-        if row.get("Status") == "Not actionable":
-            ENRICHMENT_REPORT["filtered_by_llm"] += 1
-            print(f"Skipped (Claude: not an opportunity): {row.get('Opportunity')}")
-            continue
-        kept.append(row)
-    return kept
-
-def newest_first(records):
-    return sorted(records, key=lambda row: str(row.get("First Seen") or ""), reverse=True)
-
-def collect_candidates(fixture=None):
-    """Normalized, actionable items from Apify, or from a local JSON fixture.
-
-    A fixture is either a list of items (treated as Stories) or an object with
-    "stories" and/or "posts" lists in the Apify actor output format.
-    """
-    if fixture:
-        data = json.loads(Path(fixture).read_text())
-        if isinstance(data, list):
-            data = {"stories": data}
-        sources = [(data.get("stories", []), "Story"), (data.get("posts", []), "Post / Reel")]
-    else:
-        sources = [(fetch_stories(), "Story"), (fetch_posts(), "Post / Reel")]
-    candidates = []
-    for items, source_type in sources:
-        for item in items:
-            record = normalize_item(item, source_type)
-            if record:
-                candidates.append(record)
-    return candidates
-
-def print_rows(rows):
-    for row in rank_rows(rows):
-        print(f"  [{priority_for(row)}] {clean_alert_title(row)}")
-        details = " · ".join(
-            value for value in (
-                row.get("Category"), row.get("Deadline") and f"deadline {row['Deadline']}",
-                row.get("Location"), row.get("Application / Registration Link"),
-            ) if value
-        )
-        if details:
-            print(f"      {details}")
-
-def dry_run(fixture=None):
-    """Show what a check would add, without writing files or sending alerts.
-
-    A real dry run reads job pages and calls Claude for the new rows (in
-    memory only); a fixture run stays fully offline.
-    """
-    load_enrichment()
-    records = []
-    if TRACKER_PATH.exists():
-        records, _ = cleanup_records(workbook_records())
-    new_rows = find_new_rows(records, collect_candidates(fixture))
-    if not fixture:
-        new_rows = enrich_rows(new_rows)
-    print(f"Dry run: {len(new_rows)} new opportunity row(s) would be added "
-          f"to the {len(records)} already tracked.")
-    print_rows(new_rows)
-    return new_rows
-
-def main(defer_notifications=False):
-    if not APIFY_TOKEN and not IG_SESSIONID and SCRAPER != "native":
-        raise SystemExit(
-            "No scraper is configured. Set IG_SESSIONID (native Instagram scraper) and/or "
-            "APIFY_TOKEN as GitHub Actions secrets, or export them locally. "
-            "Try --fixture tests/fixtures/sample_items.json for an offline demo."
-        )
-
-    ensure_workbook()
-    load_enrichment()
-    # Read Google Sheets edits before cleanup can merge rows, so a user's
-    # Actioned?/Notes values are carried into whatever row survives.
-    manual_fields = pull_google_manual_fields()
-    # Re-check stale job links for takedowns and backfill Claude extraction a
-    # few rows at a time; migrate_workbook then re-derives with the results.
-    existing = workbook_records()
-    descriptions = refresh_job_pages(existing)
-    run_llm_extraction(newest_first(existing), LLM_BACKFILL_PER_RUN, descriptions)
-    save_enrichment()
-    cleanup = migrate_workbook(manual_fields)
-    records = workbook_records()
-    known_ids = {str(record.get("ID")) for record in records if record.get("ID")}
-
-    new_rows = find_new_rows(records, collect_candidates())
-    new_rows = enrich_rows(new_rows)
-    save_enrichment()
-
-    append_rows(new_rows)
-    persisted = existing_ids()
-    expected = known_ids | {row["ID"] for row in new_rows}
-    if persisted != expected:
-        raise RuntimeError("Saved tracker IDs do not match the expected rows.")
-    final_records = workbook_records()
-    write_live_view(final_records)
-    batch_id = queue_batch(new_rows)
-    report = {
-        "checked_at": datetime.now(timezone.utc).isoformat(),
-        "previous_rows": len(known_ids),
-        "new_rows": len(new_rows),
-        "total_rows": len(persisted),
-        "tracker_sha256": hashlib.sha256(TRACKER_PATH.read_bytes()).hexdigest(),
-        "cleanup": cleanup,
-        "notification_batch_id": batch_id,
-        "google_sheets_configured": bool(GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SHEET_ID),
-        "live_tracker_url": tracker_url(),
-        "scrapers": SCRAPE_REPORT["scrapers"],
-        "scrape_warnings": SCRAPE_REPORT["warnings"],
-        "enrichment": dict(
-            ENRICHMENT_REPORT,
-            llm=_extractor.usage if _extractor else ({"calls": 0} if LLM_ENABLED else "disabled"),
-        ),
-    }
-    STATUS_PATH.write_text(json.dumps(report, indent=2) + "\n")
-    if not defer_notifications:
-        sync_google_sheet()
-        deliver_pending_batches()
-    print(f"Added {len(new_rows)} new opportunity row(s).")
-    print_rows(new_rows)
-    print(f"Verified {len(persisted)} total rows in {TRACKER_PATH}.")
-
-def cli():
-    parser = argparse.ArgumentParser(description="Track actionable opportunities posted by an Instagram account.")
-    parser.add_argument("--defer-notifications", action="store_true",
-                        help="save and queue alerts, but send them later with --notify")
-    parser.add_argument("--notify", action="store_true", help="send queued alerts")
-    parser.add_argument("--sync-google", action="store_true", help="sync the tracker to Google Sheets")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="print what would be added; write nothing and send nothing")
-    parser.add_argument("--fixture", metavar="JSON",
-                        help="read items from a local JSON file instead of Apify (implies --dry-run)")
-    args = parser.parse_args()
-    if args.notify:
-        deliver_pending_batches()
-    elif args.sync_google:
-        sync_google_sheet()
-    elif args.dry_run or args.fixture:
-        if not args.fixture and not (APIFY_TOKEN or IG_SESSIONID):
-            raise SystemExit("--dry-run needs IG_SESSIONID or APIFY_TOKEN, or use --fixture FILE to run offline.")
-        dry_run(args.fixture)
-    else:
-        main(defer_notifications=args.defer_notifications)
-
-
-if __name__ == "__main__":
-    cli()

@@ -5,7 +5,7 @@
 > always-on service in the [main README](../README.md) replaced it, and the workflow, the scripts at the
 > repository root and the files it generated (`Zero2Sudo_Opportunity_Tracker.xlsx`, `LATEST.md`,
 > `monitor_state.json`, `monitor_status.json`) were removed. To see it as it was, check out the tag
-> `legacy-hourly-monitor`; the commands below only work there. Its code lives on in `radar/legacy/`.
+> `legacy-hourly-monitor`; the commands below only work there. The parts the service still uses (text extraction, URL cleanup, the Instagram client) live in `radar/legacy/`; the rest was removed afterwards.
 
 ## What it watches
 

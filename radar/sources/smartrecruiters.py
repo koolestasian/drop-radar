@@ -4,8 +4,8 @@ Paginate the whole board: uses only name/id/releasedDate from the list, no
 per-posting follow-up request. `ref` in the list response is the API's own
 self-link (api.smartrecruiters.com/.../postings/<id>), confirmed live against
 several real boards -- never the public posting page, so it is not used for
-url; the public URL is built the same way job_pages._smartrecruiters's
-per-posting fetcher addresses a posting.
+url; the public URL is built the way the retired legacy per-posting fetcher
+(job_pages._smartrecruiters) addressed a posting.
 """
 from __future__ import annotations
 

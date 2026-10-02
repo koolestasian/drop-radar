@@ -1,14 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "cn";
 import { api, type Metrics, type SourceHealth } from "../api/client";
-import { Badge, Empty, ErrorNote, Spinner } from "../components/ui";
+import { ErrorNote, ListSkeleton } from "../components/common";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { ago, duration, sourceLabel } from "../format";
 
 function state(h: SourceHealth) {
-  if (h.disabled) return { label: "disabled", tone: "red" as const };
-  if (h.fail_count > 0) return { label: `${h.fail_count} failing`, tone: "amber" as const };
-  if (h.stale) return { label: "poll overdue", tone: "amber" as const };
-  if (h.last_ok) return { label: "ok", tone: "green" as const };
-  return { label: "first poll pending", tone: "neutral" as const };
+  if (h.disabled) return { label: "disabled", bg: "bg-destructive/15 text-destructive" };
+  if (h.fail_count > 0) return { label: `${h.fail_count} failing`, bg: "bg-stock-fresh" };
+  if (h.stale) return { label: "poll overdue", bg: "bg-stock-fresh" };
+  if (h.last_ok) return { label: "ok", bg: "bg-stock-applied" };
+  return { label: "first poll pending", bg: "bg-stock-quiet" };
 }
 
 function slug(name: string) {
@@ -23,7 +25,7 @@ export function Sources() {
   });
   const metrics = useQuery({ queryKey: ["metrics"], queryFn: () => api<Metrics>("/api/metrics"), refetchInterval: 60_000 });
 
-  if (health.isPending) return <Spinner label="Checking your sources" />;
+  if (health.isPending) return <ListSkeleton rows={4} label="Checking your sources" />;
   if (health.isError) return <ErrorNote error={health.error} retry={() => health.refetch()} />;
 
   const rows = [...health.data].sort((a, b) => Number(b.disabled) - Number(a.disabled) || Number(b.stale) - Number(a.stale) || b.fail_count - a.fail_count);
@@ -32,61 +34,61 @@ export function Sources() {
   const peak = Math.max(1, ...days.map(([, n]) => n));
 
   return (
-    <section aria-labelledby="sources-title" className="space-y-6">
+    <section aria-labelledby="sources-title" className="flex flex-col gap-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 id="sources-title" className="text-lg font-semibold">
+        <h1 id="sources-title" className="text-3xl font-bold tracking-tight">
           Your sources
         </h1>
-        <p className="text-sm text-zinc-500">
+        <p className="stamp text-muted-foreground">
           {rows.length} watched · {problems ? `${problems} need attention` : "all healthy"}
         </p>
       </div>
 
       {metrics.data && (
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-            <h2 className="text-sm font-semibold">Alert latency (posted / first seen → push sent)</h2>
-            <p className="mt-1 text-xs text-zinc-500">Unknown post times use first seen. These timings measure your pushes, not device receipt or proof you were first.</p>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <h2 className="text-sm font-semibold">Alert speed: posted → push sent</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Median (p50) and slow case (p95) per source. Where the post time is unknown, it counts from when we first saw it. This measures when your push was sent, not when your phone received it.</p>
             {metrics.data.latency.length === 0 ? (
-              <p className="mt-2 text-sm text-zinc-500">No alerts sent yet.</p>
+              <p className="mt-2 text-sm text-muted-foreground">No alerts sent yet.</p>
             ) : (
-              <table className="mt-2 w-full text-sm">
-                <thead className="text-left text-xs text-zinc-500">
+              <table className="stamp mt-2 w-full">
+                <thead className="text-left text-xs text-muted-foreground">
                   <tr>
                     <th className="py-1 font-medium">Source</th>
-                    <th className="py-1 font-medium">p50</th>
-                    <th className="py-1 font-medium">p95</th>
-                    <th className="py-1 font-medium">n</th>
+                    <th className="py-1 text-right font-medium">p50</th>
+                    <th className="py-1 pl-4 text-right font-medium">p95</th>
+                    <th className="py-1 pl-4 text-right font-medium">n</th>
                   </tr>
                 </thead>
                 <tbody>
                   {metrics.data.latency.map((l) => (
-                    <tr key={l.source} className="border-t border-zinc-100 dark:border-zinc-800">
-                      <td className="py-1">{sourceLabel(l.source)} <span className="text-zinc-500">{slug(l.source)}</span></td>
-                      <td className="py-1">{duration(l.p50 * 1000)}</td>
-                      <td className="py-1">{duration(l.p95 * 1000)}</td>
-                      <td className="py-1 text-zinc-500">{l.n}</td>
+                    <tr key={l.source} className="border-t border-border">
+                      <td className="py-1 font-sans text-sm">{sourceLabel(l.source)} <span className="text-muted-foreground">{slug(l.source)}</span></td>
+                      <td className="py-1 text-right">{duration(l.p50 * 1000)}</td>
+                      <td className="py-1 pl-4 text-right">{duration(l.p95 * 1000)}</td>
+                      <td className="py-1 pl-4 text-right text-muted-foreground">{l.n}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
           </div>
-          <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+          <div className="rounded-xl border border-border bg-card p-4">
             <h2 className="text-sm font-semibold">New items, last 7 days</h2>
             {days.length === 0 ? (
-              <p className="mt-2 text-sm text-zinc-500">Nothing new yet — boards are seeded on their first poll.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Nothing new yet — boards are seeded on their first poll.</p>
             ) : (
               <ul className="mt-3 flex h-24 items-end gap-2" aria-label="Items per day">
                 {days.map(([day, n]) => (
                   <li key={day} className="flex flex-1 flex-col items-center gap-1" title={`${day}: ${n}`}>
-                    <span className="w-full rounded-t bg-zinc-900/80 dark:bg-zinc-100/80" style={{ height: `${(n / peak) * 72}px` }} />
-                    <span className="text-[10px] text-zinc-500">{day.slice(5)}</span>
+                    <span className="w-full rounded-t bg-foreground/80" style={{ height: `${(n / peak) * 72}px` }} />
+                    <span className="stamp text-[11px] text-muted-foreground">{day.slice(5)}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="mt-3 text-xs text-zinc-500">
+            <p className="mt-3 text-xs text-muted-foreground">
               AI enrichment today: {metrics.data.llm_tokens_today.toLocaleString()} of{" "}
               {metrics.data.llm_daily_budget.toLocaleString()} tokens (shared)
             </p>
@@ -95,11 +97,16 @@ export function Sources() {
       )}
 
       {rows.length === 0 ? (
-        <Empty title="No sources yet">Add companies in Settings → Watchlist.</Empty>
+        <Empty className="rounded-xl border border-dashed border-border">
+          <EmptyHeader>
+            <EmptyTitle>No sources yet</EmptyTitle>
+            <EmptyDescription>Add companies in Settings → Watchlist.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full min-w-[36rem] text-sm">
-            <thead className="bg-zinc-50 text-left text-xs text-zinc-500 dark:bg-zinc-900">
+            <thead className="bg-muted text-left text-xs text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-medium">Source</th>
                 <th className="px-3 py-2 font-medium">State</th>
@@ -112,17 +119,17 @@ export function Sources() {
               {rows.map((h) => {
                 const s = state(h);
                 return (
-                  <tr key={h.name} className="border-t border-zinc-100 dark:border-zinc-800">
+                  <tr key={h.name} className="border-t border-border">
                     <td className="px-3 py-2">
                       <span className="font-medium">{slug(h.name)}</span>{" "}
-                      <span className="text-zinc-500">{sourceLabel(h.name)}</span>
+                      <span className="text-muted-foreground">{sourceLabel(h.name)}</span>
                     </td>
                     <td className="px-3 py-2">
-                      <Badge tone={s.tone}>{s.label}</Badge>
+                      <span className={cn("inline-flex rounded-full border border-stock-line px-2 py-0.5 text-xs font-medium", s.bg)}>{s.label}</span>
                     </td>
-                    <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{ago(h.last_ok) || "—"}</td>
-                    <td className="px-3 py-2">{h.items_24h}</td>
-                    <td className="max-w-xs truncate px-3 py-2 text-zinc-500" title={h.last_error ?? ""}>
+                    <td className="px-3 py-2 text-muted-foreground">{ago(h.last_ok) || "—"}</td>
+                    <td className="stamp px-3 py-2">{h.items_24h}</td>
+                    <td className="max-w-xs truncate px-3 py-2 text-muted-foreground" title={h.last_error ?? ""}>
                       {h.last_error ?? ""}
                     </td>
                   </tr>

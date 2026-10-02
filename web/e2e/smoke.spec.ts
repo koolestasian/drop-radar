@@ -27,12 +27,13 @@ function opp(id: string, company: string, title: string, extra: Partial<Opp> = {
   };
 }
 
-async function mockApi(page: Page) {
+async function mockApi(page: Page, more: Opp[] = []) {
   const state: Opp[] = [
     opp("o1", "Stripe", "Software Engineer, Intern (Summer 2027)", { deadline: localDateDaysFromNow(2), company_domain: "stripe.com" }),
     opp("o2", "NVIDIA", "Systems Software Engineer - New College Grad 2026", { sources: ["ats.workday.nvidia.wd5/NVIDIAExternalCareerSite"],
       published_at: `${new Date().toISOString().slice(0, 10)}T00:00:00+00:00` }), // Workday gives a date only
     opp("o3", "Airbnb", "Software Engineer, New Grad", { sources: ["github_repo.SimplifyJobs/New-Grad-Positions"], backfill: true }),
+    ...more,
   ];
   const fresh = opp("o9", "Ramp", "Software Engineer Intern - Summer 2027", { first_seen: new Date().toISOString() });
   let published = false; // the streamed drop is on the server once a test says so
@@ -97,10 +98,10 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
 
   await expect(page.getByRole("article")).toHaveCount(2);
   await expect(page.getByRole("heading", { name: "2 new roles" })).toBeVisible();
-  await expect(page.getByText("due in 2d")).toBeVisible();
+  await expect(page.getByRole("article", { name: /^Stripe/ }).getByText("due in 2d")).toBeVisible();
   // posted (by the employer) and found (by us) are two different clocks
   await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("San Francisco, CA · posted 1h ago");
-  await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("found 1h ago · Greenhouse");
+  await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("found 1h ago");
   await expect(page.getByRole("article", { name: /^NVIDIA/ })).toContainText("posted <1d ago"); // date only: whole days
   await expect(page.getByRole("region", { name: "Internships" }).getByRole("article")).toContainText("Stripe");
   await expect(page.getByRole("region", { name: "New grad" }).getByRole("article")).toContainText("NVIDIA");
@@ -111,13 +112,18 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   await expect(page.getByRole("article").first()).toContainText("Ramp");
   await expect(page.getByRole("button", { name: /new drop/ })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "All matches" }).click(); // new and already-open alike
+  await page.getByRole("radio", { name: "All matches" }).click(); // new and already-open alike
   await expect(page.getByRole("article")).toHaveCount(4);
   await expect(page.getByRole("article", { name: /^Airbnb/ })).toBeVisible();
-  await page.getByRole("button", { name: "New", exact: true }).click();
+  await page.getByRole("radio", { name: "New", exact: true }).click();
 
   await page.getByRole("article").first().getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("article").first().getByRole("button", { name: "Saved" })).toBeVisible();
+  // the card stays short; the detail view names where it was seen and why it matched
+  await page.getByRole("article", { name: /^Stripe/ }).getByRole("button", { name: /Software Engineer, Intern/ }).click();
+  await expect(page.getByText("Seen on").locator("xpath=following-sibling::dd")).toHaveText("Greenhouse");
+  await expect(page.getByText("role: 'software engineer'")).toBeVisible();
+  await page.keyboard.press("Escape"); // closes the phone sheet; harmless beside the desktop pane
 
   await page.getByRole("link", { name: /Board/ }).last().click();
   const saved = page.getByLabel("Saved column");
@@ -199,15 +205,15 @@ test("share copies only the public apply link and reports clipboard errors", asy
     }, configurable: true });
   }, TOKEN);
   await page.goto("/");
-  const card = page.getByRole("article", { name: /^Stripe/ });
-  await card.getByRole("button", { name: "Share", exact: true }).click();
-  await expect(card.getByRole("status")).toHaveText("Link copied");
+  await page.getByRole("article", { name: /^Stripe/ }).getByRole("button", { name: /Software Engineer, Intern/ }).click();
+  await page.getByRole("button", { name: "Share", exact: true }).click();
+  await expect(page.getByText("Link copied")).toBeVisible();
   expect(await page.locator("html").getAttribute("data-copied")).toBe("https://example.com/o1");
   await page.evaluate(() => Object.defineProperty(navigator.clipboard, "writeText", {
     value: async () => { throw new Error("denied"); }, configurable: true,
   }));
-  await card.getByRole("button", { name: "Share", exact: true }).click();
-  await expect(card.getByRole("status")).toHaveText("Couldn't share. Copy the Apply link.");
+  await page.getByRole("button", { name: "Share", exact: true }).click();
+  await expect(page.getByText("Couldn't share. Copy the Apply link.")).toBeVisible();
 });
 
 test("settings offers only the signed-in users notification subscription", async ({ page }) => {
@@ -240,16 +246,43 @@ test("a logo that fails to load becomes a letter; filters and sort reach the ser
   await expect(stripe.locator("img")).toHaveCount(0);
   await expect(stripe.getByText("S", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "US only" }).click();
-  await expect.poll(() => asked.some((u) => u.searchParams.get("us_only") === "true")).toBe(true);
   await page.getByLabel("Search role or company").fill("intern");
+  await page.getByRole("button", { name: /^Filters/ }).click(); // location, sort and the switches live in one sheet
+  await page.getByRole("switch", { name: /US only/ }).click();
+  await expect.poll(() => asked.some((u) => u.searchParams.get("us_only") === "true")).toBe(true);
   await page.getByLabel("Location").fill("san francisco");
   await expect.poll(() => asked.some((u) => u.searchParams.get("q") === "intern" && u.searchParams.get("location") === "san francisco")).toBe(true);
-  await page.getByLabel("Sort").selectOption("prestige");
+  await page.getByRole("radio", { name: "Most prestigious" }).click();
   await expect.poll(() => asked.some((u) => u.searchParams.get("sort") === "prestige")).toBe(true);
+  await page.getByRole("button", { name: "Show results" }).click();
 
   await page.getByRole("link", { name: /All jobs/ }).last().click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText("jobs");
-  await expect(page.getByRole("button", { name: "All matches" })).toHaveCount(0); // no profile tabs here
+  await expect(page.getByRole("radio", { name: "All matches" })).toHaveCount(0); // no profile tabs here
   await expect.poll(() => asked.some((u) => u.searchParams.get("include") === "all" && !u.searchParams.has("backfill"))).toBe(true);
+});
+
+test("the same role posted in several places is one row; track chips narrow the feed", async ({ page }, info) => {
+  await mockApi(page, [
+    opp("n1", "Nokia", "AI R&D Engineer Co-op", { location: "Murray Hill, NJ" }),
+    opp("n2", "Nokia", "AI R&D Engineer Co-op", { location: "Dallas, TX" }),
+    opp("n3", "Nokia", "AI R&D Engineer Co-op", { location: "Sunnyvale, CA" }),
+    opp("q1", "Jane Street", "Quantitative Trader Intern", { location: "New York, NY" }),
+    opp("h1", "Apple", "Hardware Engineering Intern", { location: "Cupertino, CA" }),
+    opp("d1", "Figma", "Product Design Intern", { location: "San Francisco, CA" }),
+  ]);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  await page.screenshot({ path: `test-results/grouped-${info.project.name}.png`, fullPage: true });
+  await expect(page.getByRole("article")).toHaveCount(6); // Stripe, NVIDIA, Nokia once, Jane Street, Apple, Figma
+  // a long row of track chips scrolls inside itself; it must not widen the page
+  const width = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+  expect(width[0], "feed scrolls sideways").toBeLessThanOrEqual(width[1]);
+  await page.getByRole("button", { name: "+2 more postings of this role" }).click();
+  await expect(page.getByRole("article")).toHaveCount(8);
+  await expect(page.getByRole("article", { name: /^Nokia/ }).nth(2)).toContainText("Sunnyvale, CA");
+
+  await page.getByRole("radiogroup", { name: "Track" }).getByRole("radio", { name: /^Quant/ }).click();
+  await expect(page.getByRole("article")).toHaveCount(1);
+  await expect(page.getByRole("article")).toContainText("Jane Street");
 });
