@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { CircleAlert } from "lucide-react";
+import { Building2, CircleAlert, House, Split } from "lucide-react";
+import { workModel } from "../workModel";
+import type { Opportunity } from "../api/client";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -53,5 +56,20 @@ export function CompanyLogo({ name, domain, className = "size-10" }: { name: str
     <span aria-hidden className={`${className} grid shrink-0 place-items-center rounded-lg text-base font-bold text-white ${MONOGRAM[h % MONOGRAM.length]}`}>
       {(name.trim()[0] ?? "?").toUpperCase()}
     </span>
+  );
+}
+
+const WORK_ICON = { Remote: House, Hybrid: Split, "On site": Building2 };
+
+/** Remote / Hybrid / On site when the posting says so (most do not, so most cards show nothing). */
+export function WorkModelBadge({ o, className }: { o: Pick<Opportunity, "location" | "title">; className?: string }) {
+  const m = workModel(o);
+  if (!m) return null;
+  const Icon = WORK_ICON[m];
+  return (
+    <Badge variant="outline" className={className}>
+      <Icon data-icon="inline-start" aria-hidden />
+      {m}
+    </Badge>
   );
 }

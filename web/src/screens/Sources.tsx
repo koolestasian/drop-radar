@@ -7,6 +7,7 @@ import { ago, duration, sourceLabel } from "../format";
 
 function state(h: SourceHealth) {
   if (h.disabled) return { label: "disabled", bg: "bg-destructive/15 text-destructive" };
+  if (h.fail_count > 0 && /429|rate|too many/i.test(h.last_error ?? "")) return { label: "rate limited, retrying", bg: "bg-stock-fresh" };
   if (h.fail_count > 0) return { label: `${h.fail_count} failing`, bg: "bg-stock-fresh" };
   if (h.stale) return { label: "poll overdue", bg: "bg-stock-fresh" };
   if (h.last_ok) return { label: "ok", bg: "bg-stock-applied" };
@@ -15,6 +16,18 @@ function state(h: SourceHealth) {
 
 function slug(name: string) {
   return name.split(".").slice(2).join(".") || name;
+}
+
+/** Median of the per-source median alert times, each counted once per alert it covers. */
+function typicalSpeed(latency: Metrics["latency"]): number | null {
+  const total = latency.reduce((n, l) => n + l.n, 0);
+  if (!total) return null;
+  let seen = 0;
+  for (const l of [...latency].sort((a, b) => a.p50 - b.p50)) {
+    seen += l.n;
+    if (seen >= total / 2) return l.p50;
+  }
+  return null;
 }
 
 export function Sources() {
@@ -30,6 +43,12 @@ export function Sources() {
 
   const rows = [...health.data].sort((a, b) => Number(b.disabled) - Number(a.disabled) || Number(b.stale) - Number(a.stale) || b.fail_count - a.fail_count);
   const problems = rows.filter((h) => h.disabled || h.stale || h.fail_count > 0).length;
+  const now = Date.now();
+  const live = rows.filter((h) => !h.disabled);
+  const upcoming = live.map((h) => new Date(h.next_run).getTime()).filter((t) => t > now);
+  const nextIn = upcoming.length ? duration(Math.min(...upcoming) - now) : "now";
+  const checkedLastHour = live.filter((h) => h.last_ok && now - new Date(h.last_ok).getTime() < 3_600_000).length;
+  const speed = metrics.data ? typicalSpeed(metrics.data.latency) : null;
   const days = Object.entries(metrics.data?.items_per_day ?? {});
   const peak = Math.max(1, ...days.map(([, n]) => n));
 
@@ -43,6 +62,21 @@ export function Sources() {
           {rows.length} watched · {problems ? `${problems} need attention` : "all healthy"}
         </p>
       </div>
+
+      <dl aria-label="How the radar is doing" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          ["Next check", nextIn === "now" ? "now" : `in ${nextIn}`, "A source is polled again as soon as its timer is up."],
+          ["Healthy", `${rows.length - problems} of ${rows.length}`, problems ? `${problems} below need attention.` : "Every source answered on time."],
+          ["Checked in the last hour", `${checkedLastHour} of ${live.length}`, "Sources that answered at least once."],
+          ["Typical alert speed", speed === null ? "none yet" : duration(speed * 1000), "Median time from posted to push sent."],
+        ].map(([label, value, note]) => (
+          <div key={label} className="rounded-xl border border-border bg-card p-3.5">
+            <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+            <dd className="stamp mt-1 text-xl font-semibold text-foreground">{value}</dd>
+            <dd className="mt-1 text-xs text-muted-foreground">{note}</dd>
+          </div>
+        ))}
+      </dl>
 
       {metrics.data && (
         <div className="grid gap-4 md:grid-cols-2">

@@ -27,7 +27,8 @@ function opp(id: string, company: string, title: string, extra: Partial<Opp> = {
   };
 }
 
-async function mockApi(page: Page, more: Opp[] = []) {
+async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
+  if (welcomed) await page.addInitScript(() => localStorage.setItem("radar.welcomed.kevin", "1")); // the first-run sheet has its own test
   const state: Opp[] = [
     opp("o1", "Stripe", "Software Engineer, Intern (Summer 2027)", { deadline: localDateDaysFromNow(2), company_domain: "stripe.com" }),
     opp("o2", "NVIDIA", "Systems Software Engineer - New College Grad 2026", { sources: ["ats.workday.nvidia.wd5/NVIDIAExternalCareerSite"],
@@ -285,4 +286,35 @@ test("the same role posted in several places is one row; track chips narrow the 
   await page.getByRole("radiogroup", { name: "Track" }).getByRole("radio", { name: /^Quant/ }).click();
   await expect(page.getByRole("article")).toHaveCount(1);
   await expect(page.getByRole("article")).toContainText("Jane Street");
+});
+
+test("a new user gets the welcome explainer once; the work model shows only when the posting says it", async ({ page }) => {
+  await mockApi(page, [
+    opp("w1", "Quora", "Software Engineer New Grad (Remote)"),
+    opp("w2", "Chase", "Data Analytics Intern", { location: "Hybrid - New York, NY" }),
+    opp("w3", "Acme", "Hybrid Cloud Engineer Intern"),
+  ], false);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  const welcome = page.getByRole("dialog", { name: "Welcome to Drop Radar" });
+  await expect(welcome).toContainText("watches 3 career pages");
+  await welcome.getByRole("button", { name: "Start browsing" }).click();
+  await expect(welcome).toBeHidden();
+  await expect(page.getByRole("article", { name: /^Quora/ })).toContainText("Remote");
+  await expect(page.getByRole("article", { name: /^Chase/ })).toContainText("Hybrid");
+  await expect(page.getByRole("article", { name: /^Acme/ }).getByText(/^(Remote|Hybrid|On site)$/)).toHaveCount(0); // "Hybrid Cloud" is the role, not a work model
+  await page.reload();
+  await expect(page.getByRole("article", { name: /^Quora/ })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Welcome to Drop Radar" })).toBeHidden();
+});
+
+test("Sources shows the radar's own numbers in plain words", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/#/sources");
+  const stats = page.getByRole("group", { name: "How the radar is doing" }).or(page.getByLabel("How the radar is doing"));
+  await expect(stats).toContainText("Healthy");
+  await expect(stats).toContainText("1 of 1");
+  await expect(stats).toContainText("Typical alert speed");
+  await expect(stats).toContainText("42s");
 });
