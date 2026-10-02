@@ -1,3 +1,4 @@
+import asyncio
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -80,6 +81,37 @@ class DedupeTests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(source=source):
                 await self.pipeline(None, [item(source, external_id)])
         self.assertEqual(len(self.store.list_opportunities()), 1)
+
+    async def test_each_new_source_sighting_is_announced_but_a_repeat_is_not(self):
+        announced = []
+        self.pipeline.on_new = announced.append
+        await self.pipeline(None, [item("ats.greenhouse.a", "1")])
+        await self.pipeline(None, [item("ats.greenhouse.b", "2")])
+        await self.pipeline(None, [item("ats.greenhouse.b", "2")])
+        [opp] = self.store.list_opportunities()
+        self.assertEqual(announced, [opp["id"], opp["id"]])
+
+    async def test_live_event_does_not_wait_for_phone_delivery(self):
+        started, release = asyncio.Event(), asyncio.Event()
+        announced = []
+
+        class SlowAlerter:
+            async def retry_pending(self):
+                pass
+
+            async def dispatch(self, *_):
+                started.set()
+                await release.wait()
+
+        self.pipeline.alerter = SlowAlerter()
+        self.pipeline.on_new = announced.append
+        task = asyncio.create_task(self.pipeline(None, [item("ats.greenhouse.a", "1")]))
+        try:
+            await asyncio.wait_for(started.wait(), 1)
+            self.assertEqual(len(announced), 1)
+        finally:
+            release.set()
+            await task
 
     async def test_earliest_seen_at_wins_regardless_of_arrival_order(self):
         later = item("ats.greenhouse.stripe", "1", seen_at=T0)
@@ -293,6 +325,29 @@ class AlertRetryWiringTests(unittest.IsolatedAsyncioTestCase):
         p = Pipeline(self.store, enricher=Enricher(self.store, extractor=FakeExtractor()), alerter=BrokenAlerter())
         await p(None, [item("ats.greenhouse.stripe", "1")])
         self.assertEqual(len(self.store.list_opportunities()), 1)
+
+    async def test_fresh_ingestion_does_not_wait_behind_old_alert_retries(self):
+        retrying, release = asyncio.Event(), asyncio.Event()
+
+        class SlowRetry:
+            async def retry_pending(self):
+                retrying.set()
+                await release.wait()
+
+            async def dispatch(self, *_):
+                pass
+
+        p = pipeline(self.store)
+        p.alerter = SlowRetry()
+        announced = []
+        p.on_new = announced.append
+        task = asyncio.create_task(p(None, [item("ats.greenhouse.a", "1")]))
+        try:
+            await asyncio.wait_for(retrying.wait(), 1)
+            self.assertEqual(len(announced), 1)
+        finally:
+            release.set()
+            await task
 
 
 class BackfillTests(unittest.IsolatedAsyncioTestCase):

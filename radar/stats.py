@@ -10,10 +10,12 @@ def _percentile(values, p):
     return values[k]
 
 
-def latency_by_source(store) -> dict[str, dict]:
+def latency_by_source(store, channel=None) -> dict[str, dict]:
     """{"source": {"n", "p50", "p95"}}, sorted by source name."""
     by_source = defaultdict(list)
     for row in store.alert_latencies():
+        if channel is not None and row["channel"] != channel:
+            continue
         by_source[row["source"] or "(unknown)"].append(row["drop_latency_s"])
     return {
         source: {"n": len(values), "p50": _percentile(values, 50), "p95": _percentile(values, 95)}

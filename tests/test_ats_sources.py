@@ -275,6 +275,16 @@ class AshbyTests(AtsSourceContractMixin, unittest.IsolatedAsyncioTestCase):
 class SmartRecruitersTests(AtsSourceContractMixin, unittest.IsolatedAsyncioTestCase):
     source_cls, ats = SmartRecruitersSource, "smartrecruiters"
 
+    async def test_unchanged_board_304_emits_nothing_and_keeps_baseline(self):
+        """Override the single-page ATS contract: even a stale ETag is ignored."""
+        http = FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()),
+                                                headers={"etag": '"v1"'})})
+        seed = make_ctx(http)
+        await self.source_cls(company(self.ats)).fetch(seed)
+        ctx = make_ctx(http, cursor=seed.pending["cursor"], etag='"v1"')
+        self.assertEqual(await self.source_cls(company(self.ats)).fetch(ctx), [])
+        self.assertEqual(http.headers, [{}, {}])
+
     def payload(self, jobs):
         return {"totalFound": len(jobs), "content": jobs}
 
@@ -308,7 +318,7 @@ class SmartRecruitersTests(AtsSourceContractMixin, unittest.IsolatedAsyncioTestC
         items = await source.fetch(ctx)
         self.assertEqual(items[0].url, "https://jobs.smartrecruiters.com/acme/c3")
 
-    async def test_truncated_page_skips_closed_detection(self):
+    async def test_failed_later_page_does_not_advance_the_baseline(self):
         source = self.source_cls(company(self.ats))
         seed_ctx = make_ctx(FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs()))}))
         await source.fetch(seed_ctx)
@@ -319,10 +329,50 @@ class SmartRecruitersTests(AtsSourceContractMixin, unittest.IsolatedAsyncioTestC
         payload = {"totalFound": 50, "content": page}
         http = FakeHttp({self.url(): FakeResponse(payload=payload)})
         ctx = make_ctx(http, cursor=seed_ctx.pending["cursor"])
-        items = await source.fetch(ctx)
+        with self.assertRaises(SourceError):
+            await source.fetch(ctx)
+        self.assertNotIn("cursor", ctx.pending)
 
-        self.assertEqual(items, [])  # no closed signal fired on a merely-truncated page
-        self.assertIn("c1", json.loads(ctx.pending["cursor"]))  # kept in the baseline, not dropped
+    async def test_page_two_is_seeded_then_its_new_drop_and_real_close_are_detected(self):
+        source = self.source_cls(company(self.ats))
+        page_two = self.url() + "&offset=2"
+        seed_http = FakeHttp({
+            self.url(): FakeResponse(payload={"totalFound": 3, "content": self.baseline_jobs()}),
+            page_two: FakeResponse(payload={"totalFound": 3, "content": [self.new_job()]}),
+        })
+        seed = make_ctx(seed_http)
+        items = await source.fetch(seed)
+        self.assertEqual({i.external_id for i in items}, {"c1", "c3"})
+        self.assertTrue(all(i.raw.get("seed") for i in items))
+        next_http = FakeHttp({
+            self.url(): FakeResponse(payload={"totalFound": 3, "content": [self.baseline_jobs()[1], self.new_job()]}),
+            page_two: FakeResponse(payload={"totalFound": 3, "content": [{"id": "c4", "name": "SWE Intern"}]}),
+        })
+        ctx = make_ctx(next_http, seed.pending["cursor"], etag=seed.pending["etag"])
+        changes = await source.fetch(ctx)
+        self.assertEqual([(i.external_id, i.raw) for i in changes], [("c4", {}), ("c1", {"closed": True})])
+        self.assertTrue(all(not h for h in next_http.headers), "a page-one ETag cannot validate page two")
+
+    async def test_upgrading_a_page_one_baseline_backfills_the_expanded_scan_silently(self):
+        http = FakeHttp({self.url(): FakeResponse(payload=self.payload(self.baseline_jobs() + [self.new_job()]))})
+        ctx = make_ctx(http, cursor=json.dumps({"c1": ["https://example.com/1", "Fellowship"]}), etag='"old"')
+        changes = await self.source_cls(company(self.ats)).fetch(ctx)
+        self.assertEqual([(i.external_id, i.raw) for i in changes], [("c3", {"seed": True})])
+        self.assertEqual(ctx.pending["etag"], SmartRecruitersSource.PAGINATED)
+
+    async def test_repeated_or_inconsistent_pages_fail_without_committing_a_cursor(self):
+        for payload in ({"totalFound": 3, "content": self.baseline_jobs()},
+                        {"totalFound": 4, "content": [self.new_job()]},
+                        {"totalFound": 3, "content": []}):
+            with self.subTest(payload=payload):
+                http = FakeHttp({
+                    self.url(): FakeResponse(payload={"totalFound": 3, "content": self.baseline_jobs()}),
+                    self.url() + "&offset=2": FakeResponse(payload=payload),
+                })
+                ctx = make_ctx(http)
+                with self.assertRaises(SourceError):
+                    await self.source_cls(company(self.ats)).fetch(ctx)
+                self.assertNotIn("cursor", ctx.pending)
 
 
 class EmptyListingGuardTests(unittest.IsolatedAsyncioTestCase):

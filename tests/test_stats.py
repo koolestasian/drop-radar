@@ -45,6 +45,13 @@ class LatencyBySourceTests(unittest.TestCase):
         self.store.record_alert(opp_id, "ntfy")  # claimed, never sent
         self.assertEqual(latency_by_source(self.store), {})
 
+    def test_a_shared_source_does_not_mix_the_friends_delivery_time_into_mine(self):
+        opp_id = self._sent("ats.greenhouse.stripe", "shared", 30)
+        self.store.record_alert(opp_id, "ntfy:friend")
+        self.store.mark_alert_sent(opp_id, "ntfy:friend", T0 + timedelta(seconds=90), 90)
+        self.assertEqual(latency_by_source(self.store, channel="ntfy")["ats.greenhouse.stripe"]["p50"], 30)
+        self.assertEqual(latency_by_source(self.store, channel="ntfy:friend")["ats.greenhouse.stripe"]["p50"], 90)
+
 
 if __name__ == "__main__":
     unittest.main()

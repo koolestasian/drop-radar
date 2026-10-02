@@ -162,20 +162,21 @@ class MultiUserAlertDispatcher:
         self.dispatchers, self.source_names = dispatchers, source_names
 
     async def dispatch(self, item, opportunity_id):
-        for user_id, dispatcher in self.dispatchers.items():
-            if item.source not in self.source_names.get(user_id, ()):
-                continue
+        async def send(user_id, dispatcher):
             try:
                 await dispatcher.dispatch(item, opportunity_id)
             except Exception:
                 log.warning("alert dispatch failed for user %s", user_id, exc_info=True)
+        await asyncio.gather(*(send(uid, d) for uid, d in self.dispatchers.items()
+                               if item.source in self.source_names.get(uid, ())))
 
     async def retry_pending(self):
-        for user_id, dispatcher in self.dispatchers.items():
+        async def retry(user_id, dispatcher):
             try:
                 await dispatcher.retry_pending()
             except Exception:
                 log.warning("alert retry failed for user %s", user_id, exc_info=True)
+        await asyncio.gather(*(retry(uid, d) for uid, d in self.dispatchers.items()))
 
 
 class AlertDispatcher:

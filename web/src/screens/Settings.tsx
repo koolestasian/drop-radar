@@ -199,6 +199,17 @@ export function Settings({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <div className="space-y-10">
+      <section aria-labelledby="alerts-title" className="space-y-2">
+        <h2 id="alerts-title" className="text-lg font-semibold">Phone alerts</h2>
+        {me.data?.alerts_enabled ? (
+          <>
+            <p className="text-sm text-zinc-500">Delivery is configured. Subscribe in ntfy on your phone and allow notifications. Device delivery still needs a real notification check.</p>
+            {me.data.notification_url && <a href={me.data.notification_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 underline dark:text-indigo-300">Open your private notification topic ↗</a>}
+          </>
+        ) : me.data ? (
+          <p role="status" className="text-sm text-amber-700 dark:text-amber-300">Phone alerts are off for your account. The live feed works while open; phone delivery needs to be enabled on the server.</p>
+        ) : me.isError ? <ErrorNote error={me.error} retry={() => me.refetch()} /> : <Spinner />}
+      </section>
       <section aria-labelledby="profile-title" className="space-y-4">
         <div>
           <h1 id="profile-title" className="text-lg font-semibold">What you're looking for</h1>

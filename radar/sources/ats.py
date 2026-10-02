@@ -124,7 +124,7 @@ class AtsSource:
                 ))
             next_ids = current_ids
         else:
-            # ponytail: truncated page (e.g. SmartRecruiters' limit=100) can't tell a
+            # ponytail: a partial search window can't tell a
             # closed posting from one pushed off-page, so keep the old baseline
             # around instead of guessing. Upgrade: paginate until exhausted.
             next_ids = current_ids | prior_ids

@@ -160,7 +160,8 @@ class Scheduler:
         """Start a task for every enabled source that is due and not already running."""
         now = self.clock.now()
         for name, at in self.next_run.items():
-            if at <= now and name not in self.disabled and name not in self.running:
+            if (at <= now and name not in self.disabled and name not in self.running
+                    and not getattr(self.sources[name], "external", False)):
                 self.running[name] = asyncio.create_task(self._run_one(self.sources[name]))
 
     async def drain(self):
@@ -213,7 +214,7 @@ class Scheduler:
         now = self.clock.now()
         waits = [
             (at - now).total_seconds() for name, at in self.next_run.items()
-            if name not in self.disabled and name not in self.running
+            if name not in self.disabled and name not in self.running and not getattr(self.sources[name], "external", False)
         ]
         return min([TICK_S] + [max(wait, 0.01) for wait in waits])
 
@@ -290,11 +291,14 @@ class Scheduler:
         snapshot = []
         for name in self.sources:
             state = self.store.get_source_state(name) or {}
+            at = (_parse(state.get("next_run")) or self.next_run[name]) if getattr(self.sources[name], "external", False) else self.next_run[name]
+            last_ok = _parse(state.get("last_ok"))
             snapshot.append({
                 "name": name,
                 "disabled": name in self.disabled,
                 "running": name in self.running,
-                "next_run": self.next_run[name].isoformat(),
+                "next_run": at.isoformat(),
+                "stale": bool(last_ok and (self.clock.now() - last_ok).total_seconds() > 2 * self.sources[name].interval_s + 60),
                 "last_ok": state.get("last_ok"),
                 "fail_count": state.get("fail_count") or 0,
                 "last_error": state.get("last_error"),

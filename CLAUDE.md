@@ -7,6 +7,18 @@ Plan and contracts: `docs/specs/`.
 
 ## Session handoff (2026-10-02)
 
+- **Codex product review (T12, 2026-10-02):** see `docs/specs/T12-first-to-act.md`.
+  Implemented pagination, per-source live events, concurrent user delivery, feed
+  reconciliation, private subscription setup, sharing, recipient-only timing stats,
+  and a residential Instagram relay. 385 offline tests pass on 3.12/3.14, 12 browser
+  checks pass. Core deployed; latest per-Story ingestion/retry/stats changes await final
+  redeploy. Another session repeatedly restarted `radar` during the live relay:
+  coordinate deployments before retrying. Mac probe got 39 Stories; relay not yet
+  verified end to end. LaunchAgent prepared, inactive. `IG_RELAY_ENABLED=1` on the VM
+  skips its blocked native polling; owner's topic is staged in `/opt/radar/alert-cutover.env`,
+  friend's separate topic is enabled (subscribe in their Settings). No device receipt
+  verified. Legacy pushes remain on pending the full-day cutover. T11 stays deferred.
+
 - Branch: `claude/trim-drop-radar-plan`. T0-T10 are all `done`; only T11
   (hardening) remains, explicitly `deferred` until the service has run live
   for a few weeks. `AGENTS.md` is a symlink to this file, so Codex and Claude

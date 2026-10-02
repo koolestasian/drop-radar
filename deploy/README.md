@@ -236,6 +236,37 @@ Where reality differed from the steps above, on a `VM.Standard.E2.1.Micro`
   `pbpaste | ssh <host> "sudo -u radar bash -c '...T=\$(cat)...'"`. Read it
   from stdin and rewrite `radar.env` with `umask 077`.
 
+## Residential Instagram relay (T12)
+
+When the VM's Instagram requests are blocked but the owner's Mac can fetch
+Stories, set `IG_RELAY_ENABLED=1` in the server's `radar.env` and restart.
+The account remains in the same watchlist; the VM scheduler skips its native
+requests. Run `.venv/bin/python deploy/instagram-relay.py` on the Mac, using
+the existing `drop-radar` SSH alias. This reads only the session/config it needs
+over SSH, polls locally, and posts normalized Stories through SSH to the running
+server's owner-authenticated `/api/instagram/relay` endpoint. Friend tokens cannot
+ingest. No new network port or API token in a URL is needed.
+
+Install it as a LaunchAgent with `RunAtLoad`, `StartInterval=300`, the absolute
+Python/script paths, and logs under `~/Library/Logs/DropRadar/`. Launchd does not
+overlap a still-running instance. The Mac must be awake and online; Sources marks
+the poll overdue after two intervals plus a minute without a successful relay.
+First successful relay backfills existing Stories silently; subsequent new Stories
+use the existing pipeline and alert history. The feed reconciles every 30s because
+seeds emit no SSE event. Removing the LaunchAgent and `IG_RELAY_ENABLED` restores
+VM polling. Keep this at the watchlist's 300s interval until real rate-limit data
+supports a shorter interval.
+
+T12 exposes each user's own ntfy subscription in Settings; subscribe in the ntfy
+phone app and permit notifications. `alerts_enabled` means a channel is configured,
+not that a phone has received anything. At this deploy the friend's separate topic
+can be enabled independently (the legacy job has no friend channel). The owner's
+topic is staged in `/opt/radar/alert-cutover.env`, mode 600, until the full-day gate
+above is met; load that topic into `radar.env` and set
+`LEGACY_ALERTS_ENABLED=false` together. Local `GH_TOKEN` is intentionally read-only;
+use `env -u GH_TOKEN -u GITHUB_TOKEN gh ...` for the owner's stored GitHub login
+when changing the repository variable. Never print either topic or token to logs.
+
 ## Deferred
 
 Docker/compose, Fly.io, S3 uploads, Postgres/Redis, sharding, and anything

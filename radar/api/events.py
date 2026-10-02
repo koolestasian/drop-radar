@@ -1,6 +1,6 @@
 """In-process pub/sub for GET /api/stream (one process, so no broker).
 
-The pipeline publishes ("opportunity", id) when an opportunity is first stored;
+The pipeline publishes ("opportunity", id) when a new source sighting is stored;
 PATCH publishes ("action", id, user_id). Each stream filters for its own user.
 """
 import asyncio

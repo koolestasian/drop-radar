@@ -26,18 +26,18 @@ class Pipeline:
         self.profile = profile
         self.enricher = enricher or Enricher(store)
         self.alerter = alerter or AlertDispatcher(store, profile=profile)
-        self.on_new = None  # callable(opportunity_id), after a new opportunity is stored, enriched and alerted
+        self.on_new = None  # callable(opportunity_id), after a new source sighting is stored and enriched
 
     async def __call__(self, source, items):
+        for item in items:
+            await self._process(item)
         # Scheduler._run_one calls the sink every poll tick of every source,
         # even with an empty batch -- that cadence is the alert retry timer.
-        # Never let a retry-sweep bug stop ingestion for this or any other source.
+        # Fresh drops go first; old pending delivery must not delay new ingestion.
         try:
             await self.alerter.retry_pending()
         except Exception:
             log.warning("alert retry sweep failed", exc_info=True)
-        for item in items:
-            await self._process(item)
 
     async def _process(self, item):
         if item.raw.get("closed"):
@@ -48,13 +48,14 @@ class Pipeline:
         if url != item.url or company != item.company:
             item = replace(item, url=url, company=company)
         opportunity_id = resolve_opportunity_id(self.store, item, url)
-        opportunity_id, is_new = self.store.upsert_item(item, opportunity_id=opportunity_id)
+        new_sighting = self.store.item_opportunity_id(item.source, item.external_id) is None
+        opportunity_id, _ = self.store.upsert_item(item, opportunity_id=opportunity_id)
         await self.enricher.enrich(opportunity_id, item)
         if item.raw.get("seed"):
             return  # backfill from a source's first poll: open before anyone watched, so not a drop
-        await self.alerter.dispatch(item, opportunity_id)
-        if is_new and self.on_new is not None:
+        if new_sighting and self.on_new is not None:
             self.on_new(opportunity_id)
+        await self.alerter.dispatch(item, opportunity_id)
 
     def _close(self, item):
         """T3's closed-signal contract: same (source, external_id), raw={"closed": True}."""

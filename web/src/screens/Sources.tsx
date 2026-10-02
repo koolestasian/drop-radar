@@ -6,6 +6,7 @@ import { ago, duration, sourceLabel } from "../format";
 function state(h: SourceHealth) {
   if (h.disabled) return { label: "disabled", tone: "red" as const };
   if (h.fail_count > 0) return { label: `${h.fail_count} failing`, tone: "amber" as const };
+  if (h.stale) return { label: "poll overdue", tone: "amber" as const };
   if (h.last_ok) return { label: "ok", tone: "green" as const };
   return { label: "first poll pending", tone: "neutral" as const };
 }
@@ -25,8 +26,8 @@ export function Sources() {
   if (health.isPending) return <Spinner label="Checking your sources" />;
   if (health.isError) return <ErrorNote error={health.error} retry={() => health.refetch()} />;
 
-  const rows = [...health.data].sort((a, b) => Number(b.disabled) - Number(a.disabled) || b.fail_count - a.fail_count);
-  const problems = rows.filter((h) => h.disabled || h.fail_count > 0).length;
+  const rows = [...health.data].sort((a, b) => Number(b.disabled) - Number(a.disabled) || Number(b.stale) - Number(a.stale) || b.fail_count - a.fail_count);
+  const problems = rows.filter((h) => h.disabled || h.stale || h.fail_count > 0).length;
   const days = Object.entries(metrics.data?.items_per_day ?? {});
   const peak = Math.max(1, ...days.map(([, n]) => n));
 
@@ -44,7 +45,8 @@ export function Sources() {
       {metrics.data && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-            <h2 className="text-sm font-semibold">Drop latency (posted → your phone)</h2>
+            <h2 className="text-sm font-semibold">Alert latency (posted / first seen → push sent)</h2>
+            <p className="mt-1 text-xs text-zinc-500">Unknown post times use first seen. These timings measure your pushes, not device receipt or proof you were first.</p>
             {metrics.data.latency.length === 0 ? (
               <p className="mt-2 text-sm text-zinc-500">No alerts sent yet.</p>
             ) : (

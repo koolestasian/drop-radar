@@ -46,8 +46,8 @@ export function Feed({ incoming, clearIncoming }: { incoming: Opportunity[]; cle
         })}`,
       ),
     getNextPageParam: (last) => last.next_cursor,
-    // Backfill sends no live-drop event; an empty first-day feed needs another look.
-    refetchInterval: (q) => q.state.data?.pages.every((p) => p.items.length === 0) ? 5000 : false,
+    // Seeds and missed SSE frames also need reconciliation after the feed fills.
+    refetchInterval: (q) => q.state.data?.pages.every((p) => p.items.length === 0) ? 5000 : 30_000,
   });
 
   const items = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);

@@ -48,6 +48,13 @@ class ActionPatch(BaseModel):
 class Me(BaseModel):
     user: str
     sources: int
+    alerts_enabled: bool = Field(description="a delivery channel is configured; device receipt is not verified")
+    notification_url: str | None = Field(description="this user's private ntfy subscription URL; no API token")
+
+
+class InstagramRelay(BaseModel):
+    username: str = Field(min_length=1, max_length=64)
+    stories: list[dict] = Field(max_length=1000)
 
 
 # Config shapes mirror the YAML files; radar.config.parse_watchlist/parse_profile
@@ -101,6 +108,7 @@ class SourceHealth(BaseModel):
     fail_count: int
     last_error: str | None
     items_24h: int
+    stale: bool = False
 
 
 class SourceLatency(BaseModel):

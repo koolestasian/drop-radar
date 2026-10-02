@@ -40,7 +40,7 @@ async function mockApi(page: Page) {
     if (req.headers()["authorization"] !== `Bearer ${TOKEN}`) return json(route, { detail: "missing or invalid bearer token" }, 401);
     const url = new URL(req.url());
     const path = url.pathname;
-    if (path === "/api/me") return json(route, { user: "kevin", sources: 3 });
+    if (path === "/api/me") return json(route, { user: "kevin", sources: 3, alerts_enabled: false, notification_url: null });
     if (path === "/api/stream")
       return route.fulfill({
         status: 200,
@@ -145,4 +145,55 @@ test("an empty feed picks up the first backfill without a live-drop event", asyn
   await expect(page.getByRole("article")).toHaveCount(1, { timeout: 8000 });
   await expect(page.getByRole("article")).toContainText("already open");
   await expect(page.getByRole("button", { name: /new drop/ })).toHaveCount(0);
+});
+
+test("a populated feed reconciles silent backfill and shows disabled phone alerts", async ({ page }) => {
+  await mockApi(page);
+  await page.clock.install();
+  let ready = false;
+  await page.route("**/api/opportunities?*", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ items: [opp("first", "Stripe", "SWE Intern"),
+      ...(ready ? [opp("later", "Airbnb", "Software Engineer Intern", { backfill: true })] : [])], next_cursor: null }),
+  }));
+  await page.route("**/api/stream", (route) => route.abort());
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  await expect(page.getByRole("article")).toHaveCount(1);
+  await expect(page.getByText("Phone alerts are off.", { exact: false })).toBeVisible();
+  ready = true;
+  await page.clock.fastForward(31_000);
+  await expect(page.getByRole("article")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: /new drop/ })).toHaveCount(0);
+});
+
+test("share copies only the public apply link and reports clipboard errors", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => {
+    localStorage.setItem("radar.token", t);
+    Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
+    Object.defineProperty(navigator.clipboard, "writeText", { value: async (text: string) => {
+      document.documentElement.dataset.copied = text;
+    }, configurable: true });
+  }, TOKEN);
+  await page.goto("/");
+  const card = page.getByRole("article").first();
+  await card.getByRole("button", { name: "Share", exact: true }).click();
+  await expect(card.getByRole("status")).toHaveText("Link copied");
+  expect(await page.locator("html").getAttribute("data-copied")).toBe("https://example.com/o1");
+  await page.evaluate(() => Object.defineProperty(navigator.clipboard, "writeText", {
+    value: async () => { throw new Error("denied"); }, configurable: true,
+  }));
+  await card.getByRole("button", { name: "Share", exact: true }).click();
+  await expect(card.getByRole("status")).toHaveText("Couldn't share. Copy the Apply link.");
+});
+
+test("settings offers only the signed-in users notification subscription", async ({ page }) => {
+  await mockApi(page);
+  await page.route("**/api/me", (route) => route.fulfill({ contentType: "application/json",
+    body: JSON.stringify({ user: "kevin", sources: 3, alerts_enabled: true, notification_url: "https://ntfy.sh/private-test-k" }) }));
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/#/settings");
+  await expect(page.getByRole("link", { name: /Open your private notification topic/ })).toHaveAttribute("href", "https://ntfy.sh/private-test-k");
+  await expect(page.getByText(/Device delivery still needs/)).toBeVisible();
 });

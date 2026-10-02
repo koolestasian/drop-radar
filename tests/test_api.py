@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import httpx
 
-from radar.alerts import AlertDispatcher, MultiUserAlertDispatcher, visible_to
+from radar.alerts import AlertDispatcher, MultiUserAlertDispatcher, NtfyChannel, visible_to
 from radar.api.app import create_app
 from radar.api.events import EventBus
 from radar.api.runtime import Runtime
@@ -157,6 +157,27 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
     async def test_include_all_widens_to_everything_their_sources_found_never_the_other_users(self):
         self.assertEqual(await self.ids_of(KEVIN, include="all"), self.names("swe", "ng", "tax"))
         self.assertEqual(await self.ids_of(FRIEND, include="all"), self.names("swe", "ib", "tax"))
+
+    async def test_phone_configuration_exposes_only_this_users_subscription(self):
+        runtime = directory()
+        runtime.pipeline = SimpleNamespace(alerter=MultiUserAlertDispatcher({
+            "kevin": AlertDispatcher(self.store, channels=[NtfyChannel("private-k", server="https://ntfy.sh", token="never-expose")]),
+            "friend": AlertDispatcher(self.store, channels=[NtfyChannel("private-f", server="https://ntfy.sh", name="ntfy:friend")]),
+        }, OWNED))
+        app = create_app(self.store, runtime, tokens=TOKENS)
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
+            for token, topic, other in ((KEVIN, "private-k", "private-f"), (FRIEND, "private-f", "private-k")):
+                r = await client.get("/api/me", headers=auth(token))
+                self.assertTrue(r.json()["alerts_enabled"])
+                self.assertEqual(r.json()["notification_url"], f"https://ntfy.sh/{topic}")
+                self.assertNotIn(other, r.text)
+                self.assertNotIn("never-expose", r.text)
+            self.assertEqual((await client.get("/api/me")).status_code, 401)
+
+    async def test_missing_phone_channel_is_explicitly_disabled(self):
+        body = (await self.get("/api/me")).json()
+        self.assertFalse(body["alerts_enabled"])
+        self.assertIsNone(body["notification_url"])
 
     async def test_an_opportunity_from_someone_elses_sources_is_a_404_not_a_403(self):
         self.assertEqual((await self.get(f"/api/opportunities/{self.ids['ib']}", KEVIN)).status_code, 404)
@@ -423,6 +444,24 @@ class StreamTests(unittest.IsolatedAsyncioTestCase):
     async def test_the_stream_needs_a_token(self):
         r = await self.client.get("/api/stream")
         self.assertEqual(r.status_code, 401)
+
+    async def test_friend_gets_a_later_sighting_of_an_already_stored_opportunity(self):
+        friend, ready = [], asyncio.Event()
+        task = asyncio.create_task(self.frames(FRIEND, friend, ready))
+        try:
+            await asyncio.wait_for(ready.wait(), 5)
+            for source in ("ats.greenhouse.airbnb", "ats.greenhouse.point72"):
+                await self.pipeline(None, [Item(source=source, external_id="ib", url="https://x.example/shared-ib",
+                                                title="Investment Banking Summer Analyst", company="Point72")])
+            for _ in range(100):
+                if friend:
+                    break
+                await asyncio.sleep(0.01)
+            self.assertEqual(len(friend), 1)
+            self.assertEqual(friend[0][1]["sources"], ["ats.greenhouse.point72"])
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
 
 
 class HealthAndMetricsTests(unittest.IsolatedAsyncioTestCase):

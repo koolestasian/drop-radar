@@ -40,6 +40,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/instagram/relay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Relay Instagram */
+        post: operations["relay_instagram_api_instagram_relay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me": {
         parameters: {
             query?: never;
@@ -232,6 +249,21 @@ export interface components {
              * @default 5
              */
             priority: number;
+            /**
+             * User Id
+             * @description numeric id; skips the throttled profile lookup
+             * @default
+             */
+            user_id: string;
+            /** Username */
+            username: string;
+        };
+        /** InstagramRelay */
+        InstagramRelay: {
+            /** Stories */
+            stories: {
+                [key: string]: unknown;
+            }[];
             /** Username */
             username: string;
         };
@@ -247,6 +279,16 @@ export interface components {
         };
         /** Me */
         Me: {
+            /**
+             * Alerts Enabled
+             * @description a delivery channel is configured; device receipt is not verified
+             */
+            alerts_enabled: boolean;
+            /**
+             * Notification Url
+             * @description this user's private ntfy subscription URL; no API token
+             */
+            notification_url: string | null;
             /** Sources */
             sources: number;
             /** User */
@@ -393,6 +435,11 @@ export interface components {
             next_run: string;
             /** Running */
             running: boolean;
+            /**
+             * Stale
+             * @default false
+             */
+            stale: boolean;
         };
         /** SourceLatency */
         SourceLatency: {
@@ -569,6 +616,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WatchlistConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    relay_instagram_api_instagram_relay_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstagramRelay"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

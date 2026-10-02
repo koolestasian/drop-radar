@@ -1,3 +1,4 @@
+import asyncio
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -77,6 +78,38 @@ class MultiUserAlertDispatcherTests(unittest.IsolatedAsyncioTestCase):
         await self.dispatch(alerter, item("ats.a", "Private Equity Summer Analyst"))
         self.assertEqual(len(self.friend.sent), 1)
         await alerter.retry_pending()  # must not raise either
+
+    async def test_a_stalled_users_send_and_retry_do_not_delay_the_friend(self):
+        started, release, delivered = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+        class Slow:
+            async def dispatch(self, *_):
+                started.set()
+                await release.wait()
+
+            async def retry_pending(self):
+                await self.dispatch()
+
+        class Fast:
+            async def dispatch(self, *_):
+                delivered.set()
+
+            async def retry_pending(self):
+                await self.dispatch()
+
+        both = frozenset({"ats.a"})
+        alerter = self.alerter({"kevin": both, "friend": both}, {"kevin": Slow(), "friend": Fast()})
+        for operation in (lambda: self.dispatch(alerter, item("ats.a", "Intern")), alerter.retry_pending):
+            started.clear()
+            release.clear()
+            delivered.clear()
+            task = asyncio.create_task(operation())
+            try:
+                await asyncio.wait_for(started.wait(), 1)
+                await asyncio.wait_for(delivered.wait(), 0.2)
+            finally:
+                release.set()
+                await task
 
     def test_two_users_sharing_a_channel_name_is_rejected(self):
         clash = {"a": AlertDispatcher(self.store, profile=CS, channels=[FakeChannel("ntfy")]),

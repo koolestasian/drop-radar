@@ -25,14 +25,15 @@ import tempfile
 from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
+from urllib.parse import quote
 
 import yaml
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse
 
-from radar.alerts import DEAD_STATUSES, visible_to
+from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
 from radar.api import events
-from radar.api.models import (Action, ActionPatch, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
+from radar.api.models import (Action, ActionPatch, InstagramRelay, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
                               SourceHealth, SourceLatency, WatchlistConfig)
 from radar.config import User, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
@@ -151,7 +152,40 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
 
     @app.get("/api/me", response_model=Me)
     async def me(user: User = Depends(current_user)):
-        return Me(user=user.id, sources=len(owned(user)))
+        pipeline = getattr(runtime, "pipeline", None)
+        dispatchers = getattr(getattr(pipeline, "alerter", None), "dispatchers", {})
+        channels = getattr(dispatchers.get(user.id), "channels", [])
+        url = next((f"{c.server}/{quote(c.topic, safe='')}" for c in channels if isinstance(c, NtfyChannel)), None)
+        return Me(user=user.id, sources=len(owned(user)), alerts_enabled=bool(channels), notification_url=url)
+
+    @app.post("/api/instagram/relay")
+    async def relay_instagram(body: InstagramRelay, user: User = Depends(current_user)):
+        from dataclasses import replace
+
+        if user.id != next(iter(runtime.users)):
+            raise HTTPException(403, "only the owner may relay Instagram")
+        scheduler = getattr(runtime, "scheduler", None)
+        source = scheduler.sources.get(f"instagram.{body.username}") if scheduler else None
+        if source is None or not getattr(source, "external", False):
+            raise HTTPException(409, "this account is not configured for Instagram relay")
+        if any(not isinstance(raw.get("pk") or raw.get("id"), (str, int))
+               or not str(raw.get("pk") or raw.get("id") or "").strip() for raw in body.stories):
+            raise HTTPException(422, "every Story needs a stable id")
+        state = store.get_source_state(source.name) or {}
+        fresh = 0
+        for raw in body.stories:
+            items = await source._to_items([raw], scheduler.context(source.name))
+            for item in items:
+                if store.item_opportunity_id(item.source, item.external_id) is not None:
+                    continue
+                if not state.get("last_ok"):
+                    item = replace(item, raw={**item.raw, "seed": True})
+                await runtime.pipeline(source, [item])
+                fresh += 1
+        at = now()
+        store.save_source_state(source.name, last_ok=at, fail_count=0, last_error=None,
+                                next_run=at + timedelta(seconds=source.interval_s))
+        return {"received": len(body.stories), "new": fresh, "backfill": not bool(state.get("last_ok"))}
 
     @app.get("/api/opportunities", response_model=Page)
     async def list_opportunities(
@@ -295,7 +329,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     @app.get("/api/metrics", response_model=Metrics)
     async def metrics(user: User = Depends(current_user)):
         mine = sorted(owned(user))
-        latency = [SourceLatency(source=source, **s) for source, s in latency_by_source(store).items()
+        channel = "ntfy" if user.id == next(iter(runtime.users)) else f"ntfy:{user.id}"
+        latency = [SourceLatency(source=source, **s) for source, s in latency_by_source(store, channel=channel).items()
                    if source in owned(user)]
         since = (now() - timedelta(days=7)).date().isoformat()
         rows = store.conn.execute(

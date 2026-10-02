@@ -55,6 +55,9 @@ class Runtime:
         users = load_users(self.users_path)
         claim_owner(self.store, users)
         sources, owned, _skipped = build_sources_for_users(users, self.settings)
+        for source in sources:
+            if source.name.startswith("instagram."):
+                source.external = self.env.get("IG_RELAY_ENABLED") == "1"
         # Keep each user's AlertDispatcher across reloads: its in-flight/backoff memory is
         # what stops a send already under way from being sent again by the next retry sweep.
         previous = self.pipeline.alerter.dispatchers if self.pipeline is not None else {}

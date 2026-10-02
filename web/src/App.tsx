@@ -58,10 +58,13 @@ export function App() {
         patchCachedOpportunity(qc, o.id, () => o);
         qc.invalidateQueries({ queryKey: ["opportunities", "board"] });
       }
-    }, setStream);
+    }, (status) => {
+      setStream(status);
+      if (status === "live") qc.invalidateQueries({ queryKey: ["opportunities"] });
+    });
   }, [signedIn, qc]);
 
-  const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me"), enabled: signedIn });
+  const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me"), enabled: signedIn, refetchInterval: 60_000 });
 
   if (!signedIn)
     return (
@@ -116,6 +119,11 @@ export function App() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-5">
+        {me.data?.alerts_enabled === false && route !== "settings" && (
+          <p role="status" className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+            Phone alerts are off. <a href="#/settings" className="underline">Check notification setup</a>; live updates reach this page while it is open.
+          </p>
+        )}
         {route === "feed" && <Feed incoming={incoming} clearIncoming={() => setIncoming([])} />}
         {route === "board" && <Board />}
         {route === "sources" && <Sources />}

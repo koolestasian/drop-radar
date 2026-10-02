@@ -149,6 +149,31 @@
         "title": "InstagramConfig",
         "type": "object"
       },
+      "InstagramRelay": {
+        "properties": {
+          "stories": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 1000,
+            "title": "Stories",
+            "type": "array"
+          },
+          "username": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "stories"
+        ],
+        "title": "InstagramRelay",
+        "type": "object"
+      },
       "Match": {
         "properties": {
           "ok": {
@@ -173,6 +198,23 @@
       },
       "Me": {
         "properties": {
+          "alerts_enabled": {
+            "description": "a delivery channel is configured; device receipt is not verified",
+            "title": "Alerts Enabled",
+            "type": "boolean"
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "this user's private ntfy subscription URL; no API token",
+            "title": "Notification Url"
+          },
           "sources": {
             "title": "Sources",
             "type": "integer"
@@ -184,7 +226,9 @@
         },
         "required": [
           "user",
-          "sources"
+          "sources",
+          "alerts_enabled",
+          "notification_url"
         ],
         "title": "Me",
         "type": "object"
@@ -487,6 +531,11 @@
           },
           "running": {
             "title": "Running",
+            "type": "boolean"
+          },
+          "stale": {
+            "default": false,
+            "title": "Stale",
             "type": "boolean"
           }
         },
@@ -791,6 +840,54 @@
           }
         },
         "summary": "Put Watchlist"
+      }
+    },
+    "/api/instagram/relay": {
+      "post": {
+        "operationId": "relay_instagram_api_instagram_relay_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstagramRelay"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Relay Instagram"
       }
     },
     "/api/me": {

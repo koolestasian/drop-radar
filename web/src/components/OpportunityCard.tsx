@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
 import type { ActionStatus, Opportunity } from "../api/client";
 import { ago, deadline, seenAfterPosted, sourceLabel, STATUS_LABEL } from "../format";
 import { Badge, Button } from "./ui";
@@ -28,6 +28,21 @@ export const OpportunityCard = forwardRef<HTMLElement, Props>(function Opportuni
   const status = o.action?.status ?? "new";
   const seen = o.backfill ? null : seenAfterPosted(o);
   const title = o.title || "Untitled opportunity";
+  const [shareStatus, setShareStatus] = useState("");
+
+  async function share() {
+    setShareStatus("");
+    try {
+      if (navigator.share) await navigator.share({ title: `${o.company}: ${title}`, url: o.url });
+      else {
+        await navigator.clipboard.writeText(o.url);
+        setShareStatus("Link copied");
+      }
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError"))
+        setShareStatus("Couldn't share. Copy the Apply link.");
+    }
+  }
 
   return (
     <article
@@ -98,6 +113,7 @@ export const OpportunityCard = forwardRef<HTMLElement, Props>(function Opportuni
         )}
         {!compact && (
           <>
+            {o.url && <Button variant="quiet" onClick={(e) => { e.stopPropagation(); void share(); }}>Share</Button>}
             <Button
               variant={status === "saved" ? "primary" : "ghost"}
               aria-pressed={status === "saved"}
@@ -134,6 +150,7 @@ export const OpportunityCard = forwardRef<HTMLElement, Props>(function Opportuni
           </select>
         </label>
       </div>
+      {shareStatus && <p role="status" className="mt-2 text-xs text-zinc-500">{shareStatus}</p>}
     </article>
   );
 });
