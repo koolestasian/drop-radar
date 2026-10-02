@@ -70,3 +70,9 @@ export function deadline(value: string, now = new Date()): Deadline | null {
   if (days <= 14) return { label: `due in ${days}d`, tone: "soon" };
   return { label: `due ${due.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`, tone: "normal" };
 }
+
+/** One readable line: "5 locations | Seattle, WAJessup, MD…" -> "5 locations"; long ones are cut. */
+export function shortLocation(location: string): string {
+  const first = location.split(" | ")[0].replace(/(.), (United States of America|United States|USA)$/i, "$1").trim();
+  return first.length > 48 ? `${first.slice(0, 46)}…` : first || "Location not listed";
+}
