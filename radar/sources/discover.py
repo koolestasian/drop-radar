@@ -18,7 +18,7 @@ from urllib.parse import parse_qsl, urlparse
 def _slug_from_url(url):
     """(ats, slug) for a recognized ATS application link, else None.
 
-    Mirrors the host/path parsing radar.legacy.job_pages.fetch_job_facts uses
+    Mirrors the host/path parsing the retired legacy job_pages.fetch_job_facts used
     per posting, including Greenhouse's embedded-board form
     (boards.greenhouse.io/embed/job_app?for=<slug>&token=<id>).
     """
