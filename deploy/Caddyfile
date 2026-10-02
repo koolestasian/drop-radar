@@ -1,4 +1,4 @@
-## HTTPS reverse proxy to the local serve process (see README.md "Remote access").
+## HTTPS reverse proxy to the local serve process (see deploy/README.md, "Remote access").
 ## Replace radar.example.com with your own domain pointed at this box, then:
 ##   sudo apt install caddy   (or: https://caddyserver.com/docs/install)
 ##   sudo cp Caddyfile /etc/caddy/Caddyfile

@@ -26,6 +26,7 @@ class LocationTests(unittest.TestCase):
         ("Remote-Canada", False), ("Sao Paulo - Brazil", False),
         # a trailing country wins over a city abbreviation inside a foreign name ("chi")
         ("Ho Chi Minh, , Vietnam", False), ("Mexicali, BAJA CALIFORNIA, Mexico", False),
+        ("Zaragoza, Aragon, ESP", False), ("Munich, Bavaria, DEU", False), ("Pittsburgh, PA, USA", True),
         ("Darlington, County Durham, United Kingdom", False), ("Albuquerque, New Mexico", True),
         ("Durham, NC, United States", True), ("United States-Florida-Melbourne", True),
         # US towns named like foreign cities; the foreign city alone stays foreign
@@ -81,7 +82,7 @@ class KevinProfileTests(unittest.TestCase):
 
 
 class FriendProfileTests(unittest.TestCase):
-    """The shipped config/friend/profile.yaml: Berkeley Haas -- finance, consulting, strategy, PM."""
+    """The shipped config/friend/profile.yaml: finance, consulting, strategy, PM."""
 
     def setUp(self):
         self.profile = load_profile(ROOT / "config" / "friend" / "profile.yaml")

@@ -482,7 +482,8 @@ class SchedulerIntegrationTests(unittest.IsolatedAsyncioTestCase):
                      "absolute_url": "https://boards.greenhouse.io/acme/jobs/1", "location": {}},
                     {"id": 3, "title": "SWE Intern, Summer 2027",
                      "absolute_url": "https://boards.greenhouse.io/acme/jobs/3", "location": {}}]
-        grown = baseline + [{"id": 2, "title": "SWE Intern, Summer 2027", "updated_at": "2026-02-01T00:00:00Z",
+        grown = baseline + [{"id": 2, "title": "SWE Intern, Summer 2027",
+                              "updated_at": utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),  # posted just now: a drop
                               "absolute_url": "https://boards.greenhouse.io/acme/jobs/2", "location": {}}]
         http = FakeHttp({url: FakeResponse(payload={"jobs": baseline})})
         clock = FakeClock()

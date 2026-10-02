@@ -33,4 +33,4 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Lint
-        run: python -m pyflakes ./*.py radar tests
+        run: python -m pyflakes radar tests

@@ -5,7 +5,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-import opportunity_monitor as monitor
+from radar.legacy import opportunity_monitor as monitor
 from openpyxl import load_workbook
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_items.json"
@@ -378,7 +378,7 @@ class DryRunTests(unittest.TestCase):
 
 class GoogleSheetsFormatTests(unittest.TestCase):
     def test_values_are_written_raw(self):
-        import google_sheets_sync as sync
+        from radar.legacy import google_sheets_sync as sync
         from test_google_sync import FakeSpreadsheet, FakeWorksheet
 
         calls = []

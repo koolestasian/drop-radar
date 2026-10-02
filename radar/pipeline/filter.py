@@ -82,7 +82,10 @@ _COUNTRY_RE = re.compile(
     r"united arab emirates|qatar|saudi arabia|japan|south korea|korea|china|hong kong|taiwan|australia|"
     r"new zealand|philippines|vietnam|viet nam|indonesia|malaysia|thailand|south africa|nigeria|kenya|egypt|"
     r"costa rica|liechtenstein|hungary|ukraine|lithuania|latvia|estonia|bulgaria|croatia|slovakia|slovenia|"
-    r"luxembourg|chile|peru|uruguay|ecuador|guatemala|panama|dominican republic|pakistan|bangladesh|sri lanka|morocco",
+    r"luxembourg|chile|peru|uruguay|ecuador|guatemala|panama|dominican republic|pakistan|bangladesh|sri lanka|morocco|"
+    # ISO alpha-3 codes some boards end with ("Zaragoza, Aragon, ESP"); only read after the last comma
+    r"esp|deu|fra|gbr|ind|sgp|mex|bra|jpn|chn|kor|aus|irl|nld|ita|che|pol|swe|dnk|nor|fin|aut|bel|prt|isr|are|"
+    r"twn|hkg|arg|col|chl|per|rou|cze|hun|ukr|tur|zaf|egy|phl|vnm|idn|mys|tha|nzl",
     re.I)
 _MULTI = re.compile(r"[;|/\n]| or | and |\d+ locations", re.I)
 

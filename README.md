@@ -1,332 +1,175 @@
-# Zero2Sudo Opportunity Monitor
+# Drop Radar
 
-An hourly GitHub Actions monitor for public **@zero2sudo** Instagram content.
+**An always-on radar for internship and new-grad postings.** It watches about 600 company career sites,
+community job lists and an Instagram account's Stories, keeps only what matches your profile, and tells you
+within minutes: a live web app and a phone push, instead of refreshing a dozen tabs.
 
-It is deliberately broader than an internship tracker. The goal is to catch **actionable opportunities** without making you repeatedly open Instagram.
+<p>
+  <img src="docs/images/feed-desktop.png" alt="Drop Radar feed on desktop" width="62%">
+  <img src="docs/images/feed-phone.png" alt="Drop Radar feed on a phone" width="26%">
+</p>
 
-## What it watches
+<sub>Screenshots use invented sample postings.</sub>
 
-Every hour, the workflow checks:
+## Why
 
-- active Instagram Stories
-- recent feed posts / reels
+Early-career roles open and fill quickly, and the announcement is scattered: some appear first on the
+employer's own applicant-tracking system, some on community lists that lag by hours, and some only in an
+Instagram Story that disappears after a day. I started this to catch the Stories of
+[@zero2sudo](https://www.instagram.com/zero2sudo/) (a career-opportunity account) without opening Instagram
+every hour. It grew into a general radar that polls the employers' boards directly, because those publish
+before anyone reposts them.
 
-It OCRs Story images and captures things such as:
+## What it does
 
-- internships
-- new-grad and early-career roles
-- student / part-time jobs
-- fellowships
-- scholarships and grants
-- hackathons and competitions
-- conferences and summits
-- recruiting events and career fairs
-- direct-consideration forms
-- referrals and talent programs
-- networking events and meetups
-- coffee chats and office hours
-- workshops, webinars, and info sessions
-- mentorships and cohorts
-- campus / ambassador / university programs
-- research programs
-- apprenticeships and externships
-- accelerators and incubators
-- application openings / reopenings / deadlines
-- other unusual opportunities with a concrete apply/register/RSVP action
+- **Polls ~600 career sources politely.** Greenhouse, Lever, Ashby, SmartRecruiters, Workday, Workable,
+  Oracle HCM, Eightfold, Avature, Amazon, Google, Apple and sitemap-based sites, plus the SimplifyJobs
+  GitHub lists and Instagram Stories (OCR). Top-tier companies are checked every 2 minutes, others every 5
+  or 15.
+- **Filters to you.** A profile names a *track* (software engineer, investment banking, ...) and a *level*
+  (intern, new grad, ...); a posting must have both, in a location you accept, for the right season.
+- **One feed, two clocks.** Each posting shows when the employer posted it and when the radar found it, newest
+  first, with search, location and US-only filters, company logos and a prestige sort.
+- **Live drops.** New postings stream into the open page (server-sent events) and can push to a phone
+  through [ntfy](https://ntfy.sh).
+- **An application board.** Save a posting, move it through applied, interview, offer or rejected, keep notes.
+- **Several users, one box.** Each person has their own watchlist, profile, statuses and push topic; a source
+  both watch is polled once.
 
-Generic career advice, motivational content, and duplicate opportunities are filtered out.
+## How it works
 
-## What happens automatically
+```mermaid
+flowchart LR
+    subgraph Sources
+        A["Company career sites<br/>Greenhouse, Lever, Workday, ..."]
+        B["Community lists<br/>SimplifyJobs on GitHub"]
+        C["Instagram Stories<br/>OCR"]
+    end
+    A & B & C --> S["Scheduler<br/>per-host limits, ETag/304, backoff"]
+    S --> P["Pipeline<br/>dedupe, enrich, profile filter"]
+    P --> D[("SQLite (WAL)")]
+    P --> N["Push alerts<br/>ntfy"]
+    D --> API["FastAPI + SSE"] --> W["React PWA"]
+```
 
-When the monitor finds something genuinely new:
+1. **Sources** (`radar/sources/`) are plugins, one file per kind, behind a small `Source` protocol:
+   `fetch(ctx) -> list[Item]`. They raise typed errors (auth, blocked, transient, schema) so the scheduler
+   knows how to back off.
+2. **Scheduler** (`radar/scheduler.py`) runs each source on its own timer, with a per-host rate limit and a
+   global request cap, and saves a cursor or ETag only after the items are stored.
+3. **Pipeline** (`radar/pipeline/`) canonicalizes URLs and company names, merges the same job seen in several
+   places into one opportunity, extracts season, track and location from the title (an LLM is optional and
+   budgeted), and decides who it matches.
+4. **Store** (`radar/store/`) is one SQLite file: opportunities, per-source sightings, source health, sent
+   alerts, and each user's status and notes.
+5. **API and web** (`radar/api/`, `web/`) serve the feed, board, settings and live stream to a React PWA.
 
-1. It creates or updates **Zero2Sudo_Opportunity_Tracker.xlsx** in this repository.
-2. It updates **LATEST.md**, a permanent browser view that requires no download.
-3. It deduplicates previously seen opportunities using stable Instagram/media
-   identity, and treats a Story that re-shares an already-tracked job posting
-   as a repost rather than a new alert.
-4. If configured, it synchronizes the same rows to a permanent Google Sheet.
-5. It creates a **GitHub Issue assigned to the repository owner** only after persistence succeeds.
-6. GitHub sends the normal issue/assignment notification through your GitHub notification settings.
+## Design decisions worth a look
 
-If nothing new is found, it stays quiet.
+- **Seed, then diff.** A source's first poll stores everything already open as *backfill*, so the feed is full
+  on day one, but nothing in it can alert. Only postings that appear after that are drops. A posting dated more
+  than a week before it was seen (a title edit, a widened search, a late list row) is treated as backfill too.
+- **Cheap, polite polling.** Conditional requests (ETag / 304) mean an unchanged board costs no download.
+  A per-host rate limit and a global request cap keep it gentle, every request carries an honest User-Agent,
+  and a source only touches documented public APIs or paths `robots.txt` allows.
+- **Claim before send.** An alert row is claimed in the database before the push goes out, and retries only
+  resend claimed-but-unsent rows, so a crash or a concurrent sweep cannot double-push.
+- **One rule for feed and phone.** What shows in a user's feed and what alerts their phone come from the same
+  predicate (`radar.alerts.visible_to`), so they cannot disagree. A user only ever sees opportunities their own
+  sources found.
+- **IDs are permanent.** Opportunity IDs, statuses and notes survive re-imports and re-deduplication.
+  Backups use SQLite's online backup API, so they are safe while the service is writing.
+- **A residential relay for Instagram.** Instagram rate-limits cloud IPs, so a script on a home Mac
+  (`deploy/instagram-relay.py`, run by launchd) fetches the Stories and posts them to the server over SSH; the
+  server OCRs and processes them like any other source.
 
-Every run also re-derives the extracted columns (organization, title, category,
-deadline, status, priority) for **all** stored rows from their saved Raw Text.
-Parser improvements therefore apply to the whole tracker without re-scraping,
-and an alert always shows the same title the tracker does. Row IDs, First Seen,
-Actioned? and Notes are never rewritten.
+## Tech stack
 
-### Where to see updates
-
-Open **[LATEST.md](LATEST.md)** for the current tracker in your browser. It
-updates at the same URL after each successful run, so there is nothing to
-download. The Excel workbook remains a formatted backup.
-
-LATEST.md is organized for triage:
-
-- **⏰ Closing within 14 days**, sorted by deadline, with days remaining
-- **🆕 New in the last 7 days**
-- **📋 Earlier**
-- collapsed **✅ Actioned** and **⌛ Past deadline or closed** sections
-
-🔥 marks a high-priority company and ⭐ a SWE / AI / data role. Story-only rows
-say when the Story has expired, so a dead link is not a surprise.
-
-### Optional: use Google Sheets as the live tracker
-
-Google Sheets provides a familiar spreadsheet at one permanent URL and preserves
-edits made in the Actioned? and Notes columns.
-
-1. Create a Google Cloud project and enable the Google Sheets API.
-2. Create a service account and download its JSON key.
-3. Create a Google Sheet and share it with the service-account email as Editor.
-4. Add the complete JSON key as a GitHub Actions secret named
-   GOOGLE_SERVICE_ACCOUNT_JSON.
-5. Copy the Sheet ID from its URL and add it as a secret named GOOGLE_SHEET_ID.
-6. Run the workflow once, then set the repository Actions variable
-   GOOGLE_SYNC_REQUIRED to true.
-
-Never commit the service-account JSON. Without these secrets, the monitor uses
-LATEST.md as the permanent live view and continues maintaining the Excel backup.
-
-Each successful check commits `monitor_status.json` with the check time,
-previous/new/total row counts, and workbook checksum. The Actions summary shows
-these counts after verifying the uploaded bytes on `main`. If no new opportunities
-are found, the workbook is intentionally unchanged and the status still updates.
-The hourly schedule is configured for minute 17; actual scheduled execution can
-be delayed. A green manual or push run alone does not verify the scheduler.
-
-Runs start from current main, back up the workbook, preserve user fields,
-deduplicate new records, verify saved IDs, update the browser/Google views, and
-commit before sending alerts. Unexpected scraper response formats fail the run.
-A durable notification queue makes alert retries safe.
-
-## Setup: choose how to scrape Instagram
-
-The monitor has two scrapers. Use either or both; with both, the native one
-runs first and Apify takes over automatically if it fails.
-
-| | Native scraper (`IG_SESSIONID`) | Apify (`APIFY_TOKEN`) |
-|---|---|---|
-| Cost | Free | Pay per actor run |
-| Speed | 2 HTTP requests | Queued actor run, often minutes |
-| Story link stickers and CTA links | Read directly | Depends on the actor |
-| Needs | An Instagram login cookie | An Apify account |
-| Weak spot | Instagram can expire the session or block cloud IPs | Actor changes and cost |
-
-**Recommended:** set both. Every check then tries the free native scraper
-first and never misses a Story when Instagram pushes back. The run summary,
-`monitor_status.json` (`scrapers`, `scrape_warnings`), and a workflow warning
-say whenever Apify had to step in; that usually means the session expired.
-
-### Native scraper: add IG_SESSIONID
-
-Stories are only served to logged-in viewers, so the native scraper uses the
-session cookie of an Instagram account.
-
-1. Use a **secondary Instagram account**, not your personal one. Automated
-   access is against Instagram's terms, and Instagram may challenge or limit
-   an account it thinks is automated.
-2. Log in to instagram.com in a desktop browser with that account.
-3. Open developer tools → **Application** (Chrome) or **Storage** (Firefox) →
-   **Cookies** → `https://www.instagram.com`, and copy the value of `sessionid`.
-4. Add it as a repository secret named `IG_SESSIONID`.
-
-The cookie is equivalent to that account's password; keep it in secrets only.
-It lasts for months unless you log out, change the password, or Instagram
-asks for a security check. If the run summary shows a fallback warning, log
-in on the web again, clear any checkpoint, and replace the secret.
-
-To force one scraper, set the repository variable `SCRAPER` to `native` or
-`apify` (default `auto`).
-
-**ToS risk is ongoing, not one-time.** Automated Instagram access stays against
-Instagram's terms for as long as the scraper runs, not just at setup; an
-account can be challenged or limited at any time, which is why Drop Radar caps
-`instagram:` in `config/watchlist.yaml` at 5 accounts (`load_watchlist` raises
-if you add a 6th) instead of scaling it like the ATS and feed sources.
-
-### Apify: add APIFY_TOKEN
-
-1. Create/sign into an Apify account.
-2. In Apify Console, open **Settings → API & Integrations** and copy your API token.
-3. In this GitHub repository open **Settings → Secrets and variables → Actions → New repository secret**.
-4. Name it `APIFY_TOKEN`, paste the token and save it.
-
-**Never commit either credential to this repository.**
-
-### Optional: better extraction with Claude
-
-Set the secret `ANTHROPIC_API_KEY` (from console.anthropic.com) and every new
-post is read by Claude, together with the job page when it can be fetched. It
-returns the employer, the exact role title, category, season, location and
-deadline, and flags posts that are not really opportunities (memes, advice,
-offer celebrations). Those posts are skipped instead of alerting, and older
-rows it flags move to a collapsed "Probably not an opportunity" section.
-
-- Model: `claude-opus-5-5` at low effort; set the variable `ANTHROPIC_MODEL`
-  to use another model.
-- Cost: roughly $0.02 per post. Existing rows are backfilled 25 per run
-  (`LLM_BACKFILL_PER_RUN`), about $5 once for the current tracker, then
-  roughly $5 a month at ten posts a day.
-- Results are cached in `enrichment_cache.json` by post text, so a post is
-  never sent twice and re-deriving the tracker makes no API calls.
-- If the API is unavailable, the run continues with the built-in parsers.
-
-### Automatic: job page checks
-
-No setup needed. For every application link the monitor reads the real
-posting: Greenhouse, Lever, Ashby and SmartRecruiters through their public
-APIs, other sites through the schema.org JobPosting data most career pages
-embed. That supplies the exact job title, location and (when the page states
-one) the deadline, and each open link is re-checked once a day (up to 80 per
-run). When a posting is taken down, its row is marked **Closed** and moves to
-the collapsed section of LATEST.md, so you stop spending time on dead links.
-Only a definitive answer (HTTP 404/410, "inactive", missing from the job
-board) closes a row; timeouts and blocked requests never do. Set the variable
-`JOB_PAGES=off` to disable it.
-
-## Start it
-
-After adding the secret:
-
-1. Open **Actions**.
-2. Click **Zero2Sudo Opportunity Monitor**.
-3. Click **Run workflow**.
-4. Open the run and verify all steps are green.
-
-The first successful run creates `Zero2Sudo_Opportunity_Tracker.xlsx` automatically.
-
-After that, GitHub runs the workflow every hour at minute 17. GitHub schedules can occasionally start a few minutes late.
+Python 3.12+, `asyncio`, `httpx`, FastAPI, Uvicorn, SQLite (WAL), Tesseract OCR, optional Claude for
+extraction. Web: React, TypeScript, Vite, Tailwind, TanStack Query, a service worker (installable PWA),
+TypeScript types generated from the API's OpenAPI schema. Deployed with systemd and Caddy on a free-tier VM.
 
 ## Run it locally
 
-Everything also works from your own machine, without GitHub Actions.
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt            # OCR needs Tesseract: brew install tesseract / apt install tesseract-ocr
+(cd web && npm ci && npm run build)        # the app is served by the API at /
+
+# The user id must match one in config/users.yaml (the shipped file has `kevin` and `friend`).
+export API_TOKENS="kevin:$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+python -m radar serve                      # http://127.0.0.1:8000 -- sign in with that token
+```
+
+The shipped watchlist polls about 600 sources on the first sweep (politely, but it is a lot). Trim
+`config/watchlist.yaml` to a handful of companies for a first try. `python -m radar.sources.discover --check`
+verifies that a board slug is real before you add it.
+
+| Variable | Purpose |
+|---|---|
+| `API_TOKENS` | `user:secret,...` (secrets at least 20 characters); required to sign in |
+| `RADAR_CONFIG_DIR`, `RADAR_DB_PATH` | where config and the database live (defaults `config/`, `data/radar.db`) |
+| `NTFY_TOPIC`, `NTFY_TOPIC_<USER>` | phone push topics, one per user (`NTFY_SERVER`, `NTFY_TOKEN` for a private server) |
+| `GH_TOKEN` | raises GitHub's rate limit for the community lists (a token with no scopes is enough) |
+| `IG_SESSIONID` | Instagram Stories, via a secondary account's session cookie |
+| `ANTHROPIC_API_KEY` | optional LLM extraction; without it the radar uses regex-only enrichment |
+| `HEARTBEAT_URL` | optional dead-man-switch URL pinged by the scheduler |
+
+Other commands: `python -m radar backup`, `python -m radar stats` (drop latency per source),
+`python -m radar openapi`. The front end alone: `cd web && npm run dev`.
+
+## Tests
 
 ```bash
-pip install -r requirements.txt
-# OCR engine: macOS `brew install tesseract`, Ubuntu `sudo apt-get install tesseract-ocr`
-
-# 1. Offline demo: no token, no network, no cost, writes nothing.
-python opportunity_monitor.py --fixture tests/fixtures/sample_items.json
-
-# 2. Real check that only prints what it would add.
-export IG_SESSIONID=...        # and/or APIFY_TOKEN=...; optional ANTHROPIC_API_KEY=...
-python opportunity_monitor.py --dry-run
-
-# 3. Real check that updates the workbook and LATEST.md in this folder.
-python opportunity_monitor.py
+python -m unittest discover -s tests       # ~400 offline tests, no network
+python -m pyflakes radar tests
+(cd web && npm run e2e)                    # Playwright against the built app, desktop and phone
 ```
 
-Running from home also sidesteps the main weakness of the native scraper:
-Instagram trusts a residential IP far more than a cloud runner's.
+GitHub Actions runs the Python suite and lint on 3.12 and 3.14 for every push. Live probes are marked and skipped
+by default.
 
-A local run skips GitHub Issues unless `GH_TOKEN` and `GITHUB_REPOSITORY` are
-set, but still sends ntfy pushes when `NTFY_TOPIC` is set. To run it hourly
-without GitHub, add a cron entry (`crontab -e`):
+## Deploying
+
+`deploy/` has a systemd unit, a nightly-backup timer, a Caddy config for HTTPS, and
+[`deploy/README.md`](deploy/README.md), a step-by-step setup that also records what the first real deploy on an
+Oracle Cloud Always Free VM (1 GB RAM) taught me.
+
+## Repository layout
 
 ```
-17 * * * * cd /path/to/zero2sudo-opportunity-monitor && IG_SESSIONID=... NTFY_TOPIC=... python3 opportunity_monitor.py >> monitor.log 2>&1
+radar/
+  sources/     one plugin per source kind (ats.py holds the shared seed-then-diff logic)
+  pipeline/    normalize, dedupe, enrich, filter
+  store/       SQLite schema, migrations, repository API
+  alerts/      ntfy channel, claim-before-send dispatcher, the shared visibility rule
+  api/         FastAPI app, runtime (hot-reloaded config), SSE events
+  scheduler.py, config.py, logos.py, backup.py, stats.py
+web/           React PWA and Playwright checks
+config/        users, watchlists and profiles (YAML)
+deploy/        systemd units, Caddyfile, the Instagram relay
+tests/         offline unit and integration tests
+docs/          specs/ (plan and decisions per milestone), openapi.json, images/
 ```
 
-Run the tests with `python -m unittest discover -s tests`.
+The project began as an hourly GitHub Actions job that read one Instagram account and kept an Excel
+tracker. The always-on service replaced it and the job is retired; its guide is kept in
+[`docs/legacy-hourly-monitor.md`](docs/legacy-hourly-monitor.md) and the last commit that still ran it is tagged
+`legacy-hourly-monitor`.
 
-## Spreadsheet columns
+## Limits and responsible use
 
-The workbook tracks:
+- **Speed is bounded by polling**: 2, 5 or 15 minutes by tier, plus rate limits and request queuing. It cannot
+  beat an insider post, only match it. Some boards publish only a date, so "posted X ago" is approximate for them.
+- **Some employers are not covered.** Sites that forbid automated access (for example Meta, TikTok and
+  iCIMS-hosted boards) are left out rather than scraped; community lists cover them, usually hours late.
+- **Instagram is a terms-of-service risk.** Automated access is against Instagram's terms, so use a secondary
+  account, keep it to a handful of accounts (the config enforces a cap of 5) or remove the `instagram:`
+  entry; everything else works without it.
+- **It finds postings; it does not apply for you.** Eligibility and applications stay with a human.
 
-- Organization
-- Opportunity
-- Category
-- Role / Track
-- Season / Year
-- Location
-- Deadline (an ISO date such as `2026-10-15` when the post names one, so it sorts)
-- Application / Registration Link
-- Instagram Source
-- Source Type
-- Raw Text
-- Status (New, Open, Reopened, Closed when the posting is taken down, Expired
-  once the deadline passes, or Not actionable when Claude is confident the post
-  is not an opportunity)
-- Priority
-- Actioned?
-- Notes
+## Project history
 
-There is also a Dashboard sheet with counts. It holds plain values rather than
-formulas, so it also reads correctly in GitHub's preview and Google Drive.
-
-Actioned? accepts `Yes`, `y`, `x`, `✓`, `done` or `applied`; they are all
-normalized to `Yes`.
-
-## Files
-
-- `opportunity_monitor.py` — scraping, OCR, extraction, deduplication, Excel updates, GitHub alerts
-- `instagram_scraper.py` — native Instagram Stories/posts scraper
-- `job_pages.py` — reads job postings (ATS APIs, JSON-LD) and detects takedowns
-- `llm_extraction.py` — optional Claude extraction
-- `enrichment_cache.json` — cached job-page facts and Claude extractions
-- `google_sheets_sync.py` — optional Google Sheets mirror
-- `requirements.txt` — Python dependencies
-- `tests/` — unit tests; `tests/fixtures/sample_items.json` is a sample Apify payload for offline runs
-- `.github/workflows/hourly.yml` — hourly cloud schedule
-- `Zero2Sudo_Opportunity_Tracker.xlsx` — generated after the first successful run
-
-## Notes
-
-- Only public Instagram content is read; the native scraper views it through the account whose session you provide.
-- Stories are ephemeral, so hourly monitoring substantially reduces the chance of missing a short-lived opportunity.
-- The Story scraper is a third-party Apify actor. Instagram changes can occasionally require changing the actor or parsing logic.
-- Apify charges can depend on actor/result usage, so check your Apify usage dashboard after the first few days.
-- The filter intentionally favors **recall over perfect precision**: missing a useful opportunity is worse than occasionally surfacing a borderline one.
-
-## Workflow philosophy
-
-**Zero2Sudo posts something actionable → GitHub checks it → Excel updates → you get one GitHub alert → you decide whether to act.**
-
-No hourly Instagram refreshing required.
-
-
-## Cleaner alerts
-
-The monitor now ranks new opportunities and makes GitHub alerts much easier to scan:
-
-- **HIGH** — a company on the high-priority list (default: Palantir, Anduril,
-  Scale AI, Primer, Vannevar Labs, Shield AI, OpenAI, Anthropic, Databricks)
-- **MEDIUM** — a software engineering, AI / ML, data science or data engineering role
-- **NORMAL** — everything else actionable
-
-To change the high-priority list, add a repository **variable** (Settings →
-Secrets and variables → Actions → Variables) named `HIGH_PRIORITY_ORGS` with a
-comma-separated list, for example `Palantir, Jane Street, Ramp`.
-
-GitHub Issue titles now look like:
-
-`🚨 [HIGH] Palantir — Software Engineering — APPLY / OPEN`
-
-The direct application link is placed prominently in the alert.
-
-### Optional: instant phone push with ntfy
-
-GitHub notifications still work without this. If you want an immediate dedicated phone push:
-
-1. Install the **ntfy** app on your phone.
-2. Pick a long, random topic name, for example:
-   `khanh-zero2sudo-7f3c9b2a91`
-3. Subscribe to that exact topic in the ntfy app.
-4. In this GitHub repository go to:
-   **Settings → Secrets and variables → Actions → New repository secret**
-5. Name the secret:
-   `NTFY_TOPIC`
-6. Set the value to only your topic name, not the full URL.
-
-Once that secret exists, the hourly workflow automatically sends a push when something new is found.
-
-HIGH-priority alerts use ntfy's urgent notification priority and include an **Apply / Open** action that jumps directly to the opportunity link.
-
-If `NTFY_TOPIC` is not configured, the workflow does not fail; it simply uses GitHub Issue/email notifications only.
-
-Using a self-hosted ntfy server or a protected topic? Set the repository
-variable `NTFY_SERVER` (for example `https://ntfy.example.com`) and/or the
-secret `NTFY_TOKEN` (an ntfy access token).
+The plan and what each milestone decided are in [`docs/specs/`](docs/specs/) (start with
+[`00-overview.md`](docs/specs/00-overview.md) and [`PROGRESS.md`](docs/specs/PROGRESS.md)). Next up: an hourly
+email digest, push only for a priority list, and a UI pass.

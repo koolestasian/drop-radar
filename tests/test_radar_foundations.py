@@ -3,7 +3,6 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-import radar
 from radar.config import load_profile, load_settings, load_watchlist
 from radar.errors import ConfigError, SourceError
 from radar.models import Item, Opportunity, opportunity_id
@@ -88,17 +87,6 @@ class ConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ConfigError, "company_tiers"):
             load_profile(write("company_tiers: {A: Q}"))
         self.assertEqual(load_profile(write("")).roles, ())
-
-
-class ShimTests(unittest.TestCase):
-    def test_shims_alias_legacy_modules(self):
-        import opportunity_monitor, job_pages, llm_extraction, instagram_scraper, google_sheets_sync
-        from radar.legacy import opportunity_monitor as real
-        self.assertIs(opportunity_monitor, real)
-        self.assertIs(job_pages, real.job_pages)
-        self.assertIs(instagram_scraper, real.instagram_scraper)
-        self.assertTrue(radar.__doc__)
-        self.assertTrue(llm_extraction.__name__ and google_sheets_sync.__name__)
 
 
 if __name__ == "__main__":

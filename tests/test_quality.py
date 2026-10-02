@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-import opportunity_monitor as monitor
+from radar.legacy import opportunity_monitor as monitor
 
 
 class Response:

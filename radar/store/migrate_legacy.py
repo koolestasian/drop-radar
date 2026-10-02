@@ -1,7 +1,10 @@
 """Import the legacy tracker workbook and enrichment cache into the store.
 
 Idempotent: re-running updates the same rows. Tracker IDs and First Seen are
-kept; Actioned?/Notes never overwrite what the store already holds.
+kept; Actioned?/Notes never overwrite what the store already holds. Imported items
+are marked seed (already open, never a drop), and a row whose link already belongs
+to another opportunity (a board saw the job first) is not imported a second time:
+its Actioned?/Notes, if any, go to that opportunity instead.
 
     python -m radar.store.migrate_legacy [--tracker X.xlsx] [--cache enrichment_cache.json] [--db data/radar.db]
                                          [--user kevin]
@@ -18,6 +21,7 @@ from pathlib import Path
 from radar.config import load_settings
 from radar.legacy import opportunity_monitor as legacy
 from radar.models import Item, utcnow
+from radar.pipeline.normalize import canonical_url
 from radar.store import Store
 from radar.views import CORE_COLUMNS, FIELD_COLUMNS, is_actioned
 
@@ -44,10 +48,17 @@ def _import_row(store, row):
         external_id=legacy.record_semantic_key(row),
         url=row["Application / Registration Link"],  # canonical link only; never fill it with the permalink
         title=row["Opportunity"],
-        raw={"instagram_source": row["Instagram Source"], "source_type": row["Source Type"]},
+        raw={"instagram_source": row["Instagram Source"], "source_type": row["Source Type"], "seed": True},
         published_at=_dt(row["Posted At"]),
         seen_at=_dt(row["First Seen"]) or utcnow(),
     ), opportunity_id=row["ID"])
+
+
+def _tracked_elsewhere(store, row):
+    """The id of a different opportunity already holding this row's link, if this row is not stored yet."""
+    url = canonical_url(row["Application / Registration Link"])
+    other = store.opportunity_id_for_url(url) if url else None
+    return other if other not in (None, row["ID"]) and store.get_opportunity(row["ID"]) is None else None
 
 
 def _import_manual_fields(store, row, user_id):
@@ -67,15 +78,21 @@ def _import_manual_fields(store, row, user_id):
 
 
 def migrate(store, tracker, cache, user_id):
-    """Returns counts: opportunities imported, rows carrying manual fields, enrichment entries."""
+    """Returns counts: opportunities imported, rows skipped as already tracked, rows carrying
+    manual fields, enrichment entries."""
     rows = [
         {header: "" if record.get(header) is None else record.get(header) for header in legacy.HEADERS}
         for record in legacy.workbook_records(Path(tracker))
     ]
     rows = [row for row in rows if row["ID"]]
-    actions = 0
+    actions = skipped = 0
     for row in rows:
         row["First Seen"] = row["First Seen"] or row["Posted At"] or utcnow().isoformat()
+        other = _tracked_elsewhere(store, row)
+        if other:
+            skipped += 1
+            actions += _import_manual_fields(store, {**row, "ID": other}, user_id)
+            continue
         _import_row(store, row)
         actions += _import_manual_fields(store, row, user_id)
     enrichment = 0
@@ -87,7 +104,7 @@ def migrate(store, tracker, cache, user_id):
         for key, value in (cached.get(section) or {}).items():
             store.set_enrichment(prefix + key, value)
             enrichment += 1
-    return {"opportunities": len(rows), "actions": actions, "enrichment": enrichment}
+    return {"opportunities": len(rows) - skipped, "skipped": skipped, "actions": actions, "enrichment": enrichment}
 
 
 def main():

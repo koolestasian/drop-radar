@@ -5,7 +5,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import opportunity_monitor as legacy
+from radar.legacy import opportunity_monitor as legacy
 from radar.models import Item
 from radar.store import MIGRATIONS, SCHEMA, Store
 from radar.store.migrate_legacy import migrate
@@ -179,7 +179,7 @@ class MigrationAndViewTests(unittest.TestCase):
 
     def test_migrate_twice_is_identical(self):
         first = self.migrate()
-        self.assertEqual(first, {"opportunities": 3, "actions": 1, "enrichment": 2})
+        self.assertEqual(first, {"opportunities": 3, "skipped": 0, "actions": 1, "enrichment": 2})
         with Store(self.db) as store:
             ids = [r["ID"] for r in legacy_records(store, "kevin")]
         self.assertEqual(self.migrate(), first)
@@ -214,6 +214,25 @@ class MigrationAndViewTests(unittest.TestCase):
         self.assertEqual(sorted(records), ["aaa", "bbb", "ccc"])
         self.assertEqual(records["aaa"]["Notes"], "applied 9/21")
         self.assertEqual(records["bbb"]["Actioned?"], "No")
+
+    def test_imported_rows_are_already_open_not_drops(self):
+        self.migrate()
+        with Store(self.db) as store:
+            mine = {"instagram.zero2sudo"}
+            self.assertEqual(len(store.list_opportunities(source_names=mine, backfill=True)), 3)
+            self.assertEqual(store.list_opportunities(source_names=mine, backfill=False), [])
+
+    def test_a_link_another_opportunity_already_holds_is_not_imported_twice(self):
+        with Store(self.db) as store:
+            store.upsert_item(item(source="ats.greenhouse.stripe", external_id="9", url="https://stripe.com/jobs/1"),
+                              opportunity_id="board1")
+        result = self.migrate()
+        self.assertEqual((result["opportunities"], result["skipped"]), (2, 1))
+        with Store(self.db) as store:
+            self.assertIsNone(store.get_opportunity("aaa"))
+            self.assertEqual(store.get_opportunity("board1", user_id="kevin")["action"]["notes"], "applied 9/21",
+                             "the skipped row's note follows the job it duplicates")
+        self.assertEqual(self.migrate(), result, "re-running changes nothing")
 
     def test_missing_enrichment_cache_is_fine(self):
         self.cache.unlink()

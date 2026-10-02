@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import opportunity_monitor as monitor
+from radar.legacy import opportunity_monitor as monitor
 from openpyxl import load_workbook
 
 

@@ -1,6 +1,5 @@
 # Generated data and reports: large, change every run, no structure worth graphing.
 LATEST.md
-QA_TEST_REPORT.md
 *.xlsx
 monitor_*.json
 enrichment_cache.json
