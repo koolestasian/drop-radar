@@ -47,7 +47,7 @@ export function Sources() {
       {metrics.data && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-4">
-            <h2 className="text-sm font-semibold">Alert speed: posted → push sent</h2>
+            <h2 className="text-sm font-semibold">Alert speed: posted to push sent</h2>
             <p className="mt-1 text-xs text-muted-foreground">Median (p50) and slow case (p95) per source. Where the post time is unknown, it counts from when we first saw it. This measures when your push was sent, not when your phone received it.</p>
             {metrics.data.latency.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">No alerts sent yet.</p>
@@ -100,7 +100,7 @@ export function Sources() {
         <Empty className="rounded-xl border border-dashed border-border">
           <EmptyHeader>
             <EmptyTitle>No sources yet</EmptyTitle>
-            <EmptyDescription>Add companies in Settings → Watchlist.</EmptyDescription>
+            <EmptyDescription>Add companies in Settings, then Watchlist.</EmptyDescription>
           </EmptyHeader>
         </Empty>
       ) : (
