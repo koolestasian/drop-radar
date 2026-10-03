@@ -14,6 +14,7 @@ from radar.alerts import AlertDispatcher, MultiUserAlertDispatcher, NtfyChannel,
 from radar.api.app import create_app
 from radar.api.events import EventBus
 from radar.api.runtime import Runtime
+from radar.pipeline.places import format_location
 from radar.config import load_settings
 from radar.config import Profile, User, Watchlist
 from radar.models import Item
@@ -196,9 +197,10 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(r.status_code, 429)
         self.assertEqual((await self.get("/api/me")).status_code, 200)  # logged-in users are not limited
 
-    async def test_the_place_is_shown_as_city_dash_country_and_the_original_is_kept(self):
+    async def test_the_place_is_shown_as_city_state_or_city_country_and_the_original_is_kept(self):
         body = (await self.get(f"/api/opportunities/{self.ids['swe']}", KEVIN)).json()
-        self.assertEqual(body["location"], "New York - United States")  # the seed wrote "New York, NY"
+        self.assertEqual(body["location"], "New York, NY")  # displayed "City, ST" in the US
+        self.assertEqual(format_location("Barcelona"), "Barcelona, Spain")
         self.assertEqual(body["location_raw"], "New York, NY")
 
     async def test_each_user_sees_matches_from_their_own_sources_only(self):

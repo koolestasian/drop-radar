@@ -17,12 +17,11 @@ function localDateDaysFromNow(days: number): string {
 
 type Opp = Record<string, unknown> & { id: string; action: { status: string; notes: string } | null };
 
-// the server shows "City - Country"; this stands in for it for the plain "City, ST" places the fixtures use
-const shown = (loc: string) => loc.replace(/^(.+), [A-Z]{2}$/, "$1 - United States");
+// the server shows US places as "City, ST", which is how the fixtures already write them
 
 function opp(id: string, company: string, title: string, extra: Partial<Opp> = {}): Opp {
   const o = oppRaw(id, company, title, extra);
-  return { ...o, location: shown(String(o.location)), location_raw: o.location };
+  return { ...o, location_raw: o.location };
 }
 
 function oppRaw(id: string, company: string, title: string, extra: Partial<Opp> = {}): Opp {
@@ -144,7 +143,7 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   await expect(page.getByRole("heading", { name: "2 new roles" })).toBeVisible();
   await expect(page.getByRole("article", { name: /^Stripe/ }).getByText("due in 2d")).toBeVisible();
   // posted (by the employer) and found (by us) are two different clocks
-  await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("San Francisco - United States · posted 1h ago");
+  await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("San Francisco, CA · posted 1h ago");
   await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("found 1h ago");
   await expect(page.getByRole("article", { name: /^NVIDIA/ })).toContainText("posted <1d ago"); // date only: whole days
   await expect(page.getByRole("region", { name: "Internships" }).getByRole("article")).toContainText("Stripe");
@@ -324,7 +323,7 @@ test("the same role posted in several places is one row; track chips narrow the 
   expect(width[0], "feed scrolls sideways").toBeLessThanOrEqual(width[1]);
   await page.getByRole("button", { name: "+2 more postings of this role" }).click();
   await expect(page.getByRole("article")).toHaveCount(8);
-  await expect(page.getByRole("article", { name: /^Nokia/ }).nth(2)).toContainText("Sunnyvale - United States");
+  await expect(page.getByRole("article", { name: /^Nokia/ }).nth(2)).toContainText("Sunnyvale, CA");
 
   await page.getByRole("radiogroup", { name: "Track" }).getByRole("radio", { name: /^Quant/ }).click();
   await expect(page.getByRole("article")).toHaveCount(1);

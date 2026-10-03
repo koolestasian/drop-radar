@@ -510,7 +510,7 @@ export interface components {
             id: string;
             /**
              * Location
-             * @description display form, "City - Country" ("A, B - Country; C - Other" for several)
+             * @description display form: "City, ST" in the US, "City, Country" elsewhere; "; " between several
              */
             location: string;
             /**
