@@ -98,6 +98,7 @@ def _parse_part(part: str):
     """One place -> (city or '', ISO2 or '', explicit); explicit is True when the text itself names the country
     (or a state/province), not just when a city name suggested one."""
     part = re.sub(r"\(([^)]*)\)", lambda m: ", " + m.group(1) + ", ", part).strip()
+    part = re.sub(r"[-\s]+\d+\s*$", "", part.split("~")[0].strip())  # "CEDAR RAPIDS-182 ~ 1100 Cimmie Ave" -> the place; "TORONTO 02" -> TORONTO
     if _fold(part).strip(" .") in _CITY_ALIASES:  # "SF", "NYC", "LA" alone are cities, not states
         part = _CITY_ALIASES[_fold(part).strip(" .")]
     m = re.match(r"^(US|USA)[- ]([A-Z]{2})[- ](.+)$", part)  # "US-TN-Tullahoma", "USA LA Bossier City"

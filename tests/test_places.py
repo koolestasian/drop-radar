@@ -35,6 +35,8 @@ CASES = [
     ("Hsinchu City, Taiwan", "Hsinchu City - Taiwan"),
     ("KUALA LUMPUR GENERAL OFFICE", "Kuala Lumpur - Malaysia"),
     ("MOUNT-ROYAL (Montreal)", "Montreal - Canada"),
+    ("TORONTO 02", "Toronto - Canada"),
+    ("US-IA-CEDAR RAPIDS-182 ~ 1100 Cimmie Ave Ne ~ BLDG 182", "Cedar Rapids - United States"),
     ("Singapore", "Singapore - Singapore"),
     ("Singapore, SGP", "Singapore - Singapore"),
     # several places: grouped by country, in the order the source listed them
