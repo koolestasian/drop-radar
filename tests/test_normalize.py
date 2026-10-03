@@ -19,6 +19,10 @@ class AtsLinkShapeTests(unittest.TestCase):
         self.same("https://jobs.lever.co/tri/07910a65-9ab3-4d48-85a8-44cd187afafd",
                   "https://jobs.lever.co/tri/07910a65-9ab3-4d48-85a8-44cd187afafd/apply")
 
+    def test_ashby_referral_tag_is_not_a_different_posting(self):
+        self.same("https://jobs.ashbyhq.com/bedrock-robotics/96a6423e-7439-4cb4-9109-117b14e47f7c",
+                  "https://jobs.ashbyhq.com/bedrock-robotics/96a6423e-7439-4cb4-9109-117b14e47f7c?jr_id=6abfee57064da25272e06c12")
+
     def test_ashby_embedded_application(self):
         self.same("https://jobs.ashbyhq.com/dandy/52bcfe21-dfa6-4669-8b58-b995c6e97b31",
                   "https://jobs.ashbyhq.com/dandy/52bcfe21-dfa6-4669-8b58-b995c6e97b31/application?embed=true")

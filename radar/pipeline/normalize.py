@@ -44,7 +44,7 @@ def canonical_url(url: str) -> str:
         path = path.removesuffix("/apply")
     elif host == "jobs.ashbyhq.com":
         path = path.removesuffix("/application")
-        query = [(k, v) for k, v in query if k != "embed"]
+        query = [(k, v) for k, v in query if k not in ("embed", "jr_id")]  # jr_id: a referral tag; it made a Story's link a second row
     elif host.endswith(".myworkdayjobs.com"):
         path = _WORKDAY_LOCALE_RE.sub("", path)
     elif host == "jobs.smartrecruiters.com":

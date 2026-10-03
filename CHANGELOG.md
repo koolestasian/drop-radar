@@ -12,7 +12,9 @@ Missing facts are read from the posting's own link.
 - **When:** a new drop waits up to 15 seconds for its link, so the feed and the push show the real place; a first-poll backfill is filled in the background. Results are cached and a miss is retried after a week.
 - **Safe by construction:** http(s) only, public addresses only (checked on every redirect hop, so a link can't aim the box at an internal address), four redirects, a 2 MB cap, an honest User-Agent, one request a second per host, robots.txt honoured for plain pages.
 - **Repair command:** `python -m radar fix-pages [--dry-run] [--limit N]` fills the postings already stored.
-- 15 new tests (385 backend). No frontend change.
+- **First live repair (2026-10-03):** of 1,734 postings looked at, 1,495 were fixed: 781 locations, 955 posted dates, 8 companies, 8 deadlines. Counts before then after: undated 1,011 to 56; bare "N locations" 903 to 14; blank locations 250 to 215; blank companies 82 to 74. What is left are pages that refuse automated clients or carry no job data.
+- Ashby links with a `jr_id` referral tag now match the board's own link, so a Story's link no longer makes a second row for the same posting (found on Bedrock Robotics).
+- 16 new tests (386 backend). No frontend change.
 
 ## 0.8.0 (2026-10-03)
 

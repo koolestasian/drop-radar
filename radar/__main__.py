@@ -82,15 +82,22 @@ def main(argv=None):
                 rows = [r["id"] for r in store.conn.execute(
                     "SELECT id FROM opportunities WHERE url != '' AND status NOT IN ('Closed', 'Expired') "
                     "ORDER BY first_seen DESC")]
-                looked = examples = fixed = 0
+                todo = []
                 for opp_id in rows:
                     opp = store.get_opportunity(opp_id)
-                    if not needs_facts(opp):
-                        continue
-                    if args.limit is not None and looked >= args.limit:
+                    if needs_facts(opp):
+                        todo.append(opp)
+                    if args.limit is not None and len(todo) >= args.limit:
                         break
+                looked = examples = fixed = 0
+
+                async def one(opp):  # PageFacts keeps at most three pages in flight, and one request a second per host
+                    changes = await pages.fill(opp["id"], dry_run=args.dry_run)
+                    return opp, changes
+
+                for finished in asyncio.as_completed([one(o) for o in todo]):
+                    opp, changes = await finished
                     looked += 1
-                    changes = await pages.fill(opp_id, dry_run=args.dry_run)
                     if changes:
                         fixed += 1
                         for k in changes:
