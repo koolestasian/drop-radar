@@ -57,6 +57,16 @@ CASES = [
     ("Toronto, ON, Canada; Chicago, IL", "Toronto, Canada; Chicago, IL"),
     ("New York; Bethlehem; Holmdel", "New York, NY; Bethlehem, PA; Holmdel, United States"),  # the one stated country settles Holmdel
     ("Remote in USA | Reston, VA | Denver, CO", "Reston, VA; Denver, CO"),
+    # T16.2 (2026-10-03): shapes the old city lists hid, from the live rows
+    ("Atlanta, Georgia", "Atlanta, GA"),  # the state, not the country
+    ("Toronto, ON, Canada | SF", "Toronto, Canada; San Francisco, CA"),  # a stated country doesn't move a known US city
+    ("Holland, Michigan, US", "Holland, MI"),
+    ("New Brunswick, NJ", "New Brunswick, NJ"),
+    ("Quincy, MA; Virginia Remote Office", "Quincy, MA; Virginia, United States"),
+    ("PARIS GO-ASNIERES-SUR-SEINE", "Paris Go-Asnieres-Sur-Seine"),  # SUR is not Suriname
+    ("AND - Jacksonville, FL", "Jacksonville, FL"),
+    ("DE-Berlin-Trion Building", "Berlin-Trion Building, Germany"),
+    ("Lubbock-Texas-United States of America", "Lubbock, TX"),
     # how you work is a badge, not part of the place
     ("Hybrid - New York, NY", "New York, NY"),
     ("Houston, TX (Remote)", "Houston, TX"),

@@ -58,8 +58,8 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 
 | # | Slice | Status |
 |---|---|---|
-| 16.1 | Logos: verified ladder | **done, live**; the live `fix-logos` write is waiting on the owner (see below) |
-| 16.2 | Delete `filter.py`'s location lists | todo |
+| 16.1 | Logos: verified ladder | **done, live**; `fix-logos` fixed in 23c3da2 (not deployed); the real run waits on a deploy, a fresh dry run and the owner's yes |
+| 16.2 | Delete `filter.py`'s location lists | **done, not deployed** (5761717); waits on the owner's diff review |
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | todo |
 | 16.4 | Self-growing watchlist + review queue | todo |
 | 16.5 | Adaptive polling + learned priority | todo (feeds T14) |
@@ -87,6 +87,13 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 - **`fix-logos`:** `python -m radar fix-logos [--dry-run]` checks every company, replaces cached
   domains whose homepage names someone else, and fills misses. The **dry run ran on the box**, and
   its report is in `/opt/radar/data/fix-logos-dryrun.txt`.
+  **That report came from the old code: do not run the real write from it.** The old code would
+  drop 19 domains, nearly all correct (rbc.com, principal.com, simon.com, kodiak.ai), to monograms
+  because their titles don't spell the full name. Since 23c3da2 a cached domain is replaced only
+  by a better one (so Hatch IT keeps the wrong deallink.io). Deploy 23c3da2, run a fresh dry run
+  (the LLM rows can change), and show the owner the risky fills: Zip -> zip.co,
+  Rollout -> rolloutpolice.com, Icon -> icon.me, Arch -> arch.com, Mill, POET, Realm, Jobsbridge,
+  Cogna -> cogna.com.br, Fox -> foxcareers.com.
   1. Show the owner the replacements first.
   2. Run it without `--dry-run` only after the owner says yes, since it writes to the live DB.
   3. Run it as `sudo -u radar bash -c "cd /opt/radar/zero2sudo-opportunity-monitor && set -a &&
@@ -98,7 +105,19 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 - **Optional:** Brandfetch's CDN with `fallback/lettermark` could replace the 16px-globe hack in
   `web/src/components/common.tsx` `CompanyLogo`. It needs a free client ID.
 
-### 16.2 Delete the duplicate location lists
+### 16.2 Delete the duplicate location lists (done: 5761717, 2026-10-03; not deployed)
+**Done:** `is_us_location` reads `places.parse_places` (and `scan_countries` for free text the
+parser can't structure). A bare city whose biggest namesake is abroad but which is also a US city
+over 40k (Cambridge, Dublin) is unknown. So is a list with an unplaceable place next to a guessed
+one ("Poughkeepsie; Kingston"). A free-text scan rules a place out only on a country or state name,
+never on a lone city ("George Bush International Airport"). Puerto Rico counts as US.
+**Gate report:** `data/t16/16.2-location-diff.txt` (gitignored, on the Mac). Over 3,610 stored
+locations: 161 unknown -> US, 83 unknown -> abroad (the direction that can miss a drop; check
+"Kingston" x2, likely Kingston NY, and "Moscow", maybe Idaho), 32 abroad -> unknown, 3 US -> abroad
+(all really Vietnam/Mexico). Display changes: 72 locations, mostly fixes. Accepted regressions:
+"Remote-LA" x4 now shows "Remote, United States" instead of "Los Angeles, CA".
+
+**Original plan:**
 - **What's duplicated:** `radar/pipeline/filter.py`'s `_US_CITIES`, `_NON_US`, `_US_NAMESAKES`
   and `_COUNTRY_RE` (about 400 hand-typed places) repeat what `radar/pipeline/places.py` (GeoNames)
   already resolves.
