@@ -100,6 +100,10 @@ def _peel_country(token: str) -> list[str]:
 
 def _peel_state(token: str) -> list[str]:
     """'Danvers MA' -> ['Danvers', 'MA'] (a state abbreviation written after the city without a comma)."""
+    folded = _fold(token)
+    for name in sorted((n for n in _STATE_ABBR if len(n) > 2), key=len, reverse=True):  # "Chicago Illinois"
+        if folded.endswith(" " + name) and len(folded) > len(name) + 1:
+            return [token.strip()[: len(folded) - len(name) - 1].strip(), token.strip()[-len(name):]]
     m = re.match(r"^(.+?)\s+([A-Z]{2})$", token.strip())
     if m and (m.group(2) in _US_STATES or m.group(2) in _CA_PROVINCES) and not _fold(token) in _CITY_COUNTRY:
         return [m.group(1), m.group(2)]

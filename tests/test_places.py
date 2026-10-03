@@ -30,6 +30,9 @@ CASES = [
     ("United States, Wisconsin, Milwaukee", "Milwaukee, WI"),
     ("Alpharetta, GA, United States", "Alpharetta, GA"),
     ("United States of America, Rochester, New York", "Rochester, NY"),
+    ("Chicago Illinois United States", "Chicago, IL"),
+    ("New York New York United States", "New York, NY"),
+    ("Jersey City New Jersey", "Jersey City, NJ"),
     ("TORONTO 02", "Toronto, Canada"),
     ("US-IA-CEDAR RAPIDS-182 ~ 1100 Cimmie Ave Ne ~ BLDG 182", "Cedar Rapids, IA"),
     # everywhere else: "City, Country"
