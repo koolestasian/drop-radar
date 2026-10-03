@@ -2,6 +2,16 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.10.1 (2026-10-03)
+
+Location format changed from "City - Country" to what the owner asked for: **US places as "City, ST"** ("Seattle, WA"), **everywhere else as "City, Country"** ("Barcelona, Spain").
+
+- A US city's state comes from the text ("Houston, TX", "San Francisco, California" becomes "San Francisco, CA"), else from the biggest US city of that exact name (Redmond is WA, Boston is MA; 1,572 cities of 30,000+ people). A small town with no state anywhere shows "Holmdel, United States" rather than a guessed state.
+- Several places are listed in the order the source gave them: "Reston, VA; Plano, TX; Toronto, Canada". Remote shows as "Remote, United States". A bare state shows as "Iowa, United States"; a bare country as the country.
+- Street addresses in a place ("152 Endicott Street, Danvers MA") are dropped, and "Danvers MA" without a comma is understood.
+- On all 12,262 distinct live places, 91% become a clean "City, ST" or "City, Country"; most of the rest are country-only or a small place with nothing to place it.
+- 390 backend tests; 36 e2e tests.
+
 ## 0.10.0 (2026-10-03)
 
 One location format: **City - Country**.
