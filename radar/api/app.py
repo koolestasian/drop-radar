@@ -289,6 +289,43 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         store.delete_user_sessions(user.id)
         return _session_for(user)
 
+    def _account_only(user):
+        if not store.is_account(user.id):
+            raise HTTPException(409, "Your alerts are set up by whoever runs this radar.")
+
+    @app.post("/api/alerts/enable", response_model=Me)
+    async def alerts_enable(user: User = Depends(current_user)):
+        """Give this account its own private ntfy topic (unguessable; the link in Settings is the subscription)."""
+        _account_only(user)
+        topic = next((r["ntfy_topic"] for r in store.list_accounts() if r["id"] == user.id), None)
+        if not topic:
+            store.save_account(user.id, ntfy_topic="dr-" + secrets.token_urlsafe(18))
+            runtime.reload()
+        return me_for(runtime.users[user.id])
+
+    @app.post("/api/alerts/disable", response_model=Me)
+    async def alerts_disable(user: User = Depends(current_user)):
+        _account_only(user)
+        store.save_account(user.id, ntfy_topic=None)
+        runtime.reload()
+        return me_for(runtime.users[user.id])
+
+    @app.post("/api/alerts/test", status_code=204)
+    async def alerts_test(user: User = Depends(current_user)):
+        """One real push to your own topic, so you can see that your phone receives them."""
+        throttle(("alert-test", user.id), 3, 3600, "Three test pushes an hour is plenty; try again later.")
+        dispatchers = getattr(getattr(getattr(runtime, "pipeline", None), "alerter", None), "dispatchers", {})
+        channels = getattr(dispatchers.get(user.id), "channels", [])
+        if not channels:
+            raise HTTPException(409, "Turn on phone alerts first.")
+        sample = {"company": "Drop Radar", "title": "Test notification", "location": "If you can read this, alerts work.",
+                  "deadline": "", "items": [], "url": ""}
+        try:
+            await asyncio.to_thread(channels[0].send, sample, [], None)
+        except Exception:
+            log.warning("test push failed for %s", user.id, exc_info=True)
+            raise HTTPException(502, "The push service didn't accept it. Try again in a minute.") from None
+
     @app.post("/api/instagram/relay")
     async def relay_instagram(body: InstagramRelay, user: User = Depends(current_user)):
         from dataclasses import replace

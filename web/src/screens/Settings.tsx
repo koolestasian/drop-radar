@@ -71,6 +71,7 @@ function Tags({ label, help, value, onChange }: { label: string; help: string; v
         }}
         onBlur={add}
         aria-label={`Add to ${label}`}
+        name={`add-${label.toLowerCase().replace(/\W+/g, "-")}`}
         placeholder="Type and press Enter"
         className="h-11 text-base sm:h-9 sm:text-sm"
       />
@@ -117,6 +118,7 @@ function ProfileForm({ initial }: { initial: ProfileConfig }) {
         <span className="text-sm font-semibold">Target season year</span>
         <Input
           type="number"
+          name="grad_year"
           min={2000}
           max={2100}
           value={p.grad_year ?? ""}
@@ -179,20 +181,21 @@ function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
           setDraft({ ...draft, name: "", slug: "" });
         }}
       >
-        <Input aria-label="Company name" placeholder="Company" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" />
-        <select aria-label="Job board" value={draft.ats} onChange={(e) => setDraft({ ...draft, ats: e.target.value })} className={select}>
+        <Input name="company" autoComplete="off" aria-label="Company name" placeholder="Company" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" />
+        <select name="ats" aria-label="Job board" value={draft.ats} onChange={(e) => setDraft({ ...draft, ats: e.target.value })} className={select}>
           {ATS.map((a) => (
             <option key={a}>{a}</option>
           ))}
         </select>
         <Input
+          name="slug"
           aria-label="Board slug"
           placeholder={SLUG_HINT[draft.ats] ?? "board slug"}
           value={draft.slug}
           onChange={(e) => setDraft({ ...draft, slug: e.target.value })}
           className="h-11 text-base sm:h-9 sm:text-sm"
         />
-        <select aria-label="Tier" value={draft.tier} onChange={(e) => setDraft({ ...draft, tier: e.target.value })} className={select}>
+        <select name="tier" aria-label="Tier" value={draft.tier} onChange={(e) => setDraft({ ...draft, tier: e.target.value })} className={select}>
           {TIERS.map((t) => (
             <option key={t}>{t}</option>
           ))}
@@ -212,6 +215,57 @@ function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
         {save.isSuccess && <span role="status" className="text-sm font-medium text-live">Saved — polling now.</span>}
       </div>
     </div>
+  );
+}
+
+function AlertsPanel({ me }: { me: Me }) {
+  const qc = useQueryClient();
+  const toggle = useMutation({
+    mutationFn: (on: boolean) => api<Me>(`/api/alerts/${on ? "enable" : "disable"}`, { method: "POST" }),
+    onSuccess: (m) => qc.setQueryData(["me"], m),
+  });
+  const test = useMutation({ mutationFn: () => api<void>("/api/alerts/test", { method: "POST" }) });
+  if (!me.alerts_enabled)
+    return me.account ? (
+      <>
+        <p className="text-sm text-muted-foreground">Get a push on your phone the moment a role that matches your profile appears. It uses the free ntfy app; no account there is needed.</p>
+        {toggle.isError && <ErrorNote error={toggle.error} />}
+        <Button size="lg" className="self-start" disabled={toggle.isPending} onClick={() => toggle.mutate(true)}>
+          {toggle.isPending ? "Turning on…" : "Turn on phone alerts"}
+        </Button>
+      </>
+    ) : (
+      <p role="status" className="text-sm text-muted-foreground">Phone alerts are off for your account. The live feed works while open; phone delivery needs to be enabled on the server.</p>
+    );
+  return (
+    <>
+      <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+        <li>Install the free ntfy app on your phone.</li>
+        <li>Open your private link below on that phone and subscribe.</li>
+        <li>Allow notifications, then send a test push to check it arrives.</li>
+      </ol>
+      <div className="flex flex-wrap gap-2">
+        {me.notification_url && (
+          <Button asChild variant="outline">
+            <a href={me.notification_url} target="_blank" rel="noopener noreferrer">
+              Open your private notification topic <ExternalLink className="size-4" aria-hidden />
+            </a>
+          </Button>
+        )}
+        <Button variant="outline" disabled={test.isPending} onClick={() => test.mutate()}>
+          {test.isPending ? "Sending…" : "Send a test push"}
+        </Button>
+        {me.account && (
+          <Button variant="ghost" disabled={toggle.isPending} onClick={() => toggle.mutate(false)}>
+            Turn off
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">The link is private to you: anyone who has it can read your alerts, so don't share it.</p>
+      {test.isSuccess && <p role="status" className="text-sm font-medium text-live">Sent. If nothing arrives, check the ntfy app's subscription.</p>}
+      {test.isError && <ErrorNote error={test.error} />}
+      {toggle.isError && <ErrorNote error={toggle.error} />}
+    </>
   );
 }
 
@@ -277,16 +331,9 @@ export function Settings() {
         )}
       </section>
 
-      <section aria-labelledby="alerts-title" className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-5">
+      <section aria-labelledby="alerts-title" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
         <h2 id="alerts-title" className={h2}>Phone alerts</h2>
-        {me.data?.alerts_enabled ? (
-          <>
-            <p className="text-sm text-muted-foreground">Delivery is configured. Subscribe in ntfy on your phone and allow notifications. Device delivery still needs a real notification check.</p>
-            {me.data.notification_url && <Button asChild variant="outline" className="self-start"><a href={me.data.notification_url} target="_blank" rel="noopener noreferrer">Open your private notification topic <ExternalLink className="size-4" aria-hidden /></a></Button>}
-          </>
-        ) : me.data ? (
-          <p role="status" className="text-sm text-muted-foreground">Phone alerts are off for your account. The live feed works while open; phone delivery needs to be enabled on the server.</p>
-        ) : me.isError ? <ErrorNote error={me.error} retry={() => me.refetch()} /> : <ListSkeleton rows={1} />}
+        {me.data ? <AlertsPanel me={me.data} /> : me.isError ? <ErrorNote error={me.error} retry={() => me.refetch()} /> : <ListSkeleton rows={1} />}
       </section>
 
       <section aria-labelledby="signin-title" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">

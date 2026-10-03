@@ -37,6 +37,7 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
     ...more,
   ];
   const fresh = opp("o9", "Ramp", "Software Engineer Intern - Summer 2027", { first_seen: new Date().toISOString() });
+  let asAccount = false; // after sign-up or login the signed-in user is the new account, not kevin
   let published = false; // the streamed drop is on the server once a test says so
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -52,13 +53,18 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
     if (req.method() === "POST" && path === "/api/auth/signup") {
       const body = JSON.parse(req.postData() ?? "{}");
       if (body.password.length < 10) return json(route, { detail: "A password needs at least 10 characters." }, 422);
+      asAccount = true;
       return json(route, { token: TOKEN, me: { ...ME, username: body.username } }, 201);
     }
     if (req.method() === "POST" && path === "/api/auth/login") {
       const body = JSON.parse(req.postData() ?? "{}");
       if (body.username !== "sam_smith" || body.password !== "correct horse battery") return json(route, { detail: "Wrong username or password." }, 401);
+      asAccount = true;
       return json(route, { token: TOKEN, me: ME });
     }
+    if (req.method() === "POST" && path === "/api/alerts/enable") return json(route, { ...ME, alerts_enabled: true, notification_url: "https://ntfy.sh/dr-private-topic" });
+    if (req.method() === "POST" && path === "/api/alerts/disable") return json(route, { ...ME, alerts_enabled: false });
+    if (req.method() === "POST" && path === "/api/alerts/test") return route.fulfill({ status: 204 });
     if (req.method() === "POST" && path === "/api/auth/logout") return route.fulfill({ status: 204 });
     if (req.method() === "PUT" && path === "/api/auth/credentials") {
       const body = JSON.parse(req.postData() ?? "{}");
@@ -68,6 +74,7 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
     const guest = !given && req.method() === "GET" && (path === "/api/me" || path.startsWith("/api/opportunities"));
     if (!guest && given !== `Bearer ${TOKEN}`) return json(route, { detail: "missing or invalid bearer token" }, 401);
     if (path === "/api/me" && guest) return json(route, { user: "guest", sources: 3, alerts_enabled: false, notification_url: null, guest: true });
+    if (path === "/api/me" && asAccount) return json(route, ME);
     if (path === "/api/me") return json(route, { user: "kevin", sources: 3, alerts_enabled: false, notification_url: null, guest: false });
     if (path === "/api/stream")
       return route.fulfill({
@@ -245,7 +252,7 @@ test("settings offers only the signed-in users notification subscription", async
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
   await page.goto("/#/settings");
   await expect(page.getByRole("link", { name: /Open your private notification topic/ })).toHaveAttribute("href", "https://ntfy.sh/private-test-k");
-  await expect(page.getByText(/Device delivery still needs/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Send a test push" })).toBeVisible(); // the way to prove a phone receives them
 });
 
 test("a #token= link signs the device in and leaves the address bar", async ({ page }) => {
@@ -427,4 +434,21 @@ test("a profile preset fills the roles, and Settings can add a username and pass
   await page.locator('input[name="new-password"]').fill("a long enough passphrase");
   await page.getByRole("button", { name: /Save sign-in|Change password/ }).click();
   await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+});
+
+test("an account turns on phone alerts, sends itself a test, and turns them off", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/#/login");
+  await page.getByRole("tab", { name: "Create account" }).click();
+  await page.getByLabel("Username").fill("sam_smith");
+  await page.getByLabel("Password").fill("correct horse battery");
+  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^Account/ })).toBeVisible();
+  await page.goto("/#/settings");
+  await page.getByRole("button", { name: "Turn on phone alerts" }).click();
+  await expect(page.getByRole("link", { name: /Open your private notification topic/ })).toHaveAttribute("href", "https://ntfy.sh/dr-private-topic");
+  await page.getByRole("button", { name: "Send a test push" }).click();
+  await expect(page.getByText("Sent. If nothing arrives")).toBeVisible();
+  await page.getByRole("button", { name: "Turn off" }).click();
+  await expect(page.getByRole("button", { name: "Turn on phone alerts" })).toBeVisible();
 });

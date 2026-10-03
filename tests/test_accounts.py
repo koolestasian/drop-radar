@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from unittest import mock
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -160,6 +161,66 @@ class AccountTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.client.get("/api/config/profile", headers=self.bearer(token))).status_code, 401)
         self.assertEqual((await self.login("sam_smith", new)).status_code, 200)
         self.assertEqual((await self.login("sam_smith", PASSWORD)).status_code, 401)
+
+    async def test_an_account_turns_on_its_own_private_alerts_and_can_send_itself_a_test(self):
+        a = (await self.signup("anna_a")).json()
+        b = (await self.signup("ben_b")).json()
+        self.assertFalse(a["me"]["alerts_enabled"])
+        on = await self.client.post("/api/alerts/enable", headers=self.bearer(a["token"]))
+        self.assertEqual(on.status_code, 200, on.text)
+        topic_a = on.json()["notification_url"].rsplit("/", 1)[1]
+        self.assertTrue(on.json()["alerts_enabled"])
+        self.assertGreaterEqual(len(topic_a), 20)
+        again = await self.client.post("/api/alerts/enable", headers=self.bearer(a["token"]))
+        self.assertEqual(again.json()["notification_url"], on.json()["notification_url"])  # enabling twice keeps the topic
+        other = await self.client.post("/api/alerts/enable", headers=self.bearer(b["token"]))
+        self.assertNotEqual(other.json()["notification_url"], on.json()["notification_url"])
+        self.assertNotIn(topic_a, other.text)
+        with mock.patch("radar.alerts.requests.post") as post:
+            post.return_value.status_code = 200
+            r = await self.client.post("/api/alerts/test", headers=self.bearer(a["token"]))
+        self.assertEqual(r.status_code, 204)
+        self.assertEqual(post.call_args.kwargs["json"]["topic"], topic_a)
+        off = await self.client.post("/api/alerts/disable", headers=self.bearer(a["token"]))
+        self.assertFalse(off.json()["alerts_enabled"])
+        self.assertEqual((await self.client.post("/api/alerts/test", headers=self.bearer(a["token"]))).status_code, 409)
+
+    async def test_configured_users_keep_their_env_alerts_and_cannot_use_account_alert_routes(self):
+        for path in ("/api/alerts/enable", "/api/alerts/disable"):
+            r = await self.client.post(path, headers=self.bearer(KEVIN))
+            self.assertEqual(r.status_code, 409, path)
+        for path in ("/api/alerts/enable", "/api/alerts/test"):
+            self.assertEqual((await self.client.post(path)).status_code, 401)  # no guests
+
+    async def test_turning_alerts_on_never_pushes_postings_that_already_matched(self):
+        token = (await self.signup()).json()["token"]
+        self.assertTrue(self.store.get_opportunity(self.opp)["items"])  # a matching posting exists from before
+        with mock.patch("radar.alerts.requests.post") as post:
+            post.return_value.status_code = 200
+            await self.client.post("/api/alerts/enable", headers=self.bearer(token))
+            await self.runtime.pipeline.alerter.retry_pending()
+            self.assertEqual(post.call_count, 0, "an old posting must not be pushed to a new channel")
+            fresh = Item(source="ats.greenhouse.stripe", external_id="swe2", url="https://x.example/swe2", title="Software Engineer Intern, Payments",
+                         company="Stripe", location="New York, NY", seen_at=datetime(2026, 9, 21, tzinfo=timezone.utc))
+            await self.runtime.pipeline(self.runtime.scheduler.sources["ats.greenhouse.stripe"], [fresh])
+        self.assertEqual(post.call_count, 1)  # only the new one, only to this account (kevin has no topic here)
+
+    async def test_the_daily_caps_stop_account_pushes_but_not_the_feed(self):
+        import radar.alerts as alerts
+        token = (await self.signup()).json()["token"]
+        original = alerts.ACCOUNT_DAILY_PUSHES
+        alerts.ACCOUNT_DAILY_PUSHES = 1
+        self.addCleanup(setattr, alerts, "ACCOUNT_DAILY_PUSHES", original)
+        with mock.patch("radar.alerts.requests.post") as post:
+            post.return_value.status_code = 200
+            await self.client.post("/api/alerts/enable", headers=self.bearer(token))
+            source = self.runtime.scheduler.sources["ats.greenhouse.stripe"]
+            for n in range(3):
+                item = Item(source="ats.greenhouse.stripe", external_id=f"cap{n}", url=f"https://x.example/cap{n}",
+                            title=f"Software Engineer Intern {n}", company="Stripe", location="New York, NY",
+                            seen_at=datetime(2026, 9, 21, tzinfo=timezone.utc))
+                await self.runtime.pipeline(source, [item])
+        self.assertEqual(post.call_count, 1)
 
     async def test_expired_sessions_stop_working(self):
         token = (await self.signup()).json()["token"]

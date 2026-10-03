@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 
-from radar.alerts import AlertDispatcher, MultiUserAlertDispatcher, channels_for
+from radar.alerts import AlertDispatcher, MultiUserAlertDispatcher, NtfyChannel, account_budget, channels_for
 from radar.api.events import EventBus
 from radar.config import account_user, load_settings, load_users
 from radar.errors import ConfigError
@@ -55,7 +55,9 @@ class Runtime:
         configured = load_users(self.users_path)
         # accounts people made themselves come after users.yaml's users: the first user owns the original
         # alert channel and the Instagram relay
-        users = configured + tuple(account_user(row) for row in self.store.list_accounts())
+        rows = self.store.list_accounts()
+        topics = {row["id"]: row["ntfy_topic"] for row in rows if row["ntfy_topic"]}  # accounts' own, never from env
+        users = configured + tuple(account_user(row) for row in rows)
         claim_owner(self.store, users)
         sources, owned, _skipped = build_sources_for_users(users, self.settings)
         shared = frozenset().union(*(owned[u.id] for u in configured))
@@ -69,12 +71,15 @@ class Runtime:
         previous = self.pipeline.alerter.dispatchers if self.pipeline is not None else {}
         dispatchers, profiles = {}, {}
         for i, user in enumerate(users):
-            channels = self.channels_for(user.id, i == 0, self.env)
+            is_account = i >= len(configured)
+            channels = ([NtfyChannel(topics[user.id], name=f"ntfy:{user.id}")] if user.id in topics else []) if is_account \
+                else self.channels_for(user.id, i == 0, self.env)
             old = previous.get(user.id)
-            if old is not None and [c.name for c in old.channels] == [c.name for c in channels]:
+            if old is not None and [(c.name, getattr(c, "topic", None)) for c in old.channels] == [(c.name, getattr(c, "topic", None)) for c in channels]:
                 dispatchers[user.id], profiles[user.id] = old, user.profile  # profile applied once all is valid
             else:
-                dispatchers[user.id] = AlertDispatcher(self.store, profile=user.profile, channels=channels)
+                dispatchers[user.id] = AlertDispatcher(self.store, profile=user.profile, channels=channels,
+                                                       budget=account_budget(self.store) if is_account else None)
         alerter = MultiUserAlertDispatcher(dispatchers, owned)
         if self.scheduler is None:
             self.pipeline = Pipeline(self.store, alerter=alerter)
