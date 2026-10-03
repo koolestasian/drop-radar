@@ -58,8 +58,8 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 
 | # | Slice | Status |
 |---|---|---|
-| 16.1 | Logos: verified ladder | **done, live**; `fix-logos` fixed in 23c3da2 (not deployed); the real run waits on a deploy, a fresh dry run and the owner's yes |
-| 16.2 | Delete `filter.py`'s location lists | **done, not deployed** (5761717); waits on the owner's diff review |
+| 16.1 | Logos: verified ladder | **done, live**; `fix-logos` fixed in 23c3da2 (deployed 2026-10-03 20:43 UTC); the real run waits on the owner's yes to `fix-logos-dryrun2.txt` |
+| 16.2 | Delete `filter.py`'s location lists | **done, live** (5761717, deployed 2026-10-03 20:43 UTC) |
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | todo |
 | 16.4 | Self-growing watchlist + review queue | todo |
 | 16.5 | Adaptive polling + learned priority | todo (feeds T14) |
@@ -105,7 +105,7 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 - **Optional:** Brandfetch's CDN with `fallback/lettermark` could replace the 16px-globe hack in
   `web/src/components/common.tsx` `CompanyLogo`. It needs a free client ID.
 
-### 16.2 Delete the duplicate location lists (done: 5761717, 2026-10-03; not deployed)
+### 16.2 Delete the duplicate location lists (done: 5761717, live since 2026-10-03 20:43 UTC)
 **Done:** `is_us_location` reads `places.parse_places` (and `scan_countries` for free text the
 parser can't structure). A bare city whose biggest namesake is abroad but which is also a US city
 over 40k (Cambridge, Dublin) is unknown. So is a list with an unplaceable place next to a guessed
