@@ -4,7 +4,7 @@ from pathlib import Path
 
 from datetime import datetime, timedelta, timezone
 
-from radar.logos import LogoResolver, name_is_domain, name_on_page, pick, registrable
+from radar.logos import LogoResolver, fix_all, name_is_domain, name_on_page, pick, registrable
 from radar.store import Store
 
 
@@ -32,7 +32,9 @@ class ResolverCacheTests(unittest.TestCase):
         self.assertEqual(logos.domain("Stripe, Inc."), "stripe.com")
 
 
-class LadderTests(unittest.TestCase):
+class _Ladder(unittest.TestCase):
+    """A resolver whose network rungs and homepages are stubs."""
+
     def setUp(self):
         self.store = Store(Path(tempfile.mkdtemp()) / "radar.db")
         self.addCleanup(self.store.close)
@@ -50,6 +52,8 @@ class LadderTests(unittest.TestCase):
         self.assertEqual(result.pop("v"), 2)
         return result
 
+
+class LadderTests(_Ladder):
     def test_name_on_page_needs_the_company_not_a_stranger(self):
         self.assertTrue(name_on_page("TD Bank", "TD Bank | Personal & Business Banking"))
         self.assertTrue(name_on_page("Hudson River Trading", "HRT - Hudson River Trading"))
@@ -179,6 +183,48 @@ class LadderTests(unittest.TestCase):
         self.assertIsNone(self.logos.domain("Acme"))
         self.assertEqual(self.logos.domain("Stripe"), "stripe.com")
         self.assertEqual(self.logos.pending, {"Acme"})
+
+
+class FixAllTests(_Ladder):
+    """`fix-logos`: every company in the database, not only the ones someone happened to look at."""
+
+    def setUp(self):
+        super().setUp()
+        for i, name in enumerate(["TD Bank", "KLA", "Erie Insurance Group", "Stripe"]):
+            self.store.save_opportunity(f"o{i}", "2026-10-01T00:00:00+00:00", company=name, title="Intern",
+                                        url=f"https://x.com/{i}")
+        self.store.set_enrichment("logo:tdbank", {"domain": "sosonko.com"})   # wrong, from the old lookup
+        self.store.set_enrichment("logo:kla", {"domain": "kla.com"})          # right; homepage 403s
+        self.store.set_enrichment("logo:stripe", {"domain": "stripe.com"})    # right; homepage readable
+        self.sites.update({"sosonko.com": "Sosonko - hosting", "tdbank.com": "TD Bank | Personal Banking",
+                           "stripe.com": "Stripe | Financial Infrastructure", "erieinsurance.com": "Erie Insurance"})
+        self.logos._clearbit = lambda name, row: {"TD Bank": "tdbank.com"}.get(name)
+        self.logos._llm = lambda name, row: {"Erie Insurance Group": "erieinsurance.com"}.get(name)
+
+    def fix(self, **kw):
+        import asyncio
+        return asyncio.run(fix_all(self.store, self.logos, **kw))
+
+    def test_a_wrong_cached_domain_is_replaced_a_miss_is_filled_a_right_one_is_kept(self):
+        changes = self.fix()
+        self.assertEqual({c["name"]: (c["old"], c["new"]) for c in changes},
+                         {"TD Bank": ("sosonko.com", "tdbank.com"), "Erie Insurance Group": (None, "erieinsurance.com")})
+        self.assertEqual(self.store.get_enrichment("logo:tdbank")["domain"], "tdbank.com")
+        self.assertEqual(self.store.get_enrichment("logo:erieinsurance")["domain"], "erieinsurance.com")
+        self.assertEqual(self.store.get_enrichment("logo:kla"), {"domain": "kla.com"})       # unreadable: not disproved, untouched
+        self.assertEqual(self.store.get_enrichment("logo:stripe"), {"domain": "stripe.com"})  # verified: untouched
+
+    def test_dry_run_reports_the_same_changes_and_writes_nothing(self):
+        changes = self.fix(dry_run=True)
+        self.assertEqual(len(changes), 2)
+        self.assertEqual(self.store.get_enrichment("logo:tdbank"), {"domain": "sosonko.com"})
+        self.assertIsNone(self.store.get_enrichment("logo:erieinsurance"))
+
+    def test_a_disproved_domain_with_no_better_answer_becomes_a_monogram(self):
+        self.logos._clearbit = lambda name, row: None
+        changes = self.fix()
+        self.assertIn({"name": "TD Bank", "old": "sosonko.com", "new": None, "source": None}, changes)
+        self.assertIsNone(self.store.get_enrichment("logo:tdbank")["domain"])
 
 
 if __name__ == "__main__":

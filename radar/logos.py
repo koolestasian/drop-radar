@@ -271,3 +271,41 @@ class LogoResolver:
                 await asyncio.wait_for(stop.wait(), timeout=5)
             except asyncio.TimeoutError:
                 pass
+
+
+async def fix_all(store, resolver: LogoResolver, dry_run=False, limit=None, concurrency=4) -> list[dict]:
+    """`fix-logos`: check every company in the database, not only those someone has looked at.
+
+    A cached domain is kept when it is the name itself or its homepage names the company, and also when the
+    homepage can't be read (nothing disproves it); a homepage that names someone else (TD Bank -> sosonko.com)
+    sends the company back through the ladder. Misses are looked up again. Returns the changes, written
+    unless dry_run: [{"name", "old", "new", "source"}]."""
+    names = {}
+    for (name,) in store.conn.execute("SELECT DISTINCT company FROM opportunities WHERE company != ''"):
+        key = norm(name)
+        if key and key not in OVERRIDES:
+            names.setdefault(key, name)
+    todo = list(names.items())[:limit]
+    gate, changes = asyncio.Semaphore(concurrency), []
+
+    async def one(key, name):
+        async with gate:
+            cached = store.get_enrichment(f"logo:{key}") or {}
+            old = cached.get("domain")
+            if old:
+                if name_is_domain(name, old) and cached.get("source") != "llm":
+                    return
+                title = await asyncio.to_thread(resolver._title, old)
+                if title is None or name_on_page(name, title):
+                    return
+            result = await resolver.resolve(name)
+            if result.pop("failed", False):
+                return  # a rung crashed: leave the cache as it was
+            if result["domain"] != old:
+                changes.append({"name": name, "old": old, "new": result["domain"], "source": result["source"]})
+            if not dry_run and (result["domain"] != old or not cached.get("checked_at")):
+                result["checked_at"] = datetime.now(timezone.utc).isoformat()
+                store.set_enrichment(f"logo:{key}", result)
+
+    await asyncio.gather(*(one(k, n) for k, n in todo))
+    return changes

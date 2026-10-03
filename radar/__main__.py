@@ -13,6 +13,8 @@
   fix-pages [--dry-run] [--limit N]
           read the links of postings with a blank or "N locations" place, no company or no posted date,
           and fill what the page says (never changes a value a source stated clearly)
+  fix-logos [--dry-run] [--limit N]
+          check every company's logo domain: replace ones whose homepage names someone else, look up misses
   openapi print the API schema; docs/openapi.json is this output (the web
           app's types are generated from it)
 """
@@ -44,6 +46,9 @@ def main(argv=None):
     fix = sub.add_parser("fix-pages", parents=[db], help="fill blank locations, companies and dates from the posting links")
     fix.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
     fix.add_argument("--limit", type=int, default=None, help="only look at this many postings")
+    logos = sub.add_parser("fix-logos", parents=[db], help="check every company's logo domain; fill misses")
+    logos.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
+    logos.add_argument("--limit", type=int, default=None, help="only look at this many companies")
     sub.add_parser("openapi", help="print the API's OpenAPI schema as JSON")
     args = parser.parse_args(argv)
 
@@ -108,6 +113,18 @@ def main(argv=None):
                                   "; ".join(f"{k} {str(opp.get(k) or '(blank)')[:30]!r} -> {str(v)[:60]!r}" for k, v in changes.items()))
                 print(f"{'would fix' if args.dry_run else 'fixed'} {fixed} of {looked} postings looked at; fields: {done}")
         asyncio.run(run())
+    elif args.command == "fix-logos":
+        import asyncio
+
+        from radar.logos import LogoResolver, fix_all
+
+        with Store(db_path) as store:
+            changes = asyncio.run(fix_all(store, LogoResolver(store), dry_run=args.dry_run, limit=args.limit))
+        for c in sorted(changes, key=lambda c: (c["old"] is None, c["name"])):
+            print(f"  {c['name'][:40]:40} {c['old'] or '(none)':30} -> {c['new'] or '(monogram)':30} {c['source'] or ''}")
+        replaced = sum(1 for c in changes if c["old"])
+        print(f"{'would change' if args.dry_run else 'changed'} {len(changes)}: {replaced} replaced or dropped, "
+              f"{len(changes) - replaced} newly found")
     elif args.command == "openapi":
         import json
 
