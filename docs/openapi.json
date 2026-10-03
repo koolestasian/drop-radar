@@ -58,6 +58,24 @@
         "title": "ActionPatch",
         "type": "object"
       },
+      "AuthResult": {
+        "properties": {
+          "me": {
+            "$ref": "#/components/schemas/Me"
+          },
+          "token": {
+            "description": "send as 'Authorization: Bearer <token>'; shown once, kept only as a hash",
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "me"
+        ],
+        "title": "AuthResult",
+        "type": "object"
+      },
       "CompanyConfig": {
         "properties": {
           "ats": {
@@ -87,6 +105,26 @@
           "slug"
         ],
         "title": "CompanyConfig",
+        "type": "object"
+      },
+      "Credentials": {
+        "properties": {
+          "password": {
+            "maxLength": 256,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 64,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Credentials",
         "type": "object"
       },
       "FeedConfig": {
@@ -174,6 +212,26 @@
         "title": "InstagramRelay",
         "type": "object"
       },
+      "Login": {
+        "properties": {
+          "password": {
+            "maxLength": 256,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 64,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Login",
+        "type": "object"
+      },
       "Match": {
         "properties": {
           "ok": {
@@ -198,6 +256,12 @@
       },
       "Me": {
         "properties": {
+          "account": {
+            "default": false,
+            "description": "made through sign-up (kept in the database), not listed in users.yaml",
+            "title": "Account",
+            "type": "boolean"
+          },
           "alerts_enabled": {
             "description": "a delivery channel is configured; device receipt is not verified",
             "title": "Alerts Enabled",
@@ -228,6 +292,18 @@
           "user": {
             "title": "User",
             "type": "string"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the name this user signs in with, if they have set one",
+            "title": "Username"
           }
         },
         "required": [
@@ -684,6 +760,166 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/auth/credentials": {
+      "put": {
+        "description": "Set or change your own username and password; your other sessions are signed out.",
+        "operationId": "set_credentials_api_auth_credentials_put",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Credentials"
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Login"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login"
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "logout_api_auth_logout_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logout"
+      }
+    },
+    "/api/auth/signup": {
+      "post": {
+        "operationId": "signup_api_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Signup"
+      }
+    },
     "/api/config/profile": {
       "get": {
         "operationId": "get_profile_api_config_profile_get",

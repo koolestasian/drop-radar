@@ -53,6 +53,23 @@ class Me(BaseModel):
     alerts_enabled: bool = Field(description="a delivery channel is configured; device receipt is not verified")
     notification_url: str | None = Field(description="this user's private ntfy subscription URL; no API token")
     guest: bool = Field(False, description="true for a visitor who is not logged in: read-only, default profile")
+    username: str | None = Field(None, description="the name this user signs in with, if they have set one")
+    account: bool = Field(False, description="made through sign-up (kept in the database), not listed in users.yaml")
+
+
+class Credentials(BaseModel):
+    username: str = Field(max_length=64)
+    password: str = Field(max_length=256)
+
+
+class AuthResult(BaseModel):
+    token: str = Field(description="send as 'Authorization: Bearer <token>'; shown once, kept only as a hash")
+    me: Me
+
+
+class Login(BaseModel):
+    username: str = Field(max_length=64)
+    password: str = Field(max_length=256)
 
 
 class InstagramRelay(BaseModel):

@@ -7,6 +7,9 @@
           'run' is an alias (00-overview.md's original name for this).
   backup  copy the live SQLite db (safe while serve is running) to
           <db's dir>/backups/, keeping the most recent --keep (T10).
+  reset-password <username>
+          give that login a new random password, print it once, and sign
+          the user out everywhere (forgotten-password help until email exists)
   openapi print the API schema; docs/openapi.json is this output (the web
           app's types are generated from it)
 """
@@ -33,6 +36,8 @@ def main(argv=None):
     backup = sub.add_parser("backup", parents=[db], help="back up the SQLite db to <db's dir>/backups/")
     backup.add_argument("--backup-dir", default=None, help="defaults to <db's dir>/backups")
     backup.add_argument("--keep", type=int, default=14, help="how many recent backups to keep")
+    reset = sub.add_parser("reset-password", parents=[db], help="set a new random password for a username")
+    reset.add_argument("username")
     sub.add_parser("openapi", help="print the API's OpenAPI schema as JSON")
     args = parser.parse_args(argv)
 
@@ -47,6 +52,19 @@ def main(argv=None):
         from radar.backup import backup_once
 
         print(backup_once(db_path, args.backup_dir, keep=args.keep))
+    elif args.command == "reset-password":
+        import secrets
+
+        from radar.api.auth import hash_password, normalize_username
+
+        with Store(db_path) as store:
+            creds = store.get_credentials(normalize_username(args.username))
+            if creds is None:
+                raise SystemExit(f"no login named {args.username!r}")
+            new = "-".join(secrets.token_hex(3) for _ in range(4))  # 24 hex characters, easy to read out
+            store.set_credentials(creds["user_id"], creds["username"], hash_password(new))
+            store.delete_user_sessions(creds["user_id"])
+            print(f"{creds['username']}: new password {new} (shown once; they are signed out everywhere)")
     elif args.command == "openapi":
         import json
 

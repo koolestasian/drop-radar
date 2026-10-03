@@ -11,7 +11,7 @@ import os
 
 from radar.alerts import AlertDispatcher, MultiUserAlertDispatcher, channels_for
 from radar.api.events import EventBus
-from radar.config import load_settings, load_users
+from radar.config import account_user, load_settings, load_users
 from radar.errors import ConfigError
 from radar.pipeline import Pipeline
 from radar.pipeline.normalize import canonical_url
@@ -52,9 +52,15 @@ class Runtime:
         self.reload()
 
     def reload(self):
-        users = load_users(self.users_path)
+        configured = load_users(self.users_path)
+        # accounts people made themselves come after users.yaml's users: the first user owns the original
+        # alert channel and the Instagram relay
+        users = configured + tuple(account_user(row) for row in self.store.list_accounts())
         claim_owner(self.store, users)
         sources, owned, _skipped = build_sources_for_users(users, self.settings)
+        shared = frozenset().union(*(owned[u.id] for u in configured))
+        for user in users[len(configured):]:  # an account sees everything the shared set finds, plus its own extras
+            owned[user.id] = shared | owned[user.id]
         for source in sources:
             if source.name.startswith("instagram."):
                 source.external = self.env.get("IG_RELAY_ENABLED") == "1"

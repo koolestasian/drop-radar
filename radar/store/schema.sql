@@ -57,3 +57,29 @@ CREATE TABLE IF NOT EXISTS enrichment (
     key  TEXT PRIMARY KEY,   -- "page:<url>" or "llm:<text hash>"
     json TEXT NOT NULL
 );
+
+-- Accounts people create themselves (users.yaml users are not here). The id is generated and never reused:
+-- statuses, notes and alerts are filed under it, so a freed username can't inherit someone's notes.
+CREATE TABLE IF NOT EXISTS accounts (
+    id         TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    profile    TEXT NOT NULL DEFAULT '{}',   -- JSON, same shape as profile.yaml
+    watchlist  TEXT NOT NULL DEFAULT '{}'    -- JSON: this account's extra companies, on top of the shared set
+);
+
+-- How someone signs in: any user (a users.yaml user or an account) can have one username and password.
+CREATE TABLE IF NOT EXISTS credentials (
+    username   TEXT PRIMARY KEY,             -- lower-case
+    user_id    TEXT NOT NULL UNIQUE,
+    pw_hash    TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+-- Login sessions: only the SHA-256 of the token is stored, so the table can't be replayed.
+CREATE TABLE IF NOT EXISTS sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    last_used  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id);
