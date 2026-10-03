@@ -19,6 +19,9 @@ const SLUG_HINT: Record<string, string> = {
   sitemap: "www.example.com/career-sitemap.xml",
 };
 const TIERS = ["S", "A", "B", "C"];
+// An account's extra companies: the boards where the server fixes the host, and its cap (keep both in step with radar/api/app.py).
+const ACCOUNT_ATS = ["greenhouse", "lever", "ashby", "smartrecruiters", "workday"];
+const MAX_EXTRA = 10;
 
 // One tap fills roles, level keywords and excludes; locations and the target year stay as they are.
 const LEVEL = ["intern", "internship", "co-op", "new grad", "grad", "graduate", "university", "early career", "entry level", "junior", "summer"];
@@ -138,7 +141,7 @@ function ProfileForm({ initial }: { initial: ProfileConfig }) {
   );
 }
 
-function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
+function WatchlistForm({ initial, account }: { initial: WatchlistConfig; account: boolean }) {
   const qc = useQueryClient();
   const [companies, setCompanies] = useState<CompanyConfig[]>(initial.companies ?? []);
   const [draft, setDraft] = useState<CompanyConfig>({ name: "", ats: "greenhouse", slug: "", tier: "B" });
@@ -150,7 +153,9 @@ function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
       qc.invalidateQueries({ queryKey: ["sources"] });
     },
   });
-  const others = [
+  const boards = account ? ACCOUNT_ATS : ATS;
+  const full = account && companies.length >= MAX_EXTRA;
+  const others = account ? [] : [
     initial.instagram?.length && `${initial.instagram.length} Instagram`,
     initial.repos?.length && `${initial.repos.length} community lists`,
     initial.feeds?.length && `${initial.feeds.length} feeds`,
@@ -170,7 +175,7 @@ function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
             </Button>
           </li>
         ))}
-        {companies.length === 0 && <li className="px-3 py-4 text-sm text-muted-foreground">No companies yet.</li>}
+        {companies.length === 0 && <li className="px-3 py-4 text-sm text-muted-foreground">{account ? "No extra companies yet." : "No companies yet."}</li>}
       </ul>
       <form
         className="grid gap-2 sm:grid-cols-[1fr_9rem_1fr_5rem_auto]"
@@ -183,7 +188,7 @@ function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
       >
         <Input name="company" autoComplete="off" aria-label="Company name" placeholder="Company" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" />
         <select name="ats" aria-label="Job board" value={draft.ats} onChange={(e) => setDraft({ ...draft, ats: e.target.value })} className={select}>
-          {ATS.map((a) => (
+          {boards.map((a) => (
             <option key={a}>{a}</option>
           ))}
         </select>
@@ -200,17 +205,18 @@ function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
             <option key={t}>{t}</option>
           ))}
         </select>
-        <Button type="submit" variant="outline" size="lg" className="sm:h-9">Add</Button>
+        <Button type="submit" variant="outline" size="lg" className="sm:h-9" disabled={full}>Add</Button>
       </form>
       <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">
         The slug is in the board's URL: boards.greenhouse.io/<b>stripe</b>, jobs.lever.co/<b>palantir</b>, or for Workday
         https://<b>nvidia.wd5</b>.myworkdayjobs.com/<b>NVIDIAExternalCareerSite</b> <ArrowRight className="inline size-3.5" aria-label="becomes" /> <b>nvidia.wd5/NVIDIAExternalCareerSite</b>.
         {others.length > 0 && ` Also watching: ${others.join(", ")} (edit those in the YAML).`}
       </p>
+      {account && <p className="stamp text-muted-foreground">{companies.length} of {MAX_EXTRA} extra companies</p>}
       {save.isError && <ErrorNote error={save.error} />}
       <div className="flex items-center gap-3">
         <Button size="lg" disabled={save.isPending} onClick={() => save.mutate({ ...initial, companies })}>
-          {save.isPending ? "Saving…" : "Save watchlist"}
+          {save.isPending ? "Checking and saving…" : account ? "Save extra companies" : "Save watchlist"}
         </Button>
         {save.isSuccess && <span role="status" className="text-sm font-medium text-live">Saved — polling now.</span>}
       </div>
@@ -327,7 +333,7 @@ export function Settings() {
           <p className="mt-1 text-sm text-muted-foreground">Changes apply to your feed and your phone alerts right away.</p>
         </div>
         {profile.isPending ? <ListSkeleton rows={2} /> : profile.isError ? <ErrorNote error={profile.error} retry={() => profile.refetch()} /> : (
-          <ProfileForm key={JSON.stringify(profile.data)} initial={profile.data} />
+          <ProfileForm key={me.data?.user} initial={profile.data} />
         )}
       </section>
 
@@ -341,17 +347,19 @@ export function Settings() {
         {me.data ? <AccountForm me={me.data} /> : me.isError ? <ErrorNote error={me.error} retry={() => me.refetch()} /> : <ListSkeleton rows={1} />}
       </section>
 
-      {!me.data?.account && (
       <section aria-labelledby="watchlist-title" className="flex flex-col gap-4">
         <div>
-          <h2 id="watchlist-title" className={h2}>Watchlist</h2>
-          <p className="text-sm text-muted-foreground">The boards the radar polls for you. A board someone else also watches is polled once for both of you.</p>
+          <h2 id="watchlist-title" className={h2}>{me.data?.account ? "Extra companies" : "Watchlist"}</h2>
+          <p className="text-sm text-muted-foreground">
+            {me.data?.account
+              ? "You already see every company the radar watches. Add more job boards here, up to 10. Each one is checked once before it is saved."
+              : "The boards the radar polls for you. A board someone else also watches is polled once for both of you."}
+          </p>
         </div>
         {watchlist.isPending ? <ListSkeleton rows={2} /> : watchlist.isError ? <ErrorNote error={watchlist.error} retry={() => watchlist.refetch()} /> : (
-          <WatchlistForm key={JSON.stringify(watchlist.data)} initial={watchlist.data} />
+          <WatchlistForm key={me.data?.user} initial={watchlist.data} account={Boolean(me.data?.account)} />
         )}
       </section>
-      )}
 
     </div>
   );

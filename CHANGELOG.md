@@ -2,6 +2,17 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.8.0 (2026-10-03)
+
+Extra companies for accounts.
+
+- An account sees every company the radar already watches and can add up to **10 more job boards** in Settings. Those boards are polled for everyone's benefit once, but only shown to the account that added them (the first poll is stored as already-open backfill, so adding a board never floods anyone).
+- **What strangers may add is tightly limited:** companies only (no feeds, Instagram or lists); only Greenhouse, Lever, Ashby, SmartRecruiters and Workday, where the board name goes into a fixed website address; strict name patterns, so nothing can point the box at another address. At most 200 extra companies across all accounts.
+- **Every new board is checked once before it is saved** (it must answer with open postings), so a typo or an empty board is refused with a plain explanation instead of being polled forever. A board that someone already watches is accepted without a check. Edits are rate limited.
+- Settings: "Extra companies" for accounts with a counter and only the allowed boards in the picker. The configured users keep the full watchlist editor.
+- Fixed: after saving the profile or watchlist the "Saved" message no longer vanishes (the form used to rebuild itself).
+- 6 new tests (370 backend); 36 e2e tests.
+
 ## 0.7.0 (2026-10-03)
 
 Phone alerts for accounts, and a way to prove they work.

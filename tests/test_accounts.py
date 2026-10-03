@@ -222,6 +222,85 @@ class AccountTests(unittest.IsolatedAsyncioTestCase):
                 await self.runtime.pipeline(source, [item])
         self.assertEqual(post.call_count, 1)
 
+    def board(self, name="Ramp", ats="greenhouse", slug="ramp"):
+        return {"name": name, "ats": ats, "slug": slug, "tier": "B"}
+
+    async def put_watchlist(self, token, companies, **extra):
+        return await self.client.put("/api/config/watchlist", headers=self.bearer(token),
+                                     json={"companies": companies, "instagram": [], "feeds": [], "repos": [], **extra})
+
+    async def test_an_account_adds_extra_companies_that_only_it_polls_for_and_owns(self):
+        a = (await self.signup("anna_a")).json()
+        b = (await self.signup("ben_b")).json()
+        with mock.patch("radar.api.app.probe_company", return_value=None):
+            r = await self.put_watchlist(a["token"], [self.board()])
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(r.json()["companies"][0]["slug"], "ramp")
+        self.assertIn("ats.greenhouse.ramp", self.runtime.scheduler.sources)  # polled now
+        self.assertIn("ats.greenhouse.ramp", self.runtime.owned[a["me"]["user"]])
+        self.assertNotIn("ats.greenhouse.ramp", self.runtime.owned[b["me"]["user"]])  # b does not see anna's extras
+        self.assertEqual((await self.client.get("/api/me", headers=self.bearer(a["token"]))).json()["sources"], 2)
+        self.assertEqual((await self.client.get("/api/me", headers=self.bearer(b["token"]))).json()["sources"], 1)
+
+    async def test_a_board_somebody_already_polls_is_accepted_without_a_probe(self):
+        token = (await self.signup()).json()["token"]
+        with mock.patch("radar.api.app.probe_company") as probe:
+            r = await self.put_watchlist(token, [self.board("Stripe", slug="stripe")])
+        self.assertEqual(r.status_code, 200, r.text)
+        probe.assert_not_called()
+
+    async def test_a_board_that_does_not_exist_is_refused_and_nothing_is_saved(self):
+        token = (await self.signup()).json()["token"]
+        with mock.patch("radar.api.app.probe_company", return_value="no board with that name was found"):
+            r = await self.put_watchlist(token, [self.board("Nope", slug="nopeco")])
+        self.assertEqual(r.status_code, 422)
+        self.assertIn("Check the slug", r.json()["detail"])
+        self.assertNotIn("ats.greenhouse.nopeco", self.runtime.scheduler.sources)
+        self.assertEqual(self.store.list_accounts()[0]["watchlist"], "{}")
+
+    async def test_accounts_cannot_make_the_box_fetch_arbitrary_things(self):
+        token = (await self.signup()).json()["token"]
+        bad = [
+            ([self.board("X", "sitemap", "evil.example.com/sitemap.xml")], "can't be added"),
+            ([self.board("X", "oracle", "evil.example.com/x")], "can't be added"),
+            ([self.board("X", "workable", "acme")], "can't be added"),
+            ([self.board("X", "greenhouse", "https://evil.example.com/x")], "slug looks wrong"),
+            ([self.board("X", "greenhouse", "../etc/passwd")], "slug looks wrong"),
+            ([self.board("X", "greenhouse", "a/b")], "slug looks wrong"),
+            ([self.board("X", "workday", "evil.example.com/x")], "slug looks wrong"),
+            ([self.board("", "greenhouse", "ramp")], "short name"),
+            ([self.board("A", slug="same"), self.board("B", slug="SAME")], "twice"),
+        ]
+        with mock.patch("radar.api.app.probe_company") as probe:
+            for companies, message in bad:
+                with self.subTest(message=message, first=companies[0]["slug"]):
+                    r = await self.put_watchlist(token, companies)
+                    self.assertEqual(r.status_code, 422, r.text)
+                    self.assertIn(message, r.json()["detail"])
+            for extra in ({"feeds": [{"url": "http://169.254.169.254/", "kind": "rss"}]},
+                          {"instagram": [{"username": "someone"}]}, {"repos": [{"name": "a/b", "path": ""}]}):
+                with self.subTest(extra=list(extra)):
+                    r = await self.put_watchlist(token, [], **extra)
+                    self.assertEqual(r.status_code, 422, r.text)
+                    self.assertIn("companies only", r.json()["detail"])
+        probe.assert_not_called()
+
+    async def test_extra_companies_are_capped_per_account_and_in_total(self):
+        import radar.api.app as app_module
+        token = (await self.signup()).json()["token"]
+        eleven = [self.board(f"Co{i}", slug=f"co{i}") for i in range(11)]
+        self.assertEqual((await self.put_watchlist(token, eleven)).status_code, 422)
+        original, app_module.MAX_EXTRA_COMPANIES_TOTAL = app_module.MAX_EXTRA_COMPANIES_TOTAL, 1
+        self.addCleanup(setattr, app_module, "MAX_EXTRA_COMPANIES_TOTAL", original)
+        other = (await self.signup("ben_b")).json()["token"]
+        with mock.patch("radar.api.app.probe_company", return_value=None):
+            self.assertEqual((await self.put_watchlist(other, [self.board("A", slug="aaa")])).status_code, 200)
+            full = await self.put_watchlist(token, [self.board("B", slug="bbb")])
+        self.assertEqual(full.status_code, 503)
+
+    async def test_configured_users_still_edit_their_yaml_watchlist_and_guests_cannot(self):
+        self.assertEqual((await self.client.put("/api/config/watchlist", json={})).status_code, 401)
+
     async def test_expired_sessions_stop_working(self):
         token = (await self.signup()).json()["token"]
         self.store.conn.execute("UPDATE sessions SET created_at = '2000-01-01T00:00:00+00:00'")
