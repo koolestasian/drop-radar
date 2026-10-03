@@ -28,7 +28,7 @@ from radar.pipeline.filter import matches_profile
 
 log = logging.getLogger(__name__)
 
-__all__ = ["DEAD_STATUSES", "AlertDispatcher", "MultiUserAlertDispatcher", "NtfyChannel", "channels_for", "should_alert", "visible_to"]
+__all__ = ["DEAD_STATUSES", "AlertDispatcher", "MultiUserAlertDispatcher", "NtfyChannel", "channels_for", "should_alert", "visible_to", "account_budget"]
 
 ZERO2SUDO_SOURCE = f"instagram.{legacy.USERNAME}"  # same env override migrate_legacy.py uses
 # A posting that is over, by the source (Closed), its deadline (Expired) or the legacy
@@ -132,6 +132,20 @@ def _default_channels():
     return [NtfyChannel(topic)] if topic else []
 
 
+ACCOUNT_DAILY_PUSHES = 40    # per account: a busy day is a handful of matches
+SHARED_DAILY_PUSHES = 150    # all accounts together: every push leaves from the box's one address, and ntfy.sh
+                             # limits what one address may send (the owner's own pushes are never counted)
+
+
+def account_budget(store, now=utcnow):
+    """True while this account channel (named "ntfy:<id>") and the accounts as a whole are under today's caps."""
+    def ok(channel_name):
+        start = now().replace(hour=0, minute=0, second=0, microsecond=0)
+        return (store.count_alerts_sent(channel_name.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_"), start) < ACCOUNT_DAILY_PUSHES
+                and store.count_alerts_sent("ntfy:u\\_%", start) < SHARED_DAILY_PUSHES)
+    return ok
+
+
 def channels_for(user_id, owner, env=None):
     """The owner (first user in users.yaml) keeps NTFY_TOPIC and the channel name
     "ntfy", so alerts rows written before multi-user support still match. Everyone
@@ -182,8 +196,9 @@ class AlertDispatcher:
     MIN_BACKOFF_S = 30
     MAX_BACKOFF_S = 3600
 
-    def __init__(self, store, profile=None, channels=None):
+    def __init__(self, store, profile=None, channels=None, budget=None):
         self.store = store
+        self.budget = budget  # callable(channel_name) -> bool: False skips a push (daily caps for shared senders)
         self.profile = profile or load_profile()
         self.channels = _default_channels() if channels is None else list(channels)
         self._by_name = {c.name: c for c in self.channels}
@@ -213,6 +228,9 @@ class AlertDispatcher:
         for channel in self.channels:
             if self.store.get_alert(opportunity_id, channel.name) is not None:
                 continue  # already claimed (sent, or pending -- retry_pending's job alone)
+            if self.budget is not None and not self.budget(channel.name):
+                log.info("daily push cap reached for %s; skipping %s", channel.name, opportunity_id)
+                continue  # not claimed: nothing is owed, the feed still has it
             if not self.store.record_alert(opportunity_id, channel.name):
                 continue  # lost the claim to a concurrent dispatch of the same opportunity
             await self._attempt_send(channel, opportunity_id, opp, reasons)

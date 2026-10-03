@@ -30,6 +30,7 @@ MIGRATIONS = (
            SELECT opportunity_id, 'kevin', status, notes, updated_at FROM actions;
        DROP TABLE actions;
        ALTER TABLE actions_new RENAME TO actions""",
+    "ALTER TABLE accounts ADD COLUMN ntfy_topic TEXT",  # 4: an account's own phone-alert topic (NULL = alerts off)
 )
 
 
@@ -292,6 +293,12 @@ class Store:
                 (_iso(sent_at), drop_latency_s, opportunity_id, channel),
             )
 
+    def count_alerts_sent(self, channel_like, since):
+        """How many pushes went out on channels matching this LIKE pattern (use \\ to escape) since `since`."""
+        return self.conn.execute(
+            "SELECT count(*) FROM alerts WHERE channel LIKE ? ESCAPE '\\' AND sent_at >= ?",
+            (channel_like, _iso(since))).fetchone()[0]
+
     def alert_latencies(self):
         """[{"source", "channel", "drop_latency_s"}] for every sent alert, earliest item's source."""
         rows = self.conn.execute(
@@ -342,10 +349,14 @@ class Store:
         return self.conn.execute("SELECT count(*) FROM accounts").fetchone()[0]
 
     def list_accounts(self):
-        return [dict(r) for r in self.conn.execute("SELECT id, profile, watchlist FROM accounts ORDER BY created_at, id")]
+        return [dict(r) for r in self.conn.execute(
+            "SELECT id, profile, watchlist, ntfy_topic FROM accounts ORDER BY created_at, id")]
 
-    def save_account(self, account_id, profile=None, watchlist=None):
+    def save_account(self, account_id, profile=None, watchlist=None, ntfy_topic=...):
+        """Update the given parts; ntfy_topic=None switches phone alerts off, leaving it out changes nothing."""
         with self.conn:
+            if ntfy_topic is not ...:
+                self.conn.execute("UPDATE accounts SET ntfy_topic = ? WHERE id = ?", (ntfy_topic, account_id))
             if profile is not None:
                 self.conn.execute("UPDATE accounts SET profile = ? WHERE id = ?",
                                   (json.dumps(profile, ensure_ascii=False), account_id))

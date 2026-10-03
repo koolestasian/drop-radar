@@ -2,6 +2,17 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.7.0 (2026-10-03)
+
+Phone alerts for accounts, and a way to prove they work.
+
+- **Turn on phone alerts** in Settings for an account: it gets its own private, unguessable ntfy topic (never chosen by the user, never from the environment), with a three-step setup and a link. Turn off removes it.
+- **Send a test push** (everyone with alerts, including the two configured users; three an hour): the way to confirm a phone really receives them.
+- **Nothing old is pushed:** alerts only fire for newly arriving postings, and the retry sweep only touches pushes already owed, so enabling alerts never sends what matched before (a test proves it).
+- **Daily caps** protect the box's single sending address: 40 pushes a day per account and 150 across all accounts. The configured users' own pushes are never counted. A skipped push is not claimed, and the posting is still in the feed. ntfy's published defaults (60-request burst, then one every 5 seconds) are far above this; the free tier's daily total could not be confirmed from its pages, so the caps are deliberately low.
+- Settings form fields now have names and autocomplete settings (DevTools flagged them).
+- 4 new tests (364 backend); 34 e2e tests.
+
 ## 0.6.0 (2026-10-03)
 
 Accounts people create themselves: a username and password instead of a long token.
