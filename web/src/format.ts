@@ -71,10 +71,10 @@ export function deadline(value: string, now = new Date()): Deadline | null {
   return { label: `due ${due.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`, tone: "normal" };
 }
 
-/** One readable line: "5 locations | Seattle, WAJessup, MD…" -> "5 locations"; long ones are cut. */
+/** One readable line of the server's "City - Country" form; long lists of places are cut (the full text is the tooltip). */
 export function shortLocation(location: string): string {
-  const first = location.split(" | ")[0].replace(/(.), (United States of America|United States|USA)$/i, "$1").trim();
-  return first.length > 48 ? `${first.slice(0, 46)}…` : first || "Location not listed";
+  const text = location.trim();
+  return text.length > 56 ? `${text.slice(0, 54)}…` : text || "Location not listed";
 }
 
 /** When the employer posted it, as distinct from when we found it: "posted 5m ago" / "3h ago" / "2d ago".

@@ -403,7 +403,14 @@
             "type": "string"
           },
           "location": {
+            "description": "display form, \"City - Country\" (\"A, B - Country; C - Other\" for several)",
             "title": "Location",
+            "type": "string"
+          },
+          "location_raw": {
+            "default": "",
+            "description": "the place exactly as the source wrote it",
+            "title": "Location Raw",
             "type": "string"
           },
           "match": {

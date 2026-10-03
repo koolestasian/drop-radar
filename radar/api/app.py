@@ -46,6 +46,7 @@ from radar.logos import LogoResolver
 from radar.models import utcnow
 from radar.pipeline.filter import is_us_location
 from radar.pipeline.normalize import canonical_company
+from radar.pipeline.places import format_location
 from radar.pipeline.enrich import DEFAULT_DAILY_TOKEN_BUDGET
 from radar.sources.instagram import story_id
 from radar.stats import latency_by_source
@@ -218,7 +219,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         fields, action = opp["fields"], opp.get("action")
         seen_by_me = [i for i in opp["items"] if i["source"] in mine]
         return Opportunity(
-            id=opp["id"], title=opp["title"], company=opp["company"], location=opp["location"], url=opp["url"],
+            id=opp["id"], title=opp["title"], company=opp["company"], location=format_location(opp["location"]),
+            location_raw=opp["location"], url=opp["url"],
             deadline=opp["deadline"], status=opp["status"], first_seen=opp["first_seen"],
             published_at=opp["published_at"], category=fields.get("Category", ""),
             role_track=fields.get("Role / Track", ""), season=fields.get("Season / Year", ""),
