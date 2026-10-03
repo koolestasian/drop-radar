@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { api, type CompanyConfig, type Me, type ProfileConfig, type WatchlistConfig } from "../api/client";
+import { api, token, type CompanyConfig, type Me, type ProfileConfig, type WatchlistConfig } from "../api/client";
 import { ArrowRight, ExternalLink, X } from "lucide-react";
 import { ErrorNote, ListSkeleton } from "../components/common";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,16 @@ const SLUG_HINT: Record<string, string> = {
   sitemap: "www.example.com/career-sitemap.xml",
 };
 const TIERS = ["S", "A", "B", "C"];
+
+// One tap fills roles, level keywords and excludes; locations and the target year stay as they are.
+const LEVEL = ["intern", "internship", "co-op", "new grad", "grad", "graduate", "university", "early career", "entry level", "junior", "summer"];
+const NOT = ["senior", "staff", "principal", "director", "high school", "phd"];
+const PRESETS: { label: string; roles: string[] }[] = [
+  { label: "Software and data", roles: ["software engineer", "software developer", "swe", "backend", "frontend", "full stack", "mobile engineer", "machine learning", "ml engineer", "ai engineer", "data engineer", "data scientist", "data analyst", "platform engineer", "security engineer"] },
+  { label: "Quant and trading", roles: ["quantitative", "quant", "trading", "trader", "research engineer", "algorithm"] },
+  { label: "Finance", roles: ["investment banking", "private equity", "venture capital", "investment", "markets", "equity research", "research analyst", "asset management", "wealth management", "corporate finance", "finance", "fp&a", "m&a", "credit", "risk", "treasury", "accounting", "audit"] },
+  { label: "Business and consulting", roles: ["consulting", "consultant", "strategy", "business analyst", "business operations", "corporate development", "product manager", "marketing", "operations", "sales", "supply chain"] },
+];
 // Native selects: they open the OS picker on a phone, which is what you want there.
 const select = "h-11 w-full rounded-lg border border-input bg-card px-3 text-base sm:h-9 sm:text-sm";
 
@@ -79,6 +89,7 @@ function ProfileForm({ initial }: { initial: ProfileConfig }) {
     },
   });
   const set = (k: keyof ProfileConfig) => (v: string[]) => setP((x) => ({ ...x, [k]: v }));
+  const preset = (roles: string[]) => setP((x) => ({ ...x, roles, keywords: LEVEL, exclude: NOT }));
   return (
     <form
       onSubmit={(e: FormEvent) => {
@@ -87,6 +98,17 @@ function ProfileForm({ initial }: { initial: ProfileConfig }) {
       }}
       className="flex flex-col gap-5"
     >
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-semibold">Start from a preset</legend>
+        <p className="text-sm text-muted-foreground">Fills the roles and level below, which you can then edit. Nothing changes until you save.</p>
+        <div className="flex flex-wrap gap-2">
+          {PRESETS.map((x) => (
+            <Button key={x.label} type="button" variant="outline" className="rounded-full pointer-coarse:h-11" onClick={() => preset(x.roles)}>
+              {x.label}
+            </Button>
+          ))}
+        </div>
+      </fieldset>
       <Tags label="Roles you want" help="A title needs one of these… e.g. software engineer, investment banking." value={p.roles ?? []} onChange={set("roles")} />
       <Tags label="Level keywords" help="…and one of these. e.g. intern, new grad, summer analyst." value={p.keywords ?? []} onChange={set("keywords")} />
       <Tags label="Exclude" help="Any of these in a title rules it out. e.g. senior, phd." value={p.exclude ?? []} onChange={set("exclude")} />
@@ -193,6 +215,50 @@ function WatchlistForm({ initial }: { initial: WatchlistConfig }) {
   );
 }
 
+function AccountForm({ me }: { me: Me }) {
+  const qc = useQueryClient();
+  const [username, setUsername] = useState(me.username ?? (me.account ? "" : me.user));
+  const [password, setPassword] = useState("");
+  const save = useMutation({
+    mutationFn: () =>
+      api<{ token: string; me: Me }>("/api/auth/credentials", { method: "PUT", body: JSON.stringify({ username: username.trim(), password }) }),
+    onSuccess: (res) => {
+      token.set(res.token); // the old session was ended; this one replaces it
+      qc.setQueryData(["me"], res.me);
+      setPassword("");
+    },
+  });
+  return (
+    <form
+      onSubmit={(e: FormEvent) => {
+        e.preventDefault();
+        save.mutate();
+      }}
+      className="flex flex-col gap-3"
+    >
+      <p className="text-sm text-muted-foreground">
+        {me.username ? `You sign in as ${me.username}. Set a new password below to change it; other devices are signed out.` : "Choose a username and password so you can sign in on any device without the long access token."}
+      </p>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-semibold">Username</span>
+        <Input name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} value={username} onChange={(e) => setUsername(e.target.value)} required className="h-11 text-base sm:h-9 sm:text-sm" />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-semibold">{me.username ? "New password" : "Password"}</span>
+        <Input name="new-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-11 text-base sm:h-9 sm:text-sm" />
+        <span className="text-sm text-muted-foreground">At least 10 characters.</span>
+      </label>
+      {save.isError && <ErrorNote error={save.error} />}
+      <div className="flex items-center gap-3">
+        <Button type="submit" size="lg" disabled={save.isPending || !username.trim() || !password}>
+          {save.isPending ? "Saving…" : me.username ? "Change password" : "Save sign-in"}
+        </Button>
+        {save.isSuccess && <span role="status" className="text-sm font-medium text-live">Saved.</span>}
+      </div>
+    </form>
+  );
+}
+
 export function Settings() {
   const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me") });
   const profile = useQuery({ queryKey: ["config", "profile"], queryFn: () => api<ProfileConfig>("/api/config/profile") });
@@ -223,6 +289,12 @@ export function Settings() {
         ) : me.isError ? <ErrorNote error={me.error} retry={() => me.refetch()} /> : <ListSkeleton rows={1} />}
       </section>
 
+      <section aria-labelledby="signin-title" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
+        <h2 id="signin-title" className={h2}>Sign-in details</h2>
+        {me.data ? <AccountForm me={me.data} /> : me.isError ? <ErrorNote error={me.error} retry={() => me.refetch()} /> : <ListSkeleton rows={1} />}
+      </section>
+
+      {!me.data?.account && (
       <section aria-labelledby="watchlist-title" className="flex flex-col gap-4">
         <div>
           <h2 id="watchlist-title" className={h2}>Watchlist</h2>
@@ -232,6 +304,7 @@ export function Settings() {
           <WatchlistForm key={JSON.stringify(watchlist.data)} initial={watchlist.data} />
         )}
       </section>
+      )}
 
     </div>
   );

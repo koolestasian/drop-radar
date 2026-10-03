@@ -28,7 +28,7 @@ function opp(id: string, company: string, title: string, extra: Partial<Opp> = {
 }
 
 async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
-  if (welcomed) await page.addInitScript(() => localStorage.setItem("radar.welcomed.kevin", "1")); // the first-run sheet has its own test
+  if (welcomed) await page.addInitScript(() => { localStorage.setItem("radar.welcomed.kevin", "1"); localStorage.setItem("radar.welcomed.u_ab12cd34ef", "1"); }); // the first-run sheet has its own test
   const state: Opp[] = [
     opp("o1", "Stripe", "Software Engineer, Intern (Summer 2027)", { deadline: localDateDaysFromNow(2), company_domain: "stripe.com" }),
     opp("o2", "NVIDIA", "Systems Software Engineer - New College Grad 2026", { sources: ["ats.workday.nvidia.wd5/NVIDIAExternalCareerSite"],
@@ -48,6 +48,22 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
     const url = new URL(req.url());
     const path = url.pathname;
     const given = req.headers()["authorization"];
+    const ME = { user: "u_ab12cd34ef", sources: 3, alerts_enabled: false, notification_url: null, guest: false, username: "sam_smith", account: true };
+    if (req.method() === "POST" && path === "/api/auth/signup") {
+      const body = JSON.parse(req.postData() ?? "{}");
+      if (body.password.length < 10) return json(route, { detail: "A password needs at least 10 characters." }, 422);
+      return json(route, { token: TOKEN, me: { ...ME, username: body.username } }, 201);
+    }
+    if (req.method() === "POST" && path === "/api/auth/login") {
+      const body = JSON.parse(req.postData() ?? "{}");
+      if (body.username !== "sam_smith" || body.password !== "correct horse battery") return json(route, { detail: "Wrong username or password." }, 401);
+      return json(route, { token: TOKEN, me: ME });
+    }
+    if (req.method() === "POST" && path === "/api/auth/logout") return route.fulfill({ status: 204 });
+    if (req.method() === "PUT" && path === "/api/auth/credentials") {
+      const body = JSON.parse(req.postData() ?? "{}");
+      return json(route, { token: TOKEN, me: { ...ME, user: "kevin", account: false, username: body.username } });
+    }
     // like the server: no token reads as the read-only guest; a wrong token is refused; writes and account routes need a real one
     const guest = !given && req.method() === "GET" && (path === "/api/me" || path.startsWith("/api/opportunities"));
     if (!guest && given !== `Bearer ${TOKEN}`) return json(route, { detail: "missing or invalid bearer token" }, 401);
@@ -95,11 +111,12 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
 test("sign in, catch a live drop, save it, move it along the board", async ({ page }, info) => {
   const mock = await mockApi(page);
   await page.goto("/#/login");
+  await page.getByRole("button", { name: "Use an access token instead" }).click();
   await page.getByLabel("Your access token").fill("wrong-token-0123456789xx");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("wasn't accepted");
   await page.getByLabel("Your access token").fill(TOKEN);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
   await expect(page.getByRole("article")).toHaveCount(2);
   await expect(page.getByRole("heading", { name: "2 new roles" })).toBeVisible();
@@ -369,9 +386,45 @@ test("a visitor without a token browses read-only and is sent to sign in for the
   await page.getByRole("button", { name: "Keep browsing as a guest" }).click();
   await expect(page.getByRole("article", { name: /^Stripe/ })).toBeVisible();
   await page.getByRole("link", { name: "Sign in" }).first().click();
+  await page.getByRole("button", { name: "Use an access token instead" }).click();
   await page.getByLabel("Your access token").fill(TOKEN);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("button", { name: /^Account/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Save" }).first()).toBeVisible();
   await expect(page.getByText("You are browsing as a guest")).toHaveCount(0);
+});
+
+test("create an account, sign out, sign back in with the password; wrong passwords say why", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/#/login");
+  await page.getByRole("tab", { name: "Create account" }).click();
+  await page.getByLabel("Username").fill("sam_smith");
+  await page.getByLabel("Password").fill("short");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("alert")).toContainText("at least 10 characters");
+  await page.getByLabel("Password").fill("correct horse battery");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("button", { name: /^Account: u_ab12cd34ef/ })).toBeVisible();
+  await page.getByRole("button", { name: /^Account/ }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
+  await page.goto("/#/login");
+  await page.getByLabel("Username").fill("sam_smith");
+  await page.getByLabel("Password").fill("not the password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Wrong username or password.");
+  await page.getByLabel("Password").fill("correct horse battery");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^Account/ })).toBeVisible();
+});
+
+test("a profile preset fills the roles, and Settings can add a username and password", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/#/settings");
+  await page.getByRole("button", { name: "Finance", exact: true }).click();
+  await expect(page.getByText("investment banking", { exact: true })).toBeVisible();
+  await page.getByLabel("Username").fill("kevin");
+  await page.locator('input[name="new-password"]').fill("a long enough passphrase");
+  await page.getByRole("button", { name: /Save sign-in|Change password/ }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
 });

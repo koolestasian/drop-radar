@@ -268,6 +268,29 @@ def load_guest_profile() -> Profile:
     return load_profile(GUEST_PROFILE)
 
 
+def account_user(row) -> User:
+    """A User from an accounts row. Bad stored JSON never stops the service: it falls back to the
+    default profile and no extra companies, and the owner can see why in the log."""
+    import json
+    import logging
+    where = f"account {row['id']}"
+    try:
+        profile = parse_profile(json.loads(row["profile"] or "{}") or _guest_profile_data(), where)
+    except (ConfigError, ValueError) as exc:
+        logging.getLogger(__name__).error("%s: stored profile unusable (%s); using the default", where, exc)
+        profile = load_guest_profile()
+    try:
+        watchlist = parse_watchlist(json.loads(row["watchlist"] or "{}"), where)
+    except (ConfigError, ValueError) as exc:
+        logging.getLogger(__name__).error("%s: stored watchlist unusable (%s); using none", where, exc)
+        watchlist = Watchlist()
+    return User(id=row["id"], watchlist=watchlist, profile=profile)
+
+
+def _guest_profile_data() -> dict:
+    return _read_yaml(GUEST_PROFILE)
+
+
 def load_users(path=None) -> tuple[User, ...]:
     """Each user names their own watchlist/profile files, relative to users.yaml
     (not a 'config/<id>/' convention: the first user's files predate this and

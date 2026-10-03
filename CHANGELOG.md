@@ -2,6 +2,18 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.6.0 (2026-10-03)
+
+Accounts people create themselves: a username and password instead of a long token.
+
+- **Create account / Sign in** with a username and password on the sign-in screen (password managers work). Access tokens still work behind "Use an access token instead", and personal `#token=` links still sign you in.
+- **Everyone can add a username and password** in Settings, including the two configured users, so there is no need for a second account and saved roles stay put.
+- **A new account** gets the default early-career profile (tech and business) that it can reshape in Settings with one-tap presets (Software and data, Quant and trading, Finance, Business and consulting), its own private saved roles, Board and notes, and the same shared set of sources as everyone.
+- **Safety:** passwords are hashed with scrypt in a worker thread (nothing in the database can be replayed); sessions are random tokens stored only as hashes and last 90 days; "wrong username" and "wrong password" answer identically; login, sign-up and credential changes are rate limited; at most 300 accounts; changing a password signs out other devices; signing out ends the session on the server too. Account ids are generated and never reused.
+- **Forgotten password:** the owner runs `python -m radar reset-password <username>` on the box (prints a new password once and signs the user out everywhere).
+- Not yet for accounts (next releases): their own phone alerts and extra companies; the Watchlist section is hidden for accounts until then.
+- 14 new account tests (360 backend tests); 32 e2e tests.
+
 ## 0.5.0 (2026-10-03)
 
 Browse without signing in; sign in for more.

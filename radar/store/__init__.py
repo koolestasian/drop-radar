@@ -325,3 +325,71 @@ class Store:
                 "INSERT INTO enrichment (key, json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET json = excluded.json",
                 (key, json.dumps(value, ensure_ascii=False, sort_keys=True)),
             )
+
+    # ---- accounts, credentials, sessions ------------------------------------
+
+    def create_account(self, account_id, profile, username, pw_hash):
+        """One transaction: the account and its credentials exist together or not at all.
+        Raises sqlite3.IntegrityError when the username is taken."""
+        now = _iso(utcnow())
+        with self.conn:
+            self.conn.execute("INSERT INTO accounts (id, created_at, profile) VALUES (?, ?, ?)",
+                              (account_id, now, json.dumps(profile, ensure_ascii=False)))
+            self.conn.execute("INSERT INTO credentials (username, user_id, pw_hash, created_at) VALUES (?, ?, ?, ?)",
+                              (username, account_id, pw_hash, now))
+
+    def count_accounts(self):
+        return self.conn.execute("SELECT count(*) FROM accounts").fetchone()[0]
+
+    def list_accounts(self):
+        return [dict(r) for r in self.conn.execute("SELECT id, profile, watchlist FROM accounts ORDER BY created_at, id")]
+
+    def save_account(self, account_id, profile=None, watchlist=None):
+        with self.conn:
+            if profile is not None:
+                self.conn.execute("UPDATE accounts SET profile = ? WHERE id = ?",
+                                  (json.dumps(profile, ensure_ascii=False), account_id))
+            if watchlist is not None:
+                self.conn.execute("UPDATE accounts SET watchlist = ? WHERE id = ?",
+                                  (json.dumps(watchlist, ensure_ascii=False), account_id))
+
+    def get_credentials(self, username):
+        row = self.conn.execute("SELECT username, user_id, pw_hash FROM credentials WHERE username = ?",
+                                (username,)).fetchone()
+        return dict(row) if row else None
+
+    def credentials_for(self, user_id):
+        row = self.conn.execute("SELECT username, user_id, pw_hash FROM credentials WHERE user_id = ?",
+                                (user_id,)).fetchone()
+        return dict(row) if row else None
+
+    def set_credentials(self, user_id, username, pw_hash):
+        """Give a user (or change) their username and password. Raises sqlite3.IntegrityError when
+        the username belongs to someone else."""
+        with self.conn:
+            self.conn.execute("DELETE FROM credentials WHERE user_id = ?", (user_id,))
+            self.conn.execute("INSERT INTO credentials (username, user_id, pw_hash, created_at) VALUES (?, ?, ?, ?)",
+                              (username, user_id, pw_hash, _iso(utcnow())))
+
+    def add_session(self, token_hash, user_id):
+        now = _iso(utcnow())
+        with self.conn:
+            self.conn.execute("INSERT INTO sessions (token_hash, user_id, created_at, last_used) VALUES (?, ?, ?, ?)",
+                              (token_hash, user_id, now, now))
+
+    def session_user(self, token_hash, since=None):
+        """Who a login session belongs to; sessions created before `since` (ISO) no longer count."""
+        row = self.conn.execute("SELECT user_id FROM sessions WHERE token_hash = ? AND created_at >= ?",
+                                (token_hash, since or "")).fetchone()
+        return row[0] if row else None
+
+    def is_account(self, user_id):
+        return self.conn.execute("SELECT 1 FROM accounts WHERE id = ?", (user_id,)).fetchone() is not None
+
+    def delete_session(self, token_hash):
+        with self.conn:
+            self.conn.execute("DELETE FROM sessions WHERE token_hash = ?", (token_hash,))
+
+    def delete_user_sessions(self, user_id):
+        with self.conn:
+            self.conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))

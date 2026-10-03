@@ -4,6 +4,77 @@
  */
 
 export interface paths {
+    "/api/auth/credentials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Credentials
+         * @description Set or change your own username and password; your other sessions are signed out.
+         */
+        put: operations["set_credentials_api_auth_credentials_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login */
+        post: operations["login_api_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Logout */
+        post: operations["logout_api_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Signup */
+        post: operations["signup_api_auth_signup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/config/profile": {
         parameters: {
             query?: never;
@@ -201,6 +272,15 @@ export interface components {
             /** Status */
             status?: ("new" | "saved" | "applied" | "interview" | "offer" | "rejected" | "ignored") | null;
         };
+        /** AuthResult */
+        AuthResult: {
+            me: components["schemas"]["Me"];
+            /**
+             * Token
+             * @description send as 'Authorization: Bearer <token>'; shown once, kept only as a hash
+             */
+            token: string;
+        };
         /** CompanyConfig */
         CompanyConfig: {
             /**
@@ -221,6 +301,13 @@ export interface components {
              * @default B
              */
             tier: string;
+        };
+        /** Credentials */
+        Credentials: {
+            /** Password */
+            password: string;
+            /** Username */
+            username: string;
         };
         /** FeedConfig */
         FeedConfig: {
@@ -267,6 +354,13 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** Login */
+        Login: {
+            /** Password */
+            password: string;
+            /** Username */
+            username: string;
+        };
         /** Match */
         Match: {
             /**
@@ -279,6 +373,12 @@ export interface components {
         };
         /** Me */
         Me: {
+            /**
+             * Account
+             * @description made through sign-up (kept in the database), not listed in users.yaml
+             * @default false
+             */
+            account: boolean;
             /**
              * Alerts Enabled
              * @description a delivery channel is configured; device receipt is not verified
@@ -299,6 +399,11 @@ export interface components {
             sources: number;
             /** User */
             user: string;
+            /**
+             * Username
+             * @description the name this user signs in with, if they have set one
+             */
+            username?: string | null;
         };
         /** Metrics */
         Metrics: {
@@ -508,6 +613,136 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    set_credentials_api_auth_credentials_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Credentials"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_api_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Login"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_api_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    signup_api_auth_signup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Credentials"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_profile_api_config_profile_get: {
         parameters: {
             query?: never;

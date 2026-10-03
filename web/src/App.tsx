@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Activity, BellOff, CircleUser, Inbox, KanbanSquare, List, LogOut, Settings as SettingsIcon, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
-import { api, setUnauthorizedHandler, token, type Me, type Opportunity } from "./api/client";
+import { api, authHeaders, setUnauthorizedHandler, token, type Me, type Opportunity } from "./api/client";
 import { openStream, type StreamStatus } from "./api/stream";
 import { patchCachedOpportunity } from "./hooks";
 import { Feed } from "./screens/Feed";
@@ -149,7 +149,14 @@ export function App() {
                 <a href="#/settings"><SettingsIcon aria-hidden /> Settings</a>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onSelect={signOut}>
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => {
+                  // end the server session too (a configured token has none); then forget it here
+                  void fetch("/api/auth/logout", { method: "POST", headers: authHeaders() }).catch(() => {});
+                  signOut();
+                }}
+              >
                 <LogOut aria-hidden /> Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>

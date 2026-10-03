@@ -21,7 +21,9 @@ import json
 import logging
 import os
 import re
+import secrets
 import signal
+import sqlite3
 import tempfile
 import time
 from pathlib import Path
@@ -34,8 +36,8 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse
 
 from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
-from radar.api import events
-from radar.api.models import (Action, ActionPatch, InstagramRelay, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
+from radar.api import auth, events
+from radar.api.models import (Action, ActionPatch, AuthResult, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
                               SourceHealth, SourceLatency, WatchlistConfig)
 from radar.config import GUEST_ID, User, Watchlist, load_guest_profile, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
@@ -96,6 +98,10 @@ def _atomic_write(path, text):
     os.replace(tmp, path)
 
 
+MAX_ACCOUNTS = 300  # accounts people made themselves; the box is small
+SESSION_DAYS = 90
+
+
 def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, crash_exit=None):
     tokens = load_settings().api_tokens if tokens is None else tokens
     bus = getattr(runtime, "events", None) or events.EventBus()
@@ -129,6 +135,9 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     app = FastAPI(title="Drop Radar", lifespan=lifespan)
     app.state.store, app.state.runtime = store, runtime
 
+    def _session_cutoff():
+        return (now() - timedelta(days=SESSION_DAYS)).isoformat()
+
     async def current_user(authorization: str = Header(default="")) -> User:
         scheme, _, given = authorization.partition(" ")
         given = given.strip().encode()
@@ -138,6 +147,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             for secret, uid in tokens.items():
                 if hmac.compare_digest(secret.encode(), given):
                     user_id = uid
+            if user_id is None:  # not a configured secret: a login session (only its hash is stored)
+                user_id = store.session_user(auth.hash_token(given.decode(errors="replace")), _session_cutoff())
         user = getattr(runtime, "users", {}).get(user_id) if user_id else None
         if user is None:
             raise HTTPException(401, "missing or invalid bearer token", headers={"WWW-Authenticate": "Bearer"})
@@ -150,19 +161,23 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         # the app listens on localhost behind Caddy, which appends the address it saw: the last entry is its own
         return request.headers.get("x-forwarded-for", "").split(",")[-1].strip() or (request.client.host if request.client else "?")
 
+    def throttle(key, limit, window_s, message="too many attempts; try again later"):
+        """At most `limit` hits per `window_s` for this key, else 429."""
+        now_s = time.monotonic()
+        recent = [t for t in hits.get(key, ()) if now_s - t < window_s]
+        if len(recent) >= limit:
+            raise HTTPException(429, message, headers={"Retry-After": str(window_s)})
+        hits[key] = recent + [now_s]
+        if len(hits) > 4000:  # a flood of fresh keys can't grow this without bound
+            for k in [k for k, v in hits.items() if not v or now_s - v[-1] >= 3600]:
+                del hits[k]
+
     async def viewer(request: Request, authorization: str = Header(default="")) -> User:
         """The logged-in user, or the read-only guest when no token is sent. A token that is sent
         and wrong is still a 401, so a signed-out or stale device is told to sign in again."""
         if authorization.strip():
             return await current_user(authorization)
-        now_s, ip = time.monotonic(), _client_ip(request)
-        recent = [t for t in hits.get(ip, ()) if now_s - t < 60]
-        if len(recent) >= 60:
-            raise HTTPException(429, "too many requests; sign in or slow down", headers={"Retry-After": "60"})
-        hits[ip] = recent + [now_s]
-        if len(hits) > 2000:  # an attacker rotating addresses can't grow this without bound
-            for k in [k for k, v in hits.items() if not v or now_s - v[-1] >= 60]:
-                del hits[k]
+        throttle(("guest", _client_ip(request)), 60, 60, "too many requests; sign in or slow down")
         return guest
 
     def owned(user):
@@ -198,15 +213,81 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         """Liveness only -- no data, no auth."""
         return {"ok": True}
 
-    @app.get("/api/me", response_model=Me)
-    async def me(user: User = Depends(viewer)):
+    def me_for(user):
         if user.id == GUEST_ID:
             return Me(user=GUEST_ID, sources=len(owned(user)), alerts_enabled=False, notification_url=None, guest=True)
+        creds = store.credentials_for(user.id)
         pipeline = getattr(runtime, "pipeline", None)
         dispatchers = getattr(getattr(pipeline, "alerter", None), "dispatchers", {})
         channels = getattr(dispatchers.get(user.id), "channels", [])
         url = next((f"{c.server}/{quote(c.topic, safe='')}" for c in channels if isinstance(c, NtfyChannel)), None)
-        return Me(user=user.id, sources=len(owned(user)), alerts_enabled=bool(channels), notification_url=url)
+        return Me(user=user.id, sources=len(owned(user)), alerts_enabled=bool(channels), notification_url=url,
+                  username=creds["username"] if creds else None, account=store.is_account(user.id))
+
+    @app.get("/api/me", response_model=Me)
+    async def me(user: User = Depends(viewer)):
+        return me_for(user)
+
+    def _session_for(user):
+        token, digest = auth.new_session_token()
+        store.add_session(digest, user.id)
+        return AuthResult(token=token, me=me_for(user))
+
+    def _check_new_credentials(body, own_id=None):
+        username = auth.normalize_username(body.username)
+        problem = auth.username_problem(username) or auth.password_problem(body.password)
+        if problem:
+            raise HTTPException(422, problem)
+        taken = getattr(runtime, "users", {})
+        if username in taken and username != own_id:  # users.yaml ids are only theirs to claim
+            raise HTTPException(409, "That username is taken.")
+        return username
+
+    @app.post("/api/auth/signup", response_model=AuthResult, status_code=201)
+    async def signup(body: Credentials, request: Request):
+        if not hasattr(runtime, "reload"):
+            raise HTTPException(503, "accounts can only be created on the running server")
+        username = _check_new_credentials(body)  # typos are free; only an attempt that would create an account counts
+        if store.count_accounts() >= MAX_ACCOUNTS:
+            raise HTTPException(503, "Sign-up is full right now.")
+        throttle(("signup", _client_ip(request)), 5, 3600, "Too many sign-ups from here; try again in an hour.")
+        pw_hash = await auth.hash_password_async(body.password)
+        account_id = "u_" + secrets.token_hex(5)
+        try:
+            store.create_account(account_id, {}, username, pw_hash)
+        except sqlite3.IntegrityError:
+            raise HTTPException(409, "That username is taken.") from None
+        runtime.reload()
+        return _session_for(runtime.users[account_id])
+
+    @app.post("/api/auth/login", response_model=AuthResult)
+    async def login(body: Login, request: Request):
+        username = auth.normalize_username(body.username)
+        throttle(("login-ip", _client_ip(request)), 20, 600)
+        throttle(("login-user", username), 10, 600)
+        creds = store.get_credentials(username)
+        ok = await auth.check_password_async(body.password, creds["pw_hash"] if creds else auth.DUMMY_HASH)
+        user = getattr(runtime, "users", {}).get(creds["user_id"]) if creds and ok else None
+        if user is None:  # unknown name, wrong password and a removed user all look the same
+            raise HTTPException(401, "Wrong username or password.")
+        return _session_for(user)
+
+    @app.post("/api/auth/logout", status_code=204)
+    async def logout(authorization: str = Header(default=""), user: User = Depends(current_user)):
+        store.delete_session(auth.hash_token(authorization.partition(" ")[2].strip()))  # a configured token has no session
+
+    @app.put("/api/auth/credentials", response_model=AuthResult)
+    async def set_credentials(body: Credentials, request: Request, user: User = Depends(current_user)):
+        """Set or change your own username and password; your other sessions are signed out."""
+        throttle(("credentials", user.id), 10, 3600)
+        username = _check_new_credentials(body, own_id=user.id)
+        pw_hash = await auth.hash_password_async(body.password)
+        try:
+            store.set_credentials(user.id, username, pw_hash)
+        except sqlite3.IntegrityError:
+            raise HTTPException(409, "That username is taken.") from None
+        store.delete_user_sessions(user.id)
+        return _session_for(user)
 
     @app.post("/api/instagram/relay")
     async def relay_instagram(body: InstagramRelay, user: User = Depends(current_user)):
@@ -373,7 +454,15 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
 
     @app.put("/api/config/profile", response_model=ProfileConfig)
     async def put_profile(body: ProfileConfig, user: User = Depends(current_user)):
-        replace_config(user, "profile", body.model_dump(), parse_profile, user.profile_path)
+        if store.is_account(user.id):  # accounts live in the database, not in a config file
+            try:
+                parse_profile(body.model_dump(), f"{user.id}'s profile")
+            except ConfigError as exc:
+                raise HTTPException(422, str(exc)) from None
+            store.save_account(user.id, profile=body.model_dump())
+            runtime.reload()
+        else:
+            replace_config(user, "profile", body.model_dump(), parse_profile, user.profile_path)
         return ProfileConfig(**dataclasses.asdict(runtime.users[user.id].profile))
 
     @app.get("/api/stream", response_class=StreamingResponse,
