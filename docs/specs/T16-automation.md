@@ -58,7 +58,7 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 
 | # | Slice | Status |
 |---|---|---|
-| 16.1 | Logos: verified ladder | **done, live**; `fix-logos` fixed in 23c3da2 (deployed 2026-10-03 20:43 UTC); the real run waits on the owner's yes to `fix-logos-dryrun2.txt` |
+| 16.1 | Logos: verified ladder | **done, live**; `fix-logos` ran for real 2026-10-03 21:35 UTC (owner's yes): 110 changed, report `/opt/radar/data/fix-logos-run.txt`, backup `backups/radar-20261003T212612Z-pre-fix-logos.db` |
 | 16.2 | Delete `filter.py`'s location lists | **done, live** (5761717, deployed 2026-10-03 20:43 UTC) |
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | todo |
 | 16.4 | Self-growing watchlist + review queue | todo |
@@ -84,7 +84,10 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
   logo coverage from 79% to about 91%.
 
 **Still to do:**
-- **`fix-logos`:** `python -m radar fix-logos [--dry-run]` checks every company, replaces cached
+- **`fix-logos` (ran 2026-10-03 21:35 UTC; 15 replaced, 95 filled).** Doubtful fills the owner accepted, fix by hand if wrong:
+  Rollout -> rolloutpolice.com, Icon -> icon.me, Arch -> arch.com, Zip -> zip.co, Cogna -> cogna.com.br, POET -> poet.com,
+  Realm -> realmalliance.com, Mill -> mill.com, PMG -> pmg.com, Jobsbridge -> jobsbridge.com. Known wrong and kept: Hatch IT -> deallink.io.
+  `python -m radar fix-logos [--dry-run]` checks every company, replaces cached
   domains whose homepage names someone else, and fills misses. The **dry run ran on the box**, and
   its report is in `/opt/radar/data/fix-logos-dryrun.txt`.
   **That report came from the old code: do not run the real write from it.** The old code would
