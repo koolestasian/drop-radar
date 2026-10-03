@@ -40,8 +40,9 @@ def claim_owner(store, users):
 
 
 class Runtime:
-    def __init__(self, store, settings=None, users_path=None, env=None, channels_for=channels_for):
+    def __init__(self, store, settings=None, users_path=None, env=None, channels_for=channels_for, pagefacts=None):
         self.store = store
+        self.pagefacts = pagefacts  # reads postings' own links to fill blank locations; the server passes one, tests none
         self.channels_for = channels_for
         self.settings = settings or load_settings()
         self.users_path = users_path
@@ -82,7 +83,7 @@ class Runtime:
                                                        budget=account_budget(self.store) if is_account else None)
         alerter = MultiUserAlertDispatcher(dispatchers, owned)
         if self.scheduler is None:
-            self.pipeline = Pipeline(self.store, alerter=alerter)
+            self.pipeline = Pipeline(self.store, alerter=alerter, pagefacts=self.pagefacts)
             self.pipeline.on_new = lambda opportunity_id: self.events.publish("opportunity", opportunity_id)
             self.scheduler = Scheduler(sources, self.store, sink=self.pipeline,
                                        heartbeat_url=self.settings.heartbeat_url)
