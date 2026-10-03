@@ -41,6 +41,7 @@ from radar.api.models import (Action, ActionPatch, AuthResult, Credentials, Inst
                               SourceHealth, SourceLatency, WatchlistConfig)
 from radar.config import GUEST_ID, User, Watchlist, load_guest_profile, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
+from radar.sources.registry import build_sources
 from radar.logos import LogoResolver
 from radar.models import utcnow
 from radar.pipeline.filter import is_us_location
@@ -100,6 +101,32 @@ def _atomic_write(path, text):
 
 MAX_ACCOUNTS = 300  # accounts people made themselves; the box is small
 SESSION_DAYS = 90
+# What an account may add to the shared set. Only boards whose host is fixed by the kind (the slug becomes a path
+# or a fixed-domain subdomain), so a stranger's input can never make the box fetch an arbitrary address.
+ACCOUNT_ATS = ("greenhouse", "lever", "ashby", "smartrecruiters", "workday")
+MAX_EXTRA_COMPANIES = 10        # per account
+MAX_EXTRA_COMPANIES_TOTAL = 200  # across all accounts: each is one more board the single poller must visit
+_SLUG = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+_WORKDAY_SLUG = re.compile(r"^[A-Za-z0-9_-]{1,40}\.wd\d{1,2}/[A-Za-z0-9_-]{1,80}$")
+
+
+async def probe_company(company):
+    """None if the board answers with open postings, else a sentence saying what is wrong."""
+    import httpx
+
+    from radar.sources.discover import _check_one
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            _, _, status = await asyncio.wait_for(_check_one(client, company), 25)
+    except Exception:
+        return "didn't answer in time"
+    if status.startswith("200 OK"):
+        return None
+    if "404" in status:
+        return "no board with that name was found"
+    if "EMPTY" in status:
+        return "has no postings (a wrong name, or nothing open right now)"
+    return "couldn't be read right now"
 
 
 def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, crash_exit=None):
@@ -480,8 +507,50 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     async def get_watchlist(user: User = Depends(current_user)):
         return watchlist_out(user)
 
+    async def put_account_watchlist(body, user):
+        """An account's extra companies, kept in the database. Companies only, on the allowed boards, capped,
+        and each board not already polled is probed once so a typo can't become a source polled forever."""
+        throttle(("watchlist", user.id), 20, 3600, "That's a lot of edits; try again in a while.")
+        if body.instagram or body.feeds or body.repos:
+            raise HTTPException(422, "Accounts can add companies only.")
+        if len(body.companies) > MAX_EXTRA_COMPANIES:
+            raise HTTPException(422, f"You can add up to {MAX_EXTRA_COMPANIES} extra companies.")
+        seen = set()
+        for c in body.companies:
+            where = f"{c.name or 'a company'} ({c.ats})"
+            if c.ats not in ACCOUNT_ATS:
+                raise HTTPException(422, f"{where}: boards of that kind can't be added. Use one of: {', '.join(ACCOUNT_ATS)}.")
+            if not (_WORKDAY_SLUG if c.ats == "workday" else _SLUG).match(c.slug):
+                raise HTTPException(422, f"{where}: the slug looks wrong. Copy just the board name from its address, not the whole link.")
+            if not c.name.strip() or len(c.name) > 60 or not c.name.isprintable():
+                raise HTTPException(422, f"{where}: give the company a short name.")
+            if (c.ats, c.slug.lower()) in seen:
+                raise HTTPException(422, f"{where}: listed twice.")
+            seen.add((c.ats, c.slug.lower()))
+        try:
+            parse_watchlist(body.model_dump(), f"{user.id}'s watchlist")
+        except ConfigError as exc:
+            raise HTTPException(422, str(exc)) from None
+        others = sum(len(json.loads(r["watchlist"] or "{}").get("companies") or [])
+                     for r in store.list_accounts() if r["id"] != user.id)
+        if others + len(body.companies) > MAX_EXTRA_COMPANIES_TOTAL:
+            raise HTTPException(503, "Extra companies are full right now.")
+        polled = set(getattr(getattr(runtime, "scheduler", None), "sources", {}))
+        for c in body.companies:
+            names = {s.name for s in build_sources(Watchlist(companies=(c,)))[0]}
+            if names <= polled:
+                continue  # somebody already watches this board: nothing new to poll, nothing to probe
+            problem = await probe_company(c)
+            if problem:
+                raise HTTPException(422, f"{c.name} ({c.ats}, '{c.slug}'): {problem}. Check the slug in the board's address.")
+        store.save_account(user.id, watchlist={"companies": [c.model_dump() for c in body.companies]})
+        runtime.reload()
+        return watchlist_out(runtime.users[user.id])
+
     @app.put("/api/config/watchlist", response_model=WatchlistConfig)
     async def put_watchlist(body: WatchlistConfig, user: User = Depends(current_user)):
+        if store.is_account(user.id):
+            return await put_account_watchlist(body, user)
         replace_config(user, "watchlist", body.model_dump(), parse_watchlist, user.watchlist_path)
         return watchlist_out(runtime.users[user.id])
 

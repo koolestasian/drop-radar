@@ -108,8 +108,15 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
     if (path === "/api/config/profile")
       return json(route, { roles: ["software engineer"], keywords: ["intern", "new grad"], exclude: ["senior"], grad_year: 2027,
         locations: ["Remote", "United States"], company_tiers: {} });
+    if (path === "/api/config/watchlist" && req.method() === "PUT") {
+      const body = JSON.parse(req.postData() ?? "{}");
+      if (body.companies.some((c: { slug: string }) => c.slug === "nopeco"))
+        return json(route, { detail: "Nope (greenhouse, 'nopeco'): no board with that name was found. Check the slug in the board's address." }, 422);
+      return json(route, body);
+    }
     if (path === "/api/config/watchlist")
-      return json(route, { companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe", tier: "S" }], instagram: [], feeds: [], repos: [] });
+      return json(route, asAccount ? { companies: [], instagram: [], feeds: [], repos: [] }
+        : { companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe", tier: "S" }], instagram: [], feeds: [], repos: [] });
     return json(route, { detail: "not found" }, 404);
   });
   return { publish: () => { published = true; } };
@@ -451,4 +458,29 @@ test("an account turns on phone alerts, sends itself a test, and turns them off"
   await expect(page.getByText("Sent. If nothing arrives")).toBeVisible();
   await page.getByRole("button", { name: "Turn off" }).click();
   await expect(page.getByRole("button", { name: "Turn on phone alerts" })).toBeVisible();
+});
+
+test("an account adds extra companies on the allowed boards only; a bad board says why", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/#/login");
+  await page.getByLabel("Username").fill("sam_smith");
+  await page.getByLabel("Password").fill("correct horse battery");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^Account/ })).toBeVisible();
+  await page.goto("/#/settings");
+  await expect(page.getByRole("heading", { name: "Extra companies" })).toBeVisible();
+  await expect(page.getByText("0 of 10 extra companies")).toBeVisible();
+  await expect(page.getByLabel("Job board").locator("option")).toHaveText(["greenhouse", "lever", "ashby", "smartrecruiters", "workday"]);
+  await page.getByLabel("Company name").fill("Nope");
+  await page.getByLabel("Board slug").fill("nopeco");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByRole("button", { name: "Save extra companies" }).click();
+  await expect(page.getByRole("alert")).toContainText("no board with that name was found");
+  await page.getByRole("button", { name: "Remove Nope" }).click();
+  await page.getByLabel("Company name").fill("Ramp");
+  await page.getByLabel("Board slug").fill("ramp");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByRole("button", { name: "Save extra companies" }).click();
+  await expect(page.getByText("Saved — polling now.")).toBeVisible();
+  await expect(page.getByText("1 of 10 extra companies")).toBeVisible();
 });
