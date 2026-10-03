@@ -301,6 +301,8 @@ async def fix_all(store, resolver: LogoResolver, dry_run=False, limit=None, conc
             result = await resolver.resolve(name)
             if result.pop("failed", False):
                 return  # a rung crashed: leave the cache as it was
+            if old and not result["domain"]:
+                return  # nothing better found: principal.com's title says only "Principal", and a monogram is worse
             if result["domain"] != old:
                 changes.append({"name": name, "old": old, "new": result["domain"], "source": result["source"]})
             if not dry_run and (result["domain"] != old or not cached.get("checked_at")):

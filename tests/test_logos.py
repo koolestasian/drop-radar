@@ -220,11 +220,13 @@ class FixAllTests(_Ladder):
         self.assertEqual(self.store.get_enrichment("logo:tdbank"), {"domain": "sosonko.com"})
         self.assertIsNone(self.store.get_enrichment("logo:erieinsurance"))
 
-    def test_a_disproved_domain_with_no_better_answer_becomes_a_monogram(self):
+    def test_a_doubted_domain_with_no_better_answer_is_kept(self):
+        """The live dry run (2026-10-03) would have dropped rbc.com, principal.com and simon.com to monograms:
+        a title that doesn't spell the full name is weak evidence, so only a better answer replaces a domain."""
         self.logos._clearbit = lambda name, row: None
         changes = self.fix()
-        self.assertIn({"name": "TD Bank", "old": "sosonko.com", "new": None, "source": None}, changes)
-        self.assertIsNone(self.store.get_enrichment("logo:tdbank")["domain"])
+        self.assertNotIn("TD Bank", [c["name"] for c in changes])
+        self.assertEqual(self.store.get_enrichment("logo:tdbank"), {"domain": "sosonko.com"})
 
 
 if __name__ == "__main__":
