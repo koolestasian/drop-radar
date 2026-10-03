@@ -33,6 +33,7 @@ WIKIDATA_URL = "https://query.wikidata.org/sparql"
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 COMMERCIAL_TLDS = {"com", "ai", "io", "co", "net", "tech", "inc", "app", "dev", "us"}
 RETRY_MISS = timedelta(days=7)
+VERSION = 2  # bump to retry every cached miss once the ladder changes
 # a company's own site, never the board or social page that merely mentions it
 NOT_A_COMPANY_SITE = ("linkedin.com", "facebook.com", "twitter.com", "x.com", "instagram.com", "youtube.com",
                       "github.com", "wikipedia.org", "linktr.ee", "greenhouse.io", "lever.co", "ashbyhq.com",
@@ -135,7 +136,7 @@ class LogoResolver:
     @staticmethod
     def _stale(cached) -> bool:
         checked = cached.get("checked_at")
-        return not checked or datetime.now(timezone.utc) - datetime.fromisoformat(checked) > RETRY_MISS
+        return not checked or cached.get("v") != VERSION or datetime.now(timezone.utc) - datetime.fromisoformat(checked) > RETRY_MISS
 
     # the rungs below are blocking; resolve() runs each in a worker thread
     def _posting(self, name: str):
@@ -143,17 +144,15 @@ class LogoResolver:
         return self.store.conn.execute("SELECT url, title FROM opportunities WHERE company = ? AND url LIKE 'http%' "
                                        "ORDER BY first_seen DESC LIMIT 1", (name,)).fetchone()
 
-    def _site_hint(self, name: str) -> str | None:
+    def _site_hint(self, name: str, row) -> str | None:
         from radar.pipeline import pagefacts
-        row = self._posting(name)
         site = pagefacts.org_site(row[0]) if row else None
         return registrable(site) if site else None
 
-    def _llm(self, name: str) -> str | None:
+    def _llm(self, name: str, row) -> str | None:
         """Claude Haiku guesses the domain from the posting; Gemini only if Haiku fails (too few calls for its quota)."""
         if time.monotonic() < self._llm_off_until:
             return None
-        row = self._posting(name)
         prompt = (f"A job posting names the employer {name!r}." + (f" Posting link: {row[0]} Job title: {row[1]!r}." if row else "")
                   + " What is that employer's official website domain (registrable domain only, like 'stripe.com')? "
                     "Use null if you are not sure which company it is.")
@@ -195,7 +194,7 @@ class LogoResolver:
             return None
         r.raise_for_status()
         return json.loads(r.json()["candidates"][0]["content"]["parts"][0]["text"])
-    def _wikidata(self, name: str) -> str | None:
+    def _wikidata(self, name: str, row=None) -> str | None:
         if time.monotonic() < self._wikidata_off_until:
             return None
         label = name.replace("\\", " ").replace('"', " ").strip()
@@ -212,7 +211,7 @@ class LogoResolver:
                 return domain
         return None
 
-    def _clearbit(self, name: str) -> str | None:
+    def _clearbit(self, name: str, row=None) -> str | None:
         r = httpx.get(SUGGEST_URL, params={"query": name}, headers={"User-Agent": USER_AGENT}, timeout=15)
         r.raise_for_status()
         return pick(name, r.json())
@@ -231,25 +230,29 @@ class LogoResolver:
         return html.unescape(" ".join(a or b for a, b in found)) or None
 
     async def resolve(self, name: str) -> dict:
-        """{"domain", "source", "verified"}; domain is None when no rung produced a verified answer."""
+        """{"domain", "source", "verified", "v"}; domain is None when no rung produced a verified answer, and
+        "failed" is set when a rung crashed (such a miss is not cached, so it is retried)."""
+        row = self._posting(name)  # here, not in a worker thread: the store's SQLite connection is thread-bound
+        failed = False
         rungs = (("posting", self._site_hint), ("wikidata", self._wikidata), ("clearbit", self._clearbit), ("llm", self._llm))
         for source, rung in rungs:
             try:
-                domain = await asyncio.to_thread(rung, name)
+                domain = await asyncio.to_thread(rung, name, row)
             except Exception as exc:  # one rung down must not stop the others
                 log.warning("logo rung %s for %r failed: %s", source, name, exc)
+                failed = True
                 continue
             domain = registrable(domain) if domain else None
             if not domain:
                 continue
             if name_is_domain(name, domain) and source != "llm":  # a model can invent a name-shaped domain; it must show its homepage
-                return {"domain": domain, "source": source, "verified": True}
+                return {"domain": domain, "source": source, "verified": True, "v": VERSION}
             title = await asyncio.to_thread(self._title, domain)
             if title is not None and name_on_page(name, title):
-                return {"domain": domain, "source": source, "verified": True}
+                return {"domain": domain, "source": source, "verified": True, "v": VERSION}
             if title is None and source == "clearbit":  # unreadable homepage: only Clearbit's name match is trusted
-                return {"domain": domain, "source": source, "verified": False}
-        return {"domain": None, "source": None, "verified": False}
+                return {"domain": domain, "source": source, "verified": False, "v": VERSION}
+        return {"domain": None, "source": None, "verified": False, "v": VERSION, **({"failed": True} if failed else {})}
 
     async def run(self, stop: asyncio.Event):
         while not stop.is_set():
@@ -260,8 +263,9 @@ class LogoResolver:
                 except Exception as exc:  # a miss now is retried the next time the name is shown
                     log.warning("logo lookup for %r failed: %s", name, exc)
                 else:
-                    result["checked_at"] = datetime.now(timezone.utc).isoformat()
-                    self.store.set_enrichment(f"logo:{norm(name)}", result)
+                    if not result.pop("failed", False):  # a crashed rung is not a real miss: ask again next time
+                        result["checked_at"] = datetime.now(timezone.utc).isoformat()
+                        self.store.set_enrichment(f"logo:{norm(name)}", result)
                 await asyncio.sleep(self.pause_s)
             try:
                 await asyncio.wait_for(stop.wait(), timeout=5)
