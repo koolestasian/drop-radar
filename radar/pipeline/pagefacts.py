@@ -174,7 +174,8 @@ def _smartrecruiters(parts, url):
             "posted": _date(d.get("releasedDate")), "deadline": ""}
 
 
-def _json_ld(parts, url):
+def _job_posting(url):
+    """The page's schema.org JobPosting dict, or None."""
     if not _robots_allows(url):
         return None
     r = _get(url, accept="text/html,application/xhtml+xml")
@@ -194,8 +195,27 @@ def _json_ld(parts, url):
             elif isinstance(item, dict):
                 kind = item.get("@type")
                 if kind == "JobPosting" or (isinstance(kind, list) and "JobPosting" in kind):
-                    return _from_posting(item)
+                    return item
                 stack.extend(v for k, v in item.items() if k == "@graph")
+    return None
+
+
+def _json_ld(parts, url):
+    posting = _job_posting(url)
+    return _from_posting(posting) if posting else None
+
+
+def org_site(url):
+    """The employer's own website as the posting states it (hiringOrganization.sameAs or .url), or None."""
+    posting = _job_posting(url)
+    org = posting.get("hiringOrganization") if posting else None
+    if not isinstance(org, dict):
+        return None
+    for key in ("sameAs", "url"):
+        value = org.get(key)
+        value = value[0] if isinstance(value, list) and value else value
+        if isinstance(value, str) and value.startswith("http"):
+            return value
     return None
 
 
