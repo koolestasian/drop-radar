@@ -33,7 +33,7 @@ _ALIASES = {  # spellings sources use for a country
     "uk": "GB", "u.k.": "GB", "great britain": "GB", "england": "GB", "scotland": "GB", "wales": "GB",
     "northern ireland": "GB", "korea": "KR", "south korea": "KR", "republic of korea": "KR", "czech republic": "CZ",
     "russia": "RU", "uae": "AE", "vietnam": "VN", "viet nam": "VN", "turkey": "TR", "turkiye": "TR", "hong kong": "HK",
-    "the netherlands": "NL", "holland": "NL", "ivory coast": "CI", "taiwan": "TW", "macau": "MO",
+    "the netherlands": "NL", "netherlands": "NL", "ivory coast": "CI", "taiwan": "TW", "macau": "MO",
 }
 _COUNTRY_BY_NAME = {_fold(n): iso for iso, n in COUNTRIES.items()} | _ALIASES
 _US_STATES = {
@@ -77,7 +77,7 @@ def _classify(token: str):
         return "zip", None
     if f in _COUNTRY_BY_NAME:
         return "country", _COUNTRY_BY_NAME[f]
-    if len(t) == 3 and t.isupper() and t in _ISO3:
+    if len(t) == 3 and t.isupper() and t in _ISO3 and t != "AND":  # "AND - Jacksonville, FL" is not Andorra
         return "country", _ISO3[t]
     if f in _REGION_COUNTRY:
         return "region", _REGION_COUNTRY[f]
@@ -121,15 +121,17 @@ def _parse_part(part: str):
     m = re.match(r"^(US|USA)[- ]([A-Z]{2})[- ](.+)$", part)  # "US-TN-Tullahoma", "USA LA Bossier City"
     if m and m.group(2) in _US_STATES:
         part = f"{m.group(3)}, {m.group(2)}, US"
-    m = re.match(r"^([A-Z]{2})[- ]+([A-Za-z].+)$", part)  # "TX-Dallas", "WI Madison"
+    m = re.match(r"^([A-Z]{2})[- ]+([A-Za-z].+)$", part)  # "TX-Dallas", "WI Madison"; "DE-Berlin", "IN - Bengaluru" are countries
     if m and (m.group(1) in _US_STATES or m.group(1) in _CA_PROVINCES) and "," not in part:
-        part = f"{m.group(2)}, {m.group(1)}"
+        first = re.split(r"\s*-\s*", m.group(2))[0]  # "DE-Berlin", "CA-QC-Mirabel": the country with that code
+        country = m.group(1) in (_CITY_COUNTRY.get(_fold(first)), _classify(first)[1]) and COUNTRIES.get(m.group(1))
+        part = f"{m.group(2)}, {country or m.group(1)}"
     m = re.match(r"^([A-Za-z][A-Za-z .'-]+?)\s+([A-Z]{2})$", part)  # "Atlanta GA", "Rosemont IL"
     if m and (m.group(2) in _US_STATES or m.group(2) in _CA_PROVINCES) and "," not in part:
         part = f"{m.group(1)}, {m.group(2)}"
     if "," not in part and " - " not in part and "-" in part:  # "US-California-Palo Alto", "Singapore-CapitaSky"
         pieces = part.split("-")
-        if len(pieces) > 1 and _classify(pieces[0])[0] in ("country", "region"):
+        if len(pieces) > 1 and any(_classify(x)[0] in ("country", "region") for x in (pieces[0], pieces[-1])):  # "Lubbock-Texas-USA"
             part = ", ".join(pieces)
     tokens = [x for x in re.split(r",|\s+-\s+|\s+–\s+|/", part) if x.strip()]
     tokens = [t2 for t in tokens for t2 in _peel_country(t)]
@@ -143,13 +145,19 @@ def _parse_part(part: str):
         if re.match(r"^\s*remote in\b", token, re.I):  # "Remote in USA"
             remote = True
             token = re.sub(r"^\s*remote in\s+", "", token, flags=re.I)
+        bare = re.sub(r"\s+", " ", _NOISE.sub(" ", token)).strip(" -_.")
+        if bare and _classify(token)[0] == "city" != _classify(bare)[0]:  # "Virginia Remote Office" is the state
+            token = bare
         kind, value = _classify(token)
+        if kind == "region" and token.strip() in COUNTRIES and any(  # "Hyderabad, IN" is India, "Warsaw, IN" Indiana
+                _CITY_COUNTRY.get(_fold(t)) == token.strip() and not has_us_namesake(t) for t in tokens):
+            kind, value = "country", token.strip()
         if kind == "country":
             country = country or value
         elif kind == "region":
             region_country = region_country or value
             state = state or _STATE_ABBR.get(_fold(token.strip(" .")), "")
-            if len(tokens) == 1 and len(token.strip()) > 2 and _fold(token) in _CITY_COUNTRY:  # "New York" alone is a city
+            if len(tokens) == 1 and len(token.strip()) > 2 and _CITY_COUNTRY.get(_fold(token)) == value:  # "New York" alone is a city
                 cities.append(_CITY_ALIASES.get(_fold(token), token.strip()))
         elif kind == "city":
             cleaned = _NOISE.sub(" ", token)
@@ -158,9 +166,12 @@ def _parse_part(part: str):
             if cleaned and cleaned.lower() not in ("in", "at", "of") and not _COUNT.match(cleaned) and not _ZIP.match(cleaned):
                 cities.append(cleaned)
     regions = [t.strip() for t in tokens if _classify(t)[0] == "region"]
-    if not cities and len(regions) >= 2:  # "New York, NY", "Washington, DC", "Delaware, OH": a state-named city, then its state
+    if not cities and len(regions) >= 2:  # "New York, NY", "Washington, DC", "New Brunswick, NJ": a state-named city, then its state
         cities.append(_CITY_ALIASES.get(_fold(regions[0]), regions[0]))
         state = _STATE_ABBR.get(_fold(regions[-1]), state)
+        region_country = _classify(regions[-1])[1]
+    if country == "GE" and not any(_CITY_COUNTRY.get(_fold(c)) == "GE" for c in cities):  # the US state, unless Tbilisi
+        country, region_country, state = "", "US", state or "GA"
     explicit = bool(country or region_country)
     if not country and region_country:
         country = region_country
@@ -195,12 +206,11 @@ def _show(city: str, iso: str, state: str) -> str:
 
 
 @lru_cache(maxsize=20000)
-def format_location(raw: str) -> str:
-    """'Seattle, WA' for a US place, 'Barcelona, Spain' for any other; '; ' between several. '' when nothing is placeable."""
-    if not raw or not raw.strip():
-        return ""
+def parse_places(raw: str) -> tuple[tuple[str, str, bool, str], ...]:
+    """Each place in raw as (city, ISO2, explicit, US state); explicit is True when the text names the country or a
+    state/province. One stated country settles the others: "New York; Bethlehem; Holmdel"."""
     parsed = []
-    for part in re.split(r"\s*;\s*|\s+\|\s+", raw):
+    for part in re.split(r"\s*;\s*|\s+\|\s+", raw or ""):
         if not part.strip() or _COUNT.match(part):
             continue
         city, iso, explicit, state = _parse_part(part.strip())
@@ -208,14 +218,50 @@ def format_location(raw: str) -> str:
             parsed.append((city, iso, explicit, state))
     stated = {iso for _, iso, explicit, _ in parsed if explicit and iso}
     context = next(iter(stated)) if len(stated) == 1 else ""
-    if any(c and c != "Remote" for c, _, _, _ in parsed):
-        parsed = [p for p in parsed if p[0] != "Remote"]  # how you work is a badge, not part of the place
-    shown: list[str] = []
+    out = []
     for city, iso, explicit, state in parsed:
-        if context and not explicit:  # "New York; Bethlehem; Holmdel": the one stated country settles the others
+        if context and not explicit and (not iso or context == "US" and has_us_namesake(city)):
             iso = context
             if iso == "US" and city and not state:
                 state = _US_STATE.get(_fold(city), "")
+        out.append((city, iso, explicit, state))
+    return tuple(out)
+
+
+def scan_countries(text: str, cities: bool = True) -> set[str]:
+    """Countries named anywhere in free text the parser can't structure ("Greater Seattle Area", "Warsaw  Poland",
+    "USA > CA > Corona"): country names, US state/Canadian province names and (unless cities=False) cities, longest
+    words first. A city abroad that is also a US city ("Cambridge") counts for neither."""
+    words, found, i = re.findall(r"[a-z]+", _fold(text)), set(), 0
+    while i < len(words):
+        for n in (4, 3, 2, 1):
+            g = " ".join(words[i:i + n])
+            iso = _COUNTRY_BY_NAME.get(g) or _REGION_COUNTRY.get(g) or (cities and len(g) > 3 and _CITY_COUNTRY.get(g))
+            if i + n <= len(words) and iso:
+                if not (g in _CITY_COUNTRY and iso != "US" and g not in _COUNTRY_BY_NAME and has_us_namesake(g)):
+                    found.add(iso)
+                i += n
+                break
+        else:
+            i += 1
+    return found
+
+
+def has_us_namesake(city: str) -> bool:
+    """A US city over 40,000 people has this name (Cambridge, MA; Dublin, CA), whatever the biggest one is."""
+    return _fold(city) in _US_STATE
+
+
+@lru_cache(maxsize=20000)
+def format_location(raw: str) -> str:
+    """'Seattle, WA' for a US place, 'Barcelona, Spain' for any other; '; ' between several. '' when nothing is placeable."""
+    if not raw or not raw.strip():
+        return ""
+    parsed = parse_places(raw)
+    if any(c and c != "Remote" for c, _, _, _ in parsed):
+        parsed = [p for p in parsed if p[0] != "Remote"]  # how you work is a badge, not part of the place
+    shown: list[str] = []
+    for city, iso, _, state in parsed:
         text = _show(city, iso, state)
         if text and text not in shown:
             shown.append(text)

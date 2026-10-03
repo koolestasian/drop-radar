@@ -33,6 +33,16 @@ class LocationTests(unittest.TestCase):
         ("Vienna, VA", True), ("Melbourne, FL", True), ("New London, CT", True), ("Warsaw, IN", True),
         ("Pensacola, FL | Vienna, VA", True), ("Vienna", False), ("Brampton, Ontario, CA", False),
         ("In-Office", None), ("N/A", None), ("", None),
+        # 2026-10-03, from the live rows when the hand lists were replaced by places.py (GeoNames)
+        ("Atlanta, Georgia", True), ("Remote, Georgia, USA", True), ("New Brunswick, NJ", True),
+        ("Holland, Michigan, US", True), ("AND - Jacksonville, FL", True), ("Anasco, Puerto Rico, United States of America", True),
+        ("Lubbock-Texas-United States of America", True), ("Greater Seattle Area", True), ("USA > CA > Corona > Deininger", True),
+        ("Rochester; Buffalo; Utica", True), ("WI Madison", True), ("Ontario, CA; San Bernardino, CA", True),
+        ("CA-QC-LONGUEUIL-J01 ~ 1000 Blvd Marie-Victorin", False), ("IND, Bangalore, KA; Hyderabad (SAL) IN", False),
+        ("Ho Chi Minh, Vietnam (Remote)", False), ("Amersfoort, UT, Netherlands", False), ("Glasgow", False),
+        ("Warsaw  Poland", False), ("Remote - EMEA", False),
+        # a US namesake, a lone city in free text, or an unplaceable place next to a guessed one: unknown, not rejected
+        ("Cambridge", None), ("Dublin", None), ("George Bush International Airport", None), ("Poughkeepsie; Kingston", None),
     ]
 
     def test_table(self):
