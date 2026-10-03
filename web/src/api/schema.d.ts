@@ -508,8 +508,17 @@ export interface components {
             first_seen: string;
             /** Id */
             id: string;
-            /** Location */
+            /**
+             * Location
+             * @description display form, "City - Country" ("A, B - Country; C - Other" for several)
+             */
             location: string;
+            /**
+             * Location Raw
+             * @description the place exactly as the source wrote it
+             * @default
+             */
+            location_raw: string;
             match: components["schemas"]["Match"];
             /** Published At */
             published_at: string | null;

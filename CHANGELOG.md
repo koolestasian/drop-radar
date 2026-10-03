@@ -2,6 +2,16 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.10.0 (2026-10-03)
+
+One location format: **City - Country**.
+
+- Every place is shown as "Houston - United States", whatever the source wrote ("Houston, TX", "Poland - Wroclaw", "US-TN-Tullahoma", "United States, Wisconsin, Milwaukee", a bare "Redmond", "KUALA LUMPUR GENERAL OFFICE"). Several places are grouped by country: "Reston, Plano - United States; Toronto - Canada". The country comes from the text, from a US state or Canadian province, or from the biggest city of that name (Redmond is Washington, Boston is Massachusetts). A city that cannot be placed keeps just its name.
+- On all 12,262 distinct places in the live data, 93% become a full "City - Country"; the rest are honestly country-only or state-only ("United States", "Iowa") or a small place with no country to be found. Nothing is guessed.
+- It applies in the feed, detail panel, Board and phone pushes. The stored text is untouched, so search and the US-only filter work as before, and the API now returns both `location` (display) and `location_raw`. Remote / Hybrid / On site badges still read the original text.
+- City data: `radar/data/places.json`, generated from GeoNames (CC BY 4.0) by `radar/data/build_places.py`; only that 0.9 MB file loads at runtime.
+- 4 new tests (390 backend); 36 e2e tests.
+
 ## 0.9.0 (2026-10-03)
 
 Missing facts are read from the posting's own link.

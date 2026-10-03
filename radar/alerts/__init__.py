@@ -25,6 +25,7 @@ from radar.config import load_profile
 from radar.legacy import opportunity_monitor as legacy
 from radar.models import utcnow
 from radar.pipeline.filter import matches_profile
+from radar.pipeline.places import format_location
 
 log = logging.getLogger(__name__)
 
@@ -99,7 +100,7 @@ class NtfyChannel:
         self.token = token if token is not None else os.environ.get("NTFY_TOKEN", "").strip()
 
     def send(self, opp, reasons, drop_latency_s):
-        lines = [x for x in (opp.get("location"), opp.get("deadline") and f"Deadline: {opp['deadline']}") if x]
+        lines = [x for x in (format_location(opp.get("location") or "") or opp.get("location"), opp.get("deadline") and f"Deadline: {opp['deadline']}") if x]
         if reasons:
             lines.append("Why: " + "; ".join(reasons))
         sources = [i["source"] for i in opp.get("items") or []]

@@ -62,7 +62,7 @@ export function CompanyLogo({ name, domain, className = "size-10" }: { name: str
 const WORK_ICON = { Remote: House, Hybrid: Split, "On site": Building2 };
 
 /** Remote / Hybrid / On site when the posting says so (most do not, so most cards show nothing). */
-export function WorkModelBadge({ o, className }: { o: Pick<Opportunity, "location" | "title">; className?: string }) {
+export function WorkModelBadge({ o, className }: { o: Pick<Opportunity, "location" | "title"> & { location_raw?: string }; className?: string }) {
   const m = workModel(o);
   if (!m) return null;
   const Icon = WORK_ICON[m];

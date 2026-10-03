@@ -20,7 +20,8 @@ class Opportunity(BaseModel):
     id: str
     title: str
     company: str
-    location: str
+    location: str = Field(description='display form, "City - Country" ("A, B - Country; C - Other" for several)')
+    location_raw: str = Field("", description="the place exactly as the source wrote it")
     url: str
     deadline: str
     status: str = Field(description="the posting itself: New, Closed, ...")

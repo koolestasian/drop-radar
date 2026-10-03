@@ -196,6 +196,11 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(r.status_code, 429)
         self.assertEqual((await self.get("/api/me")).status_code, 200)  # logged-in users are not limited
 
+    async def test_the_place_is_shown_as_city_dash_country_and_the_original_is_kept(self):
+        body = (await self.get(f"/api/opportunities/{self.ids['swe']}", KEVIN)).json()
+        self.assertEqual(body["location"], "New York - United States")  # the seed wrote "New York, NY"
+        self.assertEqual(body["location_raw"], "New York, NY")
+
     async def test_each_user_sees_matches_from_their_own_sources_only(self):
         self.assertEqual(await self.ids_of(KEVIN), self.names("swe", "ng"))
         self.assertEqual(await self.ids_of(FRIEND), self.names("ib"))

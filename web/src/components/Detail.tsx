@@ -34,7 +34,7 @@ export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus?: (s
   const due = deadline(o.deadline);
   const [notes, setNotes] = useState(o.action?.notes ?? "");
   const [shareStatus, setShareStatus] = useState("");
-  const places = o.location.split(" | ").filter(Boolean);
+  const places = o.location.split("; ").filter(Boolean); // one line per country: "A, B - United States"
   const after = seenAfterPosted(o);
 
   return (
