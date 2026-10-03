@@ -5,6 +5,7 @@ Scheduler._run_one already awaits the sink when it returns an awaitable.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import replace
 from datetime import timedelta
@@ -13,6 +14,7 @@ from radar.pipeline.dedupe import resolve_opportunity_id
 from radar.pipeline.enrich import Enricher
 from radar.pipeline.filter import matches_profile
 from radar.pipeline.normalize import canonical_company, canonical_url
+from radar.pipeline.pagefacts import needs_facts
 
 log = logging.getLogger(__name__)
 
@@ -31,13 +33,15 @@ def _long_dated(item) -> bool:
 
 
 class Pipeline:
-    def __init__(self, store, profile=None, enricher=None, alerter=None):
+    def __init__(self, store, profile=None, enricher=None, alerter=None, pagefacts=None):
         from radar.alerts import AlertDispatcher  # local: radar.alerts imports radar.pipeline.filter
 
         self.store = store
         self.profile = profile
         self.enricher = enricher or Enricher(store)
         self.alerter = alerter or AlertDispatcher(store, profile=profile)
+        self.pagefacts = pagefacts  # reads a posting's own link to fill a blank location (None: tests stay offline)
+        self._background = set()
         self.on_new = None  # callable(opportunity_id), after a new source sighting is stored and enriched
 
     async def __call__(self, source, items):
@@ -65,11 +69,38 @@ class Pipeline:
         new_sighting = self.store.item_opportunity_id(item.source, item.external_id) is None
         opportunity_id, _ = self.store.upsert_item(item, opportunity_id=opportunity_id)
         await self.enricher.enrich(opportunity_id, item)
+        await self._fill_from_page(opportunity_id, item)
         if item.raw.get("seed"):
             return  # backfill from a source's first poll: open before anyone watched, so not a drop
         if new_sighting and self.on_new is not None:
             self.on_new(opportunity_id)
         await self.alerter.dispatch(item, opportunity_id)
+
+    async def _fill_from_page(self, opportunity_id, item):
+        """A drop waits briefly for its link (so the push and the feed show the real location); a first-poll
+        backfill row is filled in the background, so a board's first poll isn't held up at one request a second."""
+        if self.pagefacts is None:
+            return
+        opp = self.store.get_opportunity(opportunity_id)
+        if opp is None or not needs_facts(opp):
+            return
+        if item.raw.get("seed"):
+            task = asyncio.create_task(self._safe_fill(opportunity_id))
+            self._background.add(task)
+            task.add_done_callback(self._background.discard)
+        else:
+            try:
+                await asyncio.wait_for(self._safe_fill(opportunity_id), 15)
+            except asyncio.TimeoutError:
+                log.info("page facts for %s took too long; the drop goes out as it is", opportunity_id)
+
+    async def _safe_fill(self, opportunity_id):
+        try:
+            await self.pagefacts.fill(opportunity_id)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.warning("page facts failed for %s", opportunity_id, exc_info=True)
 
     def _close(self, item):
         """T3's closed-signal contract: same (source, external_id), raw={"closed": True}."""

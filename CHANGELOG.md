@@ -2,6 +2,18 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.9.0 (2026-10-03)
+
+Missing facts are read from the posting's own link.
+
+- **Why:** a posting could arrive with no location ("4 locations" from a board search, or nothing at all from an @zero2sudo Story), no company or no posted date. Live counts before this release: 903 "N locations", 250 blank locations, 82 blank companies, 1,011 undated.
+- **What it reads:** the job-board detail APIs we already rely on (Workday, Greenhouse, Lever, SmartRecruiters) and the schema.org job data most company pages embed (Ashby, many company sites). On 90 real broken postings the Workday detail gave a location for 60 of 63; pages that refuse automated clients (403) or have no job data are left alone, never forced.
+- **It only fills:** blanks and bare counts. A location, company, date or deadline a source stated clearly is never changed, and "4 locations | Des Moines, IA | ..." is kept.
+- **When:** a new drop waits up to 15 seconds for its link, so the feed and the push show the real place; a first-poll backfill is filled in the background. Results are cached and a miss is retried after a week.
+- **Safe by construction:** http(s) only, public addresses only (checked on every redirect hop, so a link can't aim the box at an internal address), four redirects, a 2 MB cap, an honest User-Agent, one request a second per host, robots.txt honoured for plain pages.
+- **Repair command:** `python -m radar fix-pages [--dry-run] [--limit N]` fills the postings already stored.
+- 15 new tests (385 backend). No frontend change.
+
 ## 0.8.0 (2026-10-03)
 
 Extra companies for accounts.

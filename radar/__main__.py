@@ -10,6 +10,9 @@
   reset-password <username>
           give that login a new random password, print it once, and sign
           the user out everywhere (forgotten-password help until email exists)
+  fix-pages [--dry-run] [--limit N]
+          read the links of postings with a blank or "N locations" place, no company or no posted date,
+          and fill what the page says (never changes a value a source stated clearly)
   openapi print the API schema; docs/openapi.json is this output (the web
           app's types are generated from it)
 """
@@ -38,6 +41,9 @@ def main(argv=None):
     backup.add_argument("--keep", type=int, default=14, help="how many recent backups to keep")
     reset = sub.add_parser("reset-password", parents=[db], help="set a new random password for a username")
     reset.add_argument("username")
+    fix = sub.add_parser("fix-pages", parents=[db], help="fill blank locations, companies and dates from the posting links")
+    fix.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
+    fix.add_argument("--limit", type=int, default=None, help="only look at this many postings")
     sub.add_parser("openapi", help="print the API's OpenAPI schema as JSON")
     args = parser.parse_args(argv)
 
@@ -65,6 +71,36 @@ def main(argv=None):
             store.set_credentials(creds["user_id"], creds["username"], hash_password(new))
             store.delete_user_sessions(creds["user_id"])
             print(f"{creds['username']}: new password {new} (shown once; they are signed out everywhere)")
+    elif args.command == "fix-pages":
+        import asyncio
+
+        from radar.pipeline.pagefacts import PageFacts, needs_facts
+
+        async def run():
+            with Store(db_path) as store:
+                pages, done = PageFacts(store), {"location": 0, "company": 0, "published_at": 0, "deadline": 0}
+                rows = [r["id"] for r in store.conn.execute(
+                    "SELECT id FROM opportunities WHERE url != '' AND status NOT IN ('Closed', 'Expired') "
+                    "ORDER BY first_seen DESC")]
+                looked = examples = fixed = 0
+                for opp_id in rows:
+                    opp = store.get_opportunity(opp_id)
+                    if not needs_facts(opp):
+                        continue
+                    if args.limit is not None and looked >= args.limit:
+                        break
+                    looked += 1
+                    changes = await pages.fill(opp_id, dry_run=args.dry_run)
+                    if changes:
+                        fixed += 1
+                        for k in changes:
+                            done[k] += 1
+                        if examples < 12:
+                            examples += 1
+                            print(f"  {opp['company'] or '?'}: {opp['title'][:50]!r}: " +
+                                  "; ".join(f"{k} {str(opp.get(k) or '(blank)')[:30]!r} -> {str(v)[:60]!r}" for k, v in changes.items()))
+                print(f"{'would fix' if args.dry_run else 'fixed'} {fixed} of {looked} postings looked at; fields: {done}")
+        asyncio.run(run())
     elif args.command == "openapi":
         import json
 
@@ -83,7 +119,9 @@ def main(argv=None):
         store = Store(db_path)  # created on the thread uvicorn runs the event loop on
         # timeout_graceful_shutdown: the PWA holds /api/stream open, so uvicorn's default
         # "wait for connections to close" would otherwise hang a SIGTERM restart indefinitely.
-        uvicorn.run(create_app(store, Runtime(store, settings)), host=args.host, port=args.port,
+        from radar.pipeline.pagefacts import PageFacts
+
+        uvicorn.run(create_app(store, Runtime(store, settings, pagefacts=PageFacts(store))), host=args.host, port=args.port,
                    timeout_graceful_shutdown=args.graceful_timeout)
 
 
