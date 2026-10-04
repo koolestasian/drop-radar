@@ -5,7 +5,23 @@ Branch: claude/trim-drop-radar-plan. Foundation audit: T19-trusted-discovery.md.
 The owner asked for a useful first version next week, plus longer-term brainstorming.
 Competitor research and automation priorities were added 2026-10-04. Read the
 [app-focused research report](../../reports/Drop%20Radar%20competitor%20automation%20review.md)
-and the addendum below before implementing; its priorities refine the original day plan.
+and the [autonomous networking report](../../reports/Drop%20Radar%20autonomous%20networking.md)
+before implementing. The latest direction below supersedes conflicting review-only
+defaults in the original planning history; packet/fact/answer foundations remain.
+
+## Latest autonomy direction (2026-10-04)
+
+The owner wants routine work executed so they mainly attend agreed coffee chats,
+relevant events and genuine interviews/assessments. T20 now includes finding credible
+contact routes, initiating outreach, interpreting replies, negotiating times, placing
+agreed calendar meetings, preparing briefs, completing requested follow-through and
+consented introductions, supported applications and preparation. This expands the
+earlier approval-of-each-send preference. Once accounts and a concrete operating
+policy are explicitly configured, permitted routine outreach, scheduling, follow-ups
+and supported submissions may execute without another review click. Existing per-send
+review remains optional. Missing facts or material commitments create exceptions;
+counterpart time ambiguity normally triggers an automatic clarification reply.
+This research does not connect accounts, activate a policy or authorize real sends.
 
 ## Product outcome
 
@@ -15,29 +31,35 @@ is optimized for the owner's actual job search, not a public self-service platfo
 
 Every promising new or existing job can produce an action packet: why it fits,
 what is uncertain, the strongest referral routes, supported recruiter candidates,
-a tailored resume, a short outreach draft and the next action. Optimize useful
-interview opportunities and saved effort, not impressions, browsing or email volume.
+a truthful resume and the next action. The app then executes the allowed route and
+reconciles its outcome. People, company/event signals, replies and real relationship
+commitments also trigger work without requiring a fresh job. Optimize useful human
+progress and total saved effort, including attendance time and contact costs.
 
-Owner confirmed best fit plus realistic interview reachability and approval of each
-send. Planning questions remain: sender account, master-resume format and recruiter-list
-columns/provenance. Use in-app drafts, downloadable attachments and explicit approval
-of each external send. Gmail is a
-researched adapter option, not an assumed connected account. No email/contact files
-were read and no messages were sent in this planning pass.
+Owner confirmed best fit plus realistic interview reachability. Sender account,
+calendar, master-resume format and recruiter-list provenance remain setup inputs.
+Configure policy once; permit ordinary allowed actions and surface actual decisions.
+Draft/export and per-send review are fallback modes. Gmail/Calendar are researched
+adapter options, not connected accounts. No email/contact files were read and no
+messages were sent in this planning pass.
 
 ## Achievable first-week slice
 
-Target October 5-11, 2026 as seven focused engineering days, contingent on approved
-source inputs and a reviewed resume fact bank. This is a scope target, not a delivery
-guarantee. Deliver owner-only ranking, CSV imports, job-specific contact suggestions,
-resume variants and outreach drafts. Add Gmail send only if authorization/setup is
-ready. Download/copy fallback prevents OAuth from blocking useful preparation.
+Target October 5-11, 2026 for a narrow executing prototype, contingent on approved
+inputs, career facts and account setup. Aim for supplied verified contact → policy
+check → real reply → negotiated agreement → calendar meeting → preparation brief.
+Estimated prototype work is 5–7 focused engineering days; dependable failure handling
+and a bounded live pilot are more realistically 8–12 total days, with provider setup
+delays separate. These are assumptions, not delivery guarantees or proof of hiring ROI.
+Draft/export fallback remains useful when authorization is unavailable, but does not
+count as completion of the autonomous workflow.
 
-Exclude from first week: trained interview-probability models, automatic LinkedIn
-scraping/messaging, whole-inbox ingestion, autonomous applications, an autofill
-extension, large-scale people crawling, auto-sent follow-ups and the full foundation
-rewrite. Fix only foundation issues required for this feature; keep remaining audit
-work separately scheduled.
+Broad browser application support, unrestricted people crawling, automatic LinkedIn
+scraping/messaging, trained interview probabilities and a full foundation rewrite
+remain outside the first-week promise. Narrow touched-thread sync belongs in the
+scheduling prototype. Routine policy-permitted follow-ups are part of autonomy.
+The Day 1–7 headings below retain foundation sequencing, not a fixed release schedule;
+combine T20.1/T20.3/T20.4 foundations with T20.7 before expanding all later phases.
 
 ### Day 1: evidence and inputs
 
@@ -125,7 +147,7 @@ work separately scheduled.
 - Keep original resume immutable and version artifacts by job/facts/generation versions.
   Resume tailoring cannot change shared job records.
 
-### Day 5: outreach packet and approval
+### Day 5: outreach packet, policy and execution
 
 - Different drafts for a warm connection (small clear referral ask) and recruiter
   (job/requisition, two evidence-based fit points, a concise relevant plan, one ask).
@@ -134,19 +156,25 @@ work separately scheduled.
 - The plan should connect a real project/skill to a documented job need; no elaborate
   speculative company advice or unsupported promises.
 - Attach exactly the selected approved resume version. Provide copy and .eml export;
-  optionally send through Gmail's send-only API after user approval. Gmail drafts use
-  broader compose permissions, so in-app drafts are the default.
-- Approval binds recipient, subject/body, job version and attachment hash; any edit
-  invalidates it. Immediately before sending, check closure, suppression and prior send.
-- Default approved-send limit 10/day, one active outreach thread per person, seven-day
+  send permitted messages through the connected account once policy is enabled.
+  Send-only access cannot process replies; touched-thread sync requires read access.
+  In-app drafts remain the fallback when accounts/policy are inactive.
+- Every action binds exact recipient, content, job/fact versions, attachment hash and
+  policy revision. Review-mode approval invalidates after edits; autonomous actions
+  revalidate changed inputs against policy. Before sending, check closure, suppression,
+  relationship evidence and prior send.
+- Proposed configurable send limit 10/day, one active outreach thread per person, seven-day
   cooldown across jobs. Contact at most one person per company at a time unless the
   owner explicitly selects a second. Referral route is offered first, not required.
-- Follow-up is a suggested draft after five business days and never sends automatically
-  in v1. Replies/declines/bounces/opt-outs suppress further automatic suggestions.
+- Follow-up timing/attempts are part of policy; five business days is an unvalidated
+  baseline, not a universal optimum. Permitted follow-ups execute automatically;
+  review mode keeps them as drafts. Replies alter the next action, and declines,
+  bounces and opt-outs suppress further outreach.
 - Send state is durable with Message-ID/provider ID. Ambiguous network outcomes enter
   reconcile-needed; do not blindly retry and duplicate mail. No exactly-once promise.
-- Automatic sending is a later opt-in policy with recipients/criteria, limits, approved
-  facts/templates, pause control and kill switches; this document does not authorize it.
+- Automatic sending is the requested end-state under explicit account/policy activation
+  with recipients/criteria, limits, approved facts, pause control and kill switches.
+  This document describes that capability without activating real external actions.
 
 ### Day 6: continuous workflow
 
@@ -159,8 +187,10 @@ work separately scheduled.
   require manual confirmation even when the email verifies.
 - Add tracker states for packet ready, referral requested, outreach sent, replied,
   application submitted and next action; keep application statuses compatible.
-- Replies are manually marked in week one. Inbox sync is a separate opt-in later;
-  Gmail read permissions are broader than send permissions even if the app filters.
+- Supplied messages/manual markers bootstrap tests; the scheduling prototype needs
+  connected touched-thread sync. Gmail read permissions are broader than send
+  permissions even if the app filters. Normal replies/slot clarification progress
+  automatically; unresolved owner decisions enter the exception queue.
 - Candidate generation is resumable/idempotent; one active packet per user/job/input
   version. Partial success is retained: missing recruiter must not block resume.
 - Suggested initial preparation budget: $50/week owner-configurable, separately
@@ -177,6 +207,10 @@ work separately scheduled.
   PDF extraction/overflow, attachment identity, isolation and deletion.
 - Check duplicate sends, approval invalidation, closure after approval, timeouts,
   rate/budget caps, provider revocation, suppression and pause controls.
+- Check policy enforcement, recipient/account identity, malicious reply instructions,
+  counterpart clarification, timezone/DST conflicts, duplicate provider events,
+  mutual agreement versus invite/acceptance, manual calendar edits, reschedules,
+  cancellation and unknown-outcome reconciliation before any real networking pilot.
 - Backend discovery/pyflakes, web build/full e2e and affected real-data desktop/mobile
   checks on the final diff. Offline provider/model fakes; live send test to owner's
   own address only after explicit authorization. No tests send to recruiters.
@@ -201,7 +235,7 @@ user-scoped; shared job facts never expose private contact or resume information
 Interfaces: additive sort=recommended for For you, rank reasons/version and stable
 rank cursors; contact CSV import preview/confirm; career-fact review; POST prepare
 for existing/new jobs; GET packet status/results; authenticated artifact download;
-explicit approval and send endpoints; outcome/suppression updates. Poll durable
+policy/review authorization and action endpoints; outcome/suppression updates. Poll durable
 task status initially; SSE can notify without becoming the source of truth.
 Regenerate OpenAPI/types. Failure results distinguish no evidence, provider blocked,
 budget exhausted, missing facts, stale packet and send outcome unknown.
@@ -226,7 +260,7 @@ budget exhausted, missing facts, stale packet and send outcome unknown.
 - Track per-user research/model/render cost, queue delay and limits from the first
   release. Separate cached public evidence from private artifacts. These simple
   boundaries enable later scale without requiring new infrastructure now.
-- Beta gate: packet/resume/send isolation tests pass, approvals work, costs are bounded,
+- Beta gate: packet/resume/send isolation tests pass, policy/review authorization works, costs are bounded,
   and each invited user has completed an assisted workflow with feedback. Review after
   two weeks: regular voluntary use, measured time savings, quality defects and support
   burden determine whether to expand or fix the experience first.
@@ -266,9 +300,10 @@ budget exhausted, missing facts, stale packet and send outcome unknown.
 10. **Personal relationship CRM:** follow-ups and helpful sharing with people you know;
     relationship notes are manually supplied, never inferred from fabricated familiarity.
 
-Highest early return: ranking + network import + referral kit + truthful tailored
-resume + approved recruiter draft. Broad autonomous web/inbox/application agents
-come after this loop produces useful owner outcomes.
+The initial executing pilot combines private facts/network input with permitted
+outreach, actual reply handling and agreed scheduling. The experiments above now feed
+that workflow; broad source/form coverage expands after it works. These are priority
+judgments, not measured return rankings.
 
 ## App-focused research addendum (2026-10-04)
 
@@ -318,7 +353,7 @@ No application volume, keyword percentage or opaque fit score proves interview R
   for a bounded shortlist. Original weights are a baseline to compare with simpler
   ordering, not calibrated interview probabilities.
 - **T20.3:** imported-network/recruiter matching, approved resume selection/QA and exact
-  per-send approval. One missing contact does not block other packet components/jobs.
+  policy/review authorization. One missing contact does not block other components/jobs.
 - **T20.4:** supplied recruiting-message receipt/deadline pilot, then opt-in inbox
   integration. No mailbox access was authorized or connected in this research pass.
 - **T20.5:** one hosted-form portal pilot with approved answers, exact attachment and
@@ -327,12 +362,32 @@ No application volume, keyword percentage or opaque fit score proves interview R
   small production box. Universal ATS support is outside the first-week commitment.
 - **T20.6:** invitation-triggered preparation, delayed independent practice and
   transparent funnel/outcome reporting once recruiting-event handling is dependable.
+- **T20.7:** autonomous networking and scheduling. Connect one owner-authorized
+  account/calendar; configure recipients, purposes, disclosures, follow-ups, scheduling
+  bounds and pause controls once. Use one AI interpretation/planning worker and a
+  deterministic executor. Persist trigger/route/reply/agreement/action evidence;
+  clarify counterpart ambiguity automatically. Separate private holds, exact mutual
+  agreement, invitation delivery and acceptance. Recheck conflicts; reconcile uncertain
+  writes before retry; handle reschedules/cancellation and deliver a private brief.
+  Review only unresolved identity/facts, material commitments or out-of-policy actions.
+  First prototype: supplied verified contact → policy checks → real reply → agreed
+  calendar meeting → brief, activated only after explicit setup.
+- **T20.8:** event, introduction and outcome workflows. Monitor permitted official
+  company/event signals; complete supported registrations under policy, distinguish
+  waitlist/confirmation and arrange relevant meetings before recommending attendance.
+  Complete requested artifacts and consensual introductions using actual thread or
+  encounter evidence; no fabricated recap, endorsement or private attendee scraping.
+  Rank people/routes/actions alongside eligible jobs and active hiring steps. Measure
+  held useful conversations, completed referrals, interviews, total owner time/cost,
+  corrections and unwanted contact. Extend supported applications/preparation without
+  replacing genuine assessments. Full direction and evidence limits are in the
+  [autonomous networking report](../../reports/Drop%20Radar%20autonomous%20networking.md).
 
-The first-week commitment remains the owner-only packet/ranking/contact/approval loop.
-Include T20.4's supplied-message pilot only if the core passes release checks in time.
-Deeper people crawling and browser submission move to subsequent slices rather than
-making the week-one scope unbounded. These slice labels organize T20; no implementation
-or individual completion status is implied.
+The first-week target is now the narrow executing networking prototype described at
+the top; the broader vision is staged rather than reduced to approval packets.
+T20.7 can follow the necessary T20.1/T20.3/T20.4 foundations before all T20.5/T20.6 work.
+Deeper contact discovery, event registrations and browser coverage need separate
+iterations. These slice labels organize T20; no implementation/completion is implied.
 
 Public Greenhouse and Lever listing APIs do not grant candidate-side submission access:
 their application POST endpoints require employer keys. Plan a supported browser/form
@@ -353,7 +408,9 @@ For two weeks measure owner review time, packet acceptance, factual corrections,
 confirmed submissions, unresolved attempts, recoveries, actionable replies, assessment
 completion, human interviews and actual preparation costs. Retain cohort age/pending
 outcomes and distinguish automated invitations. Compare against the current workflow
-and simpler ranking. Approval of each external send remains the chosen default.
+and simpler ranking. The latest autonomy direction replaces the earlier per-send
+default: routine permitted actions execute after explicit account/policy activation;
+review mode remains optional and material decisions enter the exception queue.
 
 ## Research checked 2026-10-04
 
@@ -380,9 +437,12 @@ API access, accurate recruiter assignment or next-week authorization is assumed.
 
 ## Handoff
 
-Docs-only planning/research save on claude/trim-drop-radar-plan; competitor report,
-this spec and PROGRESS.md updated. Public source/targeted code checks only; no app
+Docs-only planning/research save on claude/trim-drop-radar-plan; competitor/autonomous
+networking reports, research notes, this spec and PROGRESS.md updated. Public source,
+evidence qualification and documentation link/whitespace checks only; no app
 implementation, live schema/config write, account connection, outreach, deployment,
 PR or tag. Sender/resume/contact inputs remain implementation prerequisites through
-the normal secure flow. Next implementation slice: T20.1, then T20.2 and T20.3.
+the normal secure flow. Next prototype combines necessary T20.1/T20.3/T20.4 inputs
+with T20.7: verified contact → enabled policy → reply → agreed meeting → brief,
+before broad ranking, contact discovery and form coverage.
 Existing T16.7 task status is unchanged until the owner explicitly chooses a new task.
