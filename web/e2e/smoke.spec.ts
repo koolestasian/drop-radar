@@ -350,18 +350,25 @@ test("a new user gets the welcome explainer once; the work model shows only when
   await expect(page.getByRole("dialog", { name: "Welcome to Drop Radar" })).toBeHidden();
 });
 
-test("pay shows on a card and in the detail pane only when the posting states it", async ({ page }) => {
+test("stated pay and clearly labeled market estimates stay separate", async ({ page }) => {
   await mockApi(page, [
     opp("p1", "Harvey", "Software Engineering Intern", { pay: "$62–$72/hr" }),
     opp("p2", "Brex", "Backend Engineer New Grad"),
+    opp("p3", "Figma", "Software Engineer Intern", { pay_estimate: "$35–$45/hr", pay_estimate_basis: "US-wide Software Developers; BLS OEWS 2025 10th–25th percentiles (WageDex)" }),
   ]);
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
   await page.goto("/");
   await expect(page.getByRole("article", { name: /^Harvey/ })).toContainText("$62–$72/hr");
   await expect(page.getByRole("article", { name: /^Brex/ })).not.toContainText("$");
+  await expect(page.getByRole("article", { name: /^Figma/ })).toContainText("Est. $35–$45/hr");
   await page.getByRole("article", { name: /^Harvey/ }).click();
   await expect(page.getByText("Pay", { exact: true })).toBeVisible();
   await expect(page.getByText("$62–$72/hr").first()).toBeVisible();
+  if (await page.getByRole("button", { name: "Close" }).isVisible())
+    await page.getByRole("button", { name: "Close" }).click();
+  await page.getByRole("article", { name: /^Figma/ }).click();
+  await expect(page.getByText("Market estimate", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "WageDex / BLS data" })).toBeVisible();
 });
 
 test("Sources shows the radar's own numbers in plain words", async ({ page }) => {

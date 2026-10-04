@@ -207,6 +207,16 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.ids_of(KEVIN), self.names("swe", "ng"))
         self.assertEqual(await self.ids_of(FRIEND), self.names("ib"))
 
+    async def test_market_estimate_only_appears_when_employer_pay_is_blank(self):
+        first = (await self.get(f"/api/opportunities/{self.ids['swe']}")).json()
+        self.assertEqual(first["pay"], "")
+        self.assertTrue(first["pay_estimate"])
+        self.assertIn("BLS", first["pay_estimate_basis"])
+        self.store.save_opportunity(self.ids["swe"], first_seen=T0, fields={"Pay": "$30–$40/hr"})
+        second = (await self.get(f"/api/opportunities/{self.ids['swe']}")).json()
+        self.assertEqual(second["pay"], "$30–$40/hr")
+        self.assertEqual(second["pay_estimate"], "")
+
     async def test_include_all_widens_to_everything_their_sources_found_never_the_other_users(self):
         self.assertEqual(await self.ids_of(KEVIN, include="all"), self.names("swe", "ng", "tax"))
         self.assertEqual(await self.ids_of(FRIEND, include="all"), self.names("swe", "ib", "tax"))

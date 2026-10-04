@@ -36,6 +36,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse
 
 from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
+from radar.pipeline.pay_estimate import estimate_pay
 from radar.api import auth, events
 from radar.api.models import (Action, ActionPatch, AuthResult, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
                               SourceHealth, SourceLatency, WatchlistConfig)
@@ -217,13 +218,16 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         mine = owned(user)
         _, ok, reasons = visible_to(opp, user.profile, mine)
         fields, action = opp["fields"], opp.get("action")
+        pay = fields.get("Pay", "")
+        pay_estimate, pay_estimate_basis = estimate_pay(opp["title"], opp["location"]) if not pay else ("", "")
         seen_by_me = [i for i in opp["items"] if i["source"] in mine]
         return Opportunity(
             id=opp["id"], title=opp["title"], company=opp["company"], location=format_location(opp["location"]),
             location_raw=opp["location"], url=opp["url"],
             deadline=opp["deadline"], status=opp["status"], first_seen=opp["first_seen"],
             published_at=opp["published_at"], category=fields.get("Category", ""),
-            role_track=fields.get("Role / Track", ""), season=fields.get("Season / Year", ""), pay=fields.get("Pay", ""),
+            role_track=fields.get("Role / Track", ""), season=fields.get("Season / Year", ""), pay=pay,
+            pay_estimate=pay_estimate, pay_estimate_basis=pay_estimate_basis,
             sources=sorted({i["source"] for i in seen_by_me}),
             backfill=bool(seen_by_me) and all(json.loads(i["raw"] or "{}").get("seed") for i in seen_by_me),
             match=Match(ok=ok, reasons=reasons),

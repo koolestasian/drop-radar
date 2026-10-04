@@ -526,6 +526,18 @@ export interface components {
              * @default
              */
             pay: string;
+            /**
+             * Pay Estimate
+             * @description US-wide occupation wage benchmark, only when employer pay is blank
+             * @default
+             */
+            pay_estimate: string;
+            /**
+             * Pay Estimate Basis
+             * @description occupation, source, vintage and percentiles behind the benchmark
+             * @default
+             */
+            pay_estimate_basis: string;
             /** Published At */
             published_at: string | null;
             /** Role Track */
