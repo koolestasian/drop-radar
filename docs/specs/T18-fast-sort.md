@@ -1,7 +1,8 @@
-# T18: newest-posted order from an index, not a sort per request
+# T18: answer the Jobs list from a bitmap index, not a sort and a scan per request
 
 Owner, 2026-10-04: "find the fastest way to sort" after T17 made Jobs filterable. Design only; build it in a later session.
-Status: proposed. Needs the owner's yes before deploy (it migrates the live DB, see Deploy).
+Status: proposed. **Build Option A** (no DB change, so no owner's yes needed for data). Option B, the SQL index, is the
+fallback if A is rejected. Step 0 (compression) applies either way.
 
 ## What it costs today (measured on the box, 2026-10-04, read-only, 12,351 postings, 13,364 items, 578 sources)
 
@@ -24,7 +25,87 @@ Why: `ORDER BY` an expression has no index, so SQLite must
 
 The work is O(n log n), and it is paid per request even though the page needs 30 rows. Since 3b2fbe5 the API reads rows lazily, so this sort is the floor of every list request: 0.2 to 0.4 s of the 0.3 to 0.6 s total.
 
-## The fix: a stored key with a B-tree index
+## Option A (recommended): an in-memory bitmap index
+
+Measured with `docs/specs/t18-bitmap-bench.py`, run against the live dump of 11,396 jobs. Python 3.12 stdlib only, Mac.
+
+| Question | Today on the box | Option B (SQL index) | Option A (bitmaps) |
+|---|---|---|---|
+| For you, first 30 | 0.44 s | ~60 ms (est.) | **9 us** |
+| For you + Intern + Software, first 30 | 0.38 s | ~60 ms | **9 us** |
+| For you + Quant (7 hits in 12k) | 1.2 s | ~0.6 s | **2 us** |
+| Everything + posted 7 days + New grad | 0.36 s | ~10 ms | **10 us** |
+| Header and all 24 pill counts (`/summary`) | 6-30 s scan | same scan | **11 us** (popcounts) |
+
+Cost: the build from rows already in memory is 100 ms (pure Python, regex classify included). From the DB, with the per-user
+match, it is ~3 s, measured as 12k x (`get_opportunity` 0.18 ms + `visible_to` 0.05 ms). Each bitset is 1,424 bytes.
+
+### The data structure
+Number the postings by sort order, **oldest first**: position `i` is the i-th oldest by `(posted key, id)`, so the newest has the
+highest position. Each attribute is one Python `int` used as a bitset, with bit `i` set when posting `i` has it.
+(Python ints do bitwise AND/OR/XOR and `bit_count()` in C over 64-bit words; at 12k bits that is ~190 words per op.)
+
+- `keys`: the sorted list of `(posted_key, id)`. `ids[i]`, `title[i]`, `company[i]` and `location[i]` are plain parallel lists.
+- Global bitsets: `level:intern`, `level:new_grad`, `track:<name>` x10, `drops` (not backfill), `us` (confirmed US),
+  `dead` (Closed/Expired...), `twin` (every copy of a company+title+location except the one the list shows: the newest).
+- Per user: `owned` (seen by one of the user's sources), `you` (`visible_to(...).ok`), `hidden` (the user's `ignored` actions).
+  The guest is a user with the guest profile.
+
+### The algorithms
+- **Filter:** AND the bitsets. `mask = owned & ~dead & ~twin & ~hidden [& you] [& level:x] [& track:y] [& drops] [& us]`.
+- **Sort:** none at read time. The order is the bit numbering.
+- **Page:** take set bits from the top: `i = mask.bit_length() - 1; mask ^= 1 << i`, 30 times. That is O(k x n/64) word ops.
+- **Cursor (next page):** the cursor stays `(sort_key, id)`. Find its position with `bisect` on `keys` (O(log n)), then
+  `mask &= (1 << p) - 1`. Deep pages cost the same as page 1, and twins stay consistent because `twin` is global.
+- **Posted within N days:** postings are numbered by posted key, so "posted since D" is a contiguous top range. Find it with
+  `p = bisect_left(keys, (D,))` and AND with `~((1 << p) - 1)`. O(log n), with no per-row date parsing.
+- **`since` (the New pill):** that is `first_seen`, which is a different order. Keep a `first_seen` per position and test the
+  few candidates the other filters leave, or, simpler, keep the New pill on today's SQL path (it is already 0.1 s).
+- **Text search (`q`, `location`):** after the bit filters, walk the remaining set bits newest-first and test the strings
+  until 30 match. That is O(r) string checks at ~1 us each, so it needs no inverted index at this size.
+- **Counts for `/summary`:** `(scope & bitset).bit_count()` per pill. 24 popcounts take 11 us, which replaces the background scan.
+- **Prestige sort:** tiers are 4 values. Walk the mask once per tier, highest tier first (`mask & tier_bits[t]`). This is a
+  bucket sort over the existing order, O(n/64) per tier.
+
+### Keeping it current (the hard part)
+- **Startup:** build in a worker thread with its own read connection (like the summary scan today), ~3 s. Until it is ready,
+  the API uses the current SQL path, so the service is never down.
+- **New posting from the pipeline** (the common case: newer than everything) gets position n, a new highest bit, set in
+  O(1) per bitset with no shifting.
+- **Out-of-order posting** (backfill, or a date filled later): insert at position p and shift the bits above it,
+  `x = ((x >> p) << (p + 1)) | (x & ((1 << p) - 1))`, for each bitset. That is O(n/64) words each, microseconds for ~30 bitsets.
+  `bisect.insort` the key.
+- **Status change** (PATCH status) sets or clears the user's `hidden` bit. **Profile change** (Settings) rebuilds that user's `you`
+  in the background, ~3 s.
+- **Writes by other processes** (`fix-pages`, `fix-pay`, repair SQL): poll `PRAGMA data_version` once per request (it costs
+  microseconds). It changes only when *another* connection commits, so the app's own writes don't trigger it. On a
+  change, rebuild in the background and keep serving the old index until the new one is swapped in. See
+  https://www.sqlite.org/pragma.html#pragma_data_version
+- **Twins:** on insert, look up a `twin_key -> positions` dict, and recompute `twin` bits for that group only, so the newest copy is the one shown.
+- **Hook point:** Store writes are in `save_opportunity` and `upsert_item`. Call `index.touch(opportunity_id)` after commit;
+  it re-reads that one row and moves or sets its bits.
+
+### Code shape (ponytail: one module, stdlib only)
+- `radar/api/bitindex.py`, ~150-200 lines. Build, `touch(id)`, `page(user, filters, cursor, k)`, `counts(user)`.
+- `list_opportunities` uses it when it is ready and the request has no `since`, `company`, `source` or `status`; otherwise it
+  falls back to the SQL path. `summary` uses `counts()`. It then fetches only the 30 page rows (`get_opportunity` x 30 is ~5 ms).
+- **Don't add pyroaring/Roaring.** Compressed bitmaps pay off at millions of ids. At 12k, a plain int is 1.4 KB and
+  already microseconds. Reconsider only past ~1M postings. See https://roaringbitmap.org/about/ and Lemire et al.,
+  "Better bitmap performance with Roaring bitmaps", https://arxiv.org/abs/1402.6407
+
+### Tests (offline)
+- **Same results as today, whole list:** for a seeded store with twins, hidden rows, dead rows, date-only rows and undated
+  backfill, `page()` across all pages yields exactly the ids and order the SQL path yields, for every combination of
+  scope x level x track x drops x posted_within.
+- **Counts:** `counts()` equals the paged totals per scope, level and track.
+- **Inserts:** an out-of-order insert, a new twin, an unhide and a write from another connection (data_version) all show up correctly.
+
+### Verify on the box
+- Dump For you and Everything (all pages) through the API before and after the change: identical ids and order.
+- Timing probe: every filter combination under 20 ms end to end on the server; `/summary` under 20 ms after startup.
+- RSS of `radar` before and after: expect only a few MB more (per-row strings plus about 1.4 KB per bitset).
+
+## Option B (fallback): a stored key with a B-tree index
 
 Store the posted key in a column `posted_key` and index it on `(posted_key DESC, id DESC)`.
 - **Reads:** SQLite walks the index in order and stops after the page. That is O(log n + r), where r is the number of rows inspected until the page fills (filters and the For you match run on those rows only).
