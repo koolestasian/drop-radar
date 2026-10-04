@@ -30,7 +30,13 @@ def suggestions(store, user, owned, now):
     profiles = {term: dataclasses.replace(user.profile, exclude=(*user.profile.exclude, term)) for term in candidates}
     counts, examples = dict.fromkeys(candidates, 0), {term: [] for term in candidates}
     if candidates:
+        seen = set()
         for row in store.iter_opportunities(source_names=owned):
+            # Match Jobs/summary: choose the newest twin before hidden/dead/profile gates.
+            twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
+            if twin in seen:
+                continue
+            seen.add(twin)
             if not excluded_term(row["title"], candidates):
                 continue
             opp = store.get_opportunity(row["id"], user_id=user.id)

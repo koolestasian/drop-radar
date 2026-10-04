@@ -2,6 +2,11 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.19.1 (2026-10-04)
+
+Profile suggestion previews now count displayed jobs with the same duplicate-requisition
+collapse as Jobs and its summary. A hidden newest copy also suppresses its older twins.
+
 ## 0.19.0 (2026-10-04)
 
 T16.6 adds optional title-phrase feedback after hiding a job. Three distinct hides

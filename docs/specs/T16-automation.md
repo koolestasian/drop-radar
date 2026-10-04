@@ -67,7 +67,7 @@ extraction model. First use is 16.5 priority, calibrated against Haiku before it
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from fetched page text via Haiku done (6006a83, 2026-10-04, v0.17.0): verified quote/amount/currency/period, shared daily budget, content cache, background calls, Gemini on API failure. Off-box sample: 4 model + 1 regex fills/20 blanks. Approved live backfill added 33/2,403 (31 Haiku + 2 structured/regex); owner stated pay 349 → 360. Owner-approved Codex cached-text completion added another 164 globally; owner feed now 412 stated. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
 | 16.4 | Self-growing watchlist + review queue | **done** (2026-10-04, this commit, v0.16.0): stored-link, YC and pinned aggregator queues; Settings careers URL detection; daily off-box repair/archive review queue |
 | 16.5 | Adaptive polling + learned priority | **done, live** (2026-10-04, this commit); automatic CS-student tiers, budgeted refresh and posting-hour polling (feeds T14) |
-| 16.6 | Learn from the user | **doing**: v0.19.0 implemented/validated; live schema approval and deployment pending |
+| 16.6 | Learn from the user | **doing**: v0.19.1 validated; schema 5 approved/applied, final deploy verification pending |
 | 16.7 | Maintenance by agent | todo |
 | 16.8 | Company names from source data | todo |
 
@@ -343,7 +343,7 @@ Artifacts: `data/t16/16.5-live-{before.log,after.log,audit.json,tier-diff.json,p
   guarded worker finishes. Existing SSRF/redirect/robots/size/time guards are reused.
 - Read-only production snapshot copied off-box: migration 4→5 preserved checksums
   of all existing table values; old/new matching agreed on 11,519 distinct posting
-  values. Snapshot owner feed: 1,727 visible, 441 stated pay, 1,286 blank pay,
+  values. Snapshot raw matching rows before requisition deduplication: 1,727, 441 stated pay, 1,286 blank pay,
   65 blank company/130 blank location; top companies TikTok 105, RTX 58,
   Palantir 58, ByteDance 31, Microsoft 29. No automatic suggestions without feedback.
   Empty-suggestion query took 1.4 ms locally. Artifacts:
@@ -354,12 +354,20 @@ Artifacts: `data/t16/16.5-live-{before.log,after.log,audit.json,tier-diff.json,p
   after Escape has a regression check. No production tokens were used.
 - Validation: 503 backend tests, pyflakes, web build and all 68 desktop/phone e2e
   tests pass. The API privacy regression includes the new nullable feedback fields.
-  Local approval removed exactly the previewed 1,092 jobs (1,723→631 after local
-  test hides), preserving all other profile fields. Settings text contrast measured
+  Initial local approval matched 1,092 raw-row removals (1,723→631). Live deployment
+  verification exposed that preview counts also needed Jobs requisition deduplication;
+  v0.19.1 now uses the same newest-twin selection before visibility/profile gates.
+  A regression compares preview counts with actual API lists, including hidden twins.
+  All other profile fields are preserved. Settings text contrast measured
   6.6:1 or better; keyboard/phone focus and all new 44px controls checked in Chrome.
   Existing Ponytail markers reviewed; no new deliberate shortcuts added.
-- Outstanding: production schema approval/backup/deploy and live
-  verification; a real future dismissal pattern and the owner's own phone.
+- Schema 4→5 approved and applied on production after backup
+  `backups/t16.6/radar-20261004T191900Z.db`. All existing table values unchanged,
+  quick_check OK; new feedback is NULL and the mute table empty. First live API
+  comparison: same 1,578 IDs/card values/profile, 413 stated pay, 1,165 blank pay,
+  53 blank company/107 blank location. No deployment errors.
+- v0.19.1 checks: 504 backend tests, pyflakes, build and 68 e2e pass.
+- Outstanding: final v0.19.1 deployment verification; a real future dismissal pattern and the owner's own phone.
   Historical rejection logging and company/location exclusion learning are deferred.
 
 ### 16.7 Maintenance by agent

@@ -32,7 +32,7 @@ class FeedbackTests(unittest.IsolatedAsyncioTestCase):
         self.app = create_app(self.store, self.runtime, tokens={"k" * 24: "owner"})
         self.client = httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app), base_url="http://test",
                                       headers={"Authorization": "Bearer " + "k" * 24})
-        self.ids = [self.add(str(i), "Sales Engineer Intern") for i in range(5)]
+        self.ids = [self.add(str(i), f"Sales Engineer Intern {i}") for i in range(5)]
 
     async def asyncTearDown(self):
         await self.client.aclose()
@@ -77,6 +77,20 @@ class FeedbackTests(unittest.IsolatedAsyncioTestCase):
         self.store.set_action(self.ids[3], "other", status="ignored", hide_term="sales")
         self.store.set_action(self.ids[4], "owner", status="ignored")
         self.assertEqual((await self.suggestions())["suggestions"], [])
+
+    async def test_preview_matches_displayed_duplicate_requisitions(self):
+        for id in self.ids[:3]:
+            await self.hide(id)
+        duplicate = self.add("duplicate", "Sales Engineer Intern 4")
+        self.assertEqual((await self.suggestions())["suggestions"][0]["affected_count"], 2)
+        response = await self.client.get("/api/opportunities", params={"sort": "found"})
+        self.assertEqual(len(response.json()["items"]), 2)
+        await self.hide(duplicate)
+        # A hidden newest twin also suppresses the older copy in Jobs.
+        result = (await self.suggestions())["suggestions"][0]
+        response = await self.client.get("/api/opportunities", params={"sort": "found"})
+        self.assertEqual(result["affected_count"], len(response.json()["items"]))
+        self.assertEqual(result["affected_count"], 1)
 
     async def test_invalid_feedback_does_not_change_actions(self):
         for body in ({"status": "ignored", "hide_term": "marketing"}, {"hide_term": "sales"},
