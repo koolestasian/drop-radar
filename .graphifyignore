@@ -5,3 +5,7 @@ monitor_*.json
 enrichment_cache.json
 tests/fixtures/
 .venv/
+# Local agent skills and config are not part of the product.
+.agents/
+.claude/
+.codex/

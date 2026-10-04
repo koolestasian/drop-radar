@@ -25,7 +25,9 @@ import secrets
 import signal
 import sqlite3
 import tempfile
+import threading
 import time
+from collections import Counter
 from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
@@ -36,13 +38,16 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse
 
 from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
+from radar.pipeline import roles
 from radar.pipeline.pay_estimate import estimate_pay
 from radar.api import auth, events
-from radar.api.models import (Action, ActionPatch, AuthResult, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
-                              SourceHealth, SourceLatency, WatchlistConfig)
+from radar.api.bitindex import BitIndex, pill_counts
+from radar.api.models import (Action, ActionPatch, AuthResult, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
+                              SourceHealth, SourceLatency, Summary, WatchlistConfig)
 from radar.config import GUEST_ID, User, Watchlist, load_guest_profile, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
 from radar.sources.registry import build_sources
+from radar.store import Store
 from radar.logos import LogoResolver
 from radar.models import utcnow
 from radar.pipeline.filter import is_us_location
@@ -140,6 +145,9 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     # never fires -- uvicorn would otherwise keep serving a process that stopped polling.
     crash_exit = crash_exit or (lambda: os.kill(os.getpid(), signal.SIGTERM))
     logos = LogoResolver(store)
+    index = BitIndex(store)
+    getattr(bus, "on_publish", []).append(lambda event: index.nudge() if event[0] == "opportunity" else None)
+    background = getattr(runtime, "scheduler", None) is not None  # production: a worker keeps the index fresh; tests build it in the request
 
     def _log_crash(task):
         if task.cancelled() or task.exception() is None:
@@ -154,15 +162,21 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             task = asyncio.create_task(runtime.scheduler.run(stop))
             task.add_done_callback(_log_crash)
             logo_task = asyncio.create_task(logos.run(stop))  # production only: tests stay offline
+            # ponytail: accounts build their view on their first request, not here: each is 15-30 s of CPU on the box
+            warm = [u for u in getattr(runtime, "users", {}).values() if not store.is_account(u.id)] + [guest]
+            threading.Thread(target=lambda: [index.safely(u, owned(u), refresh=False) for u in warm],
+                             daemon=True).start()  # until it is built, lists read SQL
         try:
             yield
         finally:
             if task is not None:
                 stop.set()  # Scheduler.run drains in-flight fetches before returning
                 await asyncio.gather(task, logo_task, return_exceptions=True)
+            index.close()
 
     app = FastAPI(title="Drop Radar", lifespan=lifespan)
     app.state.store, app.state.runtime = store, runtime
+    app.state.index = index
 
     def _session_cutoff():
         return (now() - timedelta(days=SESSION_DAYS)).isoformat()
@@ -184,6 +198,14 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         return user
 
     guest = User(id=GUEST_ID, watchlist=Watchlist(), profile=load_guest_profile())
+    rank_cache = {}  # user id -> (the User it was computed for, ranks): 800 company names are canonicalised per call
+
+    def ranks_of(user):
+        if (hit := rank_cache.get(user.id)) is None or hit[0] is not user:
+            hit = rank_cache[user.id] = (user, _ranks(user))
+        return hit[1]
+
+    summaries, counting = {}, {}  # user id -> (time, Summary); user id -> its recount in progress
     hits, cached = {}, {}  # guest rate limit (ip -> request times) and 60s response cache (query -> (time, page))
 
     def _client_ip(request):
@@ -226,7 +248,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             location_raw=opp["location"], url=opp["url"],
             deadline=opp["deadline"], status=opp["status"], first_seen=opp["first_seen"],
             published_at=opp["published_at"], category=fields.get("Category", ""),
-            role_track=fields.get("Role / Track", ""), season=fields.get("Season / Year", ""), pay=pay,
+            role_track=fields.get("Role / Track", ""), level=roles.level(opp["title"], fields.get("Category", "")),
+            track=roles.track(opp["title"], fields.get("Role / Track", "")), season=fields.get("Season / Year", ""), pay=pay,
             pay_estimate=pay_estimate, pay_estimate_basis=pay_estimate_basis,
             sources=sorted({i["source"] for i in seen_by_me}),
             backfill=bool(seen_by_me) and all(json.loads(i["raw"] or "{}").get("seed") for i in seen_by_me),
@@ -413,11 +436,18 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                                       "or by company prestige (S > A > B > C tiers), newest posted within a tier"),
         backfill: bool | None = Query(None, description="false: only new drops; true: only postings that were "
                                                          "already open when your sources first looked"),
+        level: str | None = Query(None, pattern="^(intern|new_grad)$", description="internships or new-grad roles"),
+        track: str | None = Query(None, description="one of: " + ", ".join(roles.TRACK_NAMES)),
+        posted_within: int | None = Query(None, ge=0, description="posted this many days back or less (the posting "
+                                                                  "date, else a live drop's found time; undated "
+                                                                  "backfill never matches)"),
         cursor: str | None = None,
         limit: int = Query(50, ge=1, le=200),
     ):
         # ponytail: scores every candidate in Python per request (one row fetch each);
         # fine for two users and thousands of rows -- precompute per-user matches if it slows.
+        if track is not None and track not in roles.TRACK_NAMES:
+            raise HTTPException(422, f"track must be one of {roles.TRACK_NAMES}")
         is_guest = user.id == GUEST_ID
         if is_guest:  # every visitor's page is the same: cap it, ignore personal filters, reuse it for a minute
             limit, action = min(limit, 50), None
@@ -428,8 +458,33 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         today = now().date()
         items, keys, more, seen = [], [], None, set()
         terms, places = (q or "").split(), (location or "").split()
-        for row in store.list_opportunities(status=status, since=since, source_names=owned(user),
-                                              backfill=backfill, sort=sort, ranks=_ranks(user)):
+        view = None
+        if sort != "found" and since is None and source is None and status is None and action is None and closing_within is None:
+            view = index.view(user, owned(user), background)  # None while it is still being built: SQL answers
+        if view is not None:
+            snap, ranks = view.snap, ranks_of(user)
+            mask = view.shown[backfill] & ~view.dead & ~index.hidden(store.conn, user.id, snap)
+            for on, bits in ((include == "matches", view.you), (level, snap.level.get(level, 0)),
+                             (track, snap.track.get(track, 0)), (us_only, snap.us)):
+                mask &= bits if on else -1
+            if posted_within is not None:
+                mask &= view.posted_since(today - timedelta(days=posted_within))
+            for i in view.positions(mask, sort, ranks, after):
+                r = snap.recs[i]
+                if (terms and not _has_terms(f"{r['title']} {r['company']}", terms)) or (
+                        places and not _has_terms(r["location"], places)) or (
+                        company and company.lower() not in r["company"].lower()):
+                    continue
+                opp = store.get_opportunity(r["id"], user_id=user.id)
+                if opp is None:  # deleted since the snapshot
+                    continue
+                if len(items) == limit:
+                    more = keys[-1]
+                    break
+                items.append(serialize(opp, user))
+                keys.append((view.sort_key(i, sort, ranks), r["id"]))
+        for row in (() if view is not None else store.iter_opportunities(
+                status=status, since=since, source_names=owned(user), backfill=backfill, sort=sort, ranks=ranks_of(user))):
             # one card per job: Invesco posts the same "Business Trainee, Hyderabad" as five requisitions.
             # Checked before the cursor so every page agrees on which copy is the one shown.
             twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
@@ -446,6 +501,14 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             if company and company.lower() not in row["company"].lower():
                 continue
             if us_only and is_us_location(row["location"]) is not True:
+                continue
+            if level or track:  # the title decides these; the row's own fields break a tie, no fetch needed
+                fields = json.loads(row["fields"] or "{}")
+                if (level and roles.level(row["title"], fields.get("Category", "")) != level) or (
+                        track and roles.track(row["title"], fields.get("Role / Track", "")) != track):
+                    continue
+            if posted_within is not None and row["published_at"] and (
+                    datetime.fromisoformat(row["published_at"]).date() < today - timedelta(days=posted_within)):
                 continue
             opp = store.get_opportunity(row["id"], user_id=user.id)
             mine = opp.get("action") or {}
@@ -466,6 +529,12 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                 continue
             if include == "matches" and not out.match.ok:
                 continue
+            if (level and out.level != level) or (track and out.track != track):
+                continue
+            if posted_within is not None:
+                posted = out.published_at or ("" if out.backfill else out.first_seen)
+                if not posted or datetime.fromisoformat(posted).date() < today - timedelta(days=posted_within):
+                    continue
             if len(items) == limit:
                 more = keys[-1]
                 break
@@ -478,6 +547,64 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                 cached.clear()
             cached[request.url.query] = (time.monotonic(), page)
         return page
+
+    @app.get("/api/opportunities/summary", response_model=Summary)
+    async def summary(user: User = Depends(viewer)):
+        """The numbers behind the Jobs header and filter pills, over everything the list would show.
+        Counting reads every posting (seconds on the box), so a request never waits for it: it gets the last
+        count at once, and an older-than-5-minutes or missing one starts a recount. The first ever request
+        is a 503 with Retry-After while the recount runs."""
+        view = index.view(user, owned(user), background)
+        if view is not None:  # popcounts: microseconds, so no cache and no recount
+            base = view.shown[None] & ~view.dead & ~index.hidden(store.conn, user.id, view.snap)
+            return Summary(you=counts(pill_counts(view.snap, base & view.you)),
+                           everything=counts(pill_counts(view.snap, base)))
+        hit = summaries.get(user.id)
+        if (not hit or time.monotonic() - hit[0] > 300) and user.id not in counting:
+            counting[user.id] = asyncio.ensure_future(recount(user))
+        if hit:
+            return hit[1]
+        raise HTTPException(503, "counting your jobs; try again in a few seconds", headers={"Retry-After": "5"})
+
+    def counts(c):
+        return Counts(total=c["total"], level={k[6:]: n for k, n in c.items() if k.startswith("level:")},
+                      track={k[6:]: n for k, n in c.items() if k.startswith("track:")})
+
+    async def recount(user):
+        mine, path = owned(user), store.conn.execute("PRAGMA database_list").fetchone()["file"]
+
+        def scan():  # its own connection on a worker thread, and it naps now and then so requests stay quick
+            you, everything, seen = Counter(), Counter(), set()
+            with Store(path) as db:
+                # the list's order, so the same copy of a twin is the one counted
+                for n, row in enumerate(db.iter_opportunities(source_names=mine, sort="posted")):
+                    if n % 200 == 0:
+                        time.sleep(0.02)
+                    twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
+                    if twin in seen:
+                        continue
+                    seen.add(twin)
+                    opp = db.get_opportunity(row["id"], user_id=user.id)
+                    if (opp.get("action") or {}).get("status") == HIDDEN_BY_DEFAULT or opp["status"] in DEAD_STATUSES:
+                        continue
+                    if not any(i["source"] in mine for i in opp["items"]):
+                        continue
+                    ok = visible_to(opp, user.profile, mine)[1]
+                    lvl, trk = roles.level(opp["title"], opp["fields"].get("Category", "")), roles.track(opp["title"], opp["fields"].get("Role / Track", ""))
+                    for scope in (everything, you) if ok else (everything,):
+                        scope["total"] += 1
+                        if lvl:
+                            scope["level:" + lvl] += 1
+                        scope["track:" + trk] += 1
+            return you, everything
+
+        try:
+            you, everything = await asyncio.to_thread(scan)
+            summaries[user.id] = (time.monotonic(), Summary(you=counts(you), everything=counts(everything)))
+        except Exception:
+            logging.getLogger(__name__).exception("summary recount failed")
+        finally:
+            counting.pop(user.id, None)
 
     @app.get("/api/opportunities/{opp_id}", response_model=Opportunity)
     async def get_opportunity(opp_id: str, user: User = Depends(viewer)):

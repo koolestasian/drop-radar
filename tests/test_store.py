@@ -9,7 +9,7 @@ from radar.legacy import opportunity_monitor as legacy
 from radar.models import Item
 from radar.store import MIGRATIONS, SCHEMA, Store
 from radar.store.migrate_legacy import migrate
-from radar.views import legacy_records, write_views
+from radar.views import legacy_records
 
 T0 = datetime(2026, 9, 1, 12, tzinfo=timezone.utc)
 
@@ -237,17 +237,6 @@ class MigrationAndViewTests(unittest.TestCase):
     def test_missing_enrichment_cache_is_fine(self):
         self.cache.unlink()
         self.assertEqual(self.migrate()["enrichment"], 0)
-
-    def test_views_match_legacy_writers_byte_for_byte(self):
-        self.migrate()
-        now = datetime(2026, 9, 30, 12, tzinfo=timezone.utc)
-        expected_md = self.dir / "expected.md"
-        legacy.write_live_view(legacy.workbook_records(self.tracker), now, expected_md)
-        out_xlsx, out_md = self.dir / "out.xlsx", self.dir / "LATEST.md"
-        with Store(self.db) as store:
-            write_views(store, "kevin", out_xlsx, out_md, now)
-        self.assertEqual(out_md.read_bytes(), expected_md.read_bytes())
-        self.assertEqual(legacy.workbook_records(out_xlsx), legacy.workbook_records(self.tracker))
 
 
 if __name__ == "__main__":

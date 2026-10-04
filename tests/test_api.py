@@ -221,6 +221,53 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.ids_of(KEVIN, include="all"), self.names("swe", "ng", "tax"))
         self.assertEqual(await self.ids_of(FRIEND, include="all"), self.names("swe", "ib", "tax"))
 
+    async def test_level_and_track_filter_on_the_server_and_come_back_on_each_item(self):
+        self.assertEqual(await self.ids_of(KEVIN, include="all", level="intern"), self.names("swe", "tax"))
+        self.assertEqual(await self.ids_of(KEVIN, include="all", level="new_grad"), self.names("ng"))
+        self.assertEqual(await self.ids_of(KEVIN, include="all", track="Finance"), self.names("tax"))
+        self.assertEqual(await self.ids_of(KEVIN, level="intern", track="Software"), self.names("swe"))
+        items = (await self.get("/api/opportunities", include="all")).json()["items"]
+        self.assertEqual({o["id"]: (o["level"], o["track"]) for o in items},
+                         {self.ids["swe"]: ("intern", "Software"), self.ids["ng"]: ("new_grad", "Software"),
+                          self.ids["tax"]: ("intern", "Finance")})
+        for bad in ({"level": "senior"}, {"track": "Plumbing"}):
+            self.assertEqual((await self.get("/api/opportunities", **bad)).status_code, 422)
+
+    async def test_posted_within_counts_days_back_from_the_posting_date_or_the_live_drop_time(self):
+        # now is 2026-10-01; nothing has a posting date, so the live drops' found time (Sep 20) stands in
+        self.assertEqual(await self.ids_of(KEVIN, include="all", posted_within=7), set())
+        self.assertEqual(await self.ids_of(KEVIN, include="all", posted_within=30), self.names("swe", "ng", "tax"))
+        self.store.save_opportunity(self.ids["swe"], first_seen=T0, published_at=datetime(2026, 9, 30, tzinfo=timezone.utc))
+        self.assertEqual(await self.ids_of(KEVIN, include="all", posted_within=1), self.names("swe"))  # date-only: Sep 30 is 1 day back
+
+    async def counted(self, token):
+        for _ in range(100):
+            r = await self.get("/api/opportunities/summary", token)
+            if r.status_code == 200:
+                return r.json()
+            await asyncio.sleep(0.05)
+        self.fail(r.text)
+
+    async def test_the_summary_counts_exactly_what_the_list_shows(self):
+        for token, who in ((KEVIN, "kevin"), (FRIEND, "friend")):
+            body = await self.counted(token)
+            for scope, include in (("you", "matches"), ("everything", "all")):
+                with self.subTest(who=who, scope=scope):
+                    shown = (await self.get("/api/opportunities", token, include=include)).json()["items"]
+                    counts = body[scope]
+                    self.assertEqual(counts["total"], len(shown))
+                    for lvl in ("intern", "new_grad"):
+                        self.assertEqual(counts["level"].get(lvl, 0), sum(o["level"] == lvl for o in shown))
+                    for name in {o["track"] for o in shown}:
+                        self.assertEqual(counts["track"][name], sum(o["track"] == name for o in shown))
+        for _ in range(100):  # the first request starts the count and is told to retry
+            r = await self.guest_get("/api/opportunities/summary")
+            if r.status_code == 200:
+                break
+            self.assertEqual((r.status_code, r.headers["retry-after"]), (503, "5"))
+            await asyncio.sleep(0.05)
+        self.assertEqual(r.json()["everything"]["total"], 4)
+
     async def test_phone_configuration_exposes_only_this_users_subscription(self):
         runtime = directory()
         runtime.pipeline = SimpleNamespace(alerter=MultiUserAlertDispatcher({

@@ -2,7 +2,7 @@ import { forwardRef } from "react";
 import { ArrowUpRight, Bookmark, BookmarkCheck, EyeOff, Eye } from "lucide-react";
 import { cn } from "cn";
 import type { ActionStatus, Opportunity } from "../api/client";
-import { ago, deadline, posted, shortLocation } from "../format";
+import { ago, deadline, LEVEL_LABEL, posted, shortLocation } from "../format";
 import { stockOf } from "../stock";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ type Props = {
   selected?: boolean;
   fresh?: boolean;
   compact?: boolean;
-  onStatus?: (status: ActionStatus) => void; // absent for a guest: no Save or Ignore
+  onStatus?: (status: ActionStatus) => void; // absent for a guest: no Save or Hide
   onOpen?: () => void;
 };
 
@@ -40,7 +40,12 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
   const stock = stockOf(o);
   const due = deadline(o.deadline);
   const shownPay = o.pay || o.pay_estimate;
-  const meta = [shortLocation(o.location), posted(o.published_at)].filter(Boolean).join(" · ");
+  const meta = [shortLocation(o.location), posted(o.published_at) ?? `found ${ago(o.first_seen)}`].filter(Boolean).join(" · "); // one date: posted, or found when the posting gives none
+  const level = o.level && (
+    <Badge variant="outline" className="bg-background/60">
+      {LEVEL_LABEL[o.level]}
+    </Badge>
+  );
   const stop = (fn: () => void) => (e: React.MouseEvent) => {
     e.stopPropagation();
     fn();
@@ -77,6 +82,7 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
             {stock.label}
           </Badge>
         )}
+        {o.level && <span className="hidden sm:inline-flex">{level}</span>}
         <WorkModelBadge o={o} className="hidden bg-background/60 md:inline-flex" />
         {shownPay && <span className="stamp hidden shrink-0 font-medium tabular-nums md:inline">{o.pay ? "" : "Est. "}{shownPay}</span>}
         {due && <span className={cn("stamp hidden font-medium sm:inline", DEADLINE_TONE[due.tone])}>{due.label}</span>}
@@ -145,10 +151,10 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
             {stock.label}
           </Badge>
         )}
+        {level}
         <WorkModelBadge o={o} className="bg-background/60" />
         {shownPay && <span className="stamp font-medium tabular-nums">{o.pay ? "" : "Est. "}{shownPay}</span>}
         {due && <span className={cn("stamp font-medium", DEADLINE_TONE[due.tone])}>{due.label}</span>}
-        <span className="stamp min-w-0 truncate text-muted-foreground">found {ago(o.first_seen)}</span>
         {onStatus && (
         <div className="ml-auto flex items-center">
           <Button
@@ -163,7 +169,7 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
           <Button
             variant="ghost"
             size="icon"
-            aria-label={status === "ignored" ? "Unignore" : "Ignore"}
+            aria-label={status === "ignored" ? "Unhide" : "Hide"}
             onClick={stop(() => onStatus(status === "ignored" ? "new" : "ignored"))}
           >
             {status === "ignored" ? <Eye /> : <EyeOff />}

@@ -29,6 +29,8 @@ class Opportunity(BaseModel):
     published_at: str | None
     category: str
     role_track: str
+    level: str = Field("", description='"intern", "new_grad", or "" for anything else (see radar.pipeline.roles)')
+    track: str = Field("Other", description="Quant, Software, Finance...; \"Other\" when no rule matches")
     season: str
     pay: str = Field("", description='the pay range the posting states, e.g. "$62–$72/hr" or "$120,000–$165,000/yr"; '
                                       'empty when it states none')
@@ -45,6 +47,17 @@ class Opportunity(BaseModel):
 class Page(BaseModel):
     items: list[Opportunity]
     next_cursor: str | None
+
+
+class Counts(BaseModel):
+    total: int
+    level: dict[str, int] = Field(description="intern / new_grad -> how many")
+    track: dict[str, int] = Field(description="track name -> how many")
+
+
+class Summary(BaseModel):
+    you: Counts = Field(description="what matches your profile (the For you scope)")
+    everything: Counts = Field(description="everything your sources found (the Everything scope)")
 
 
 class ActionPatch(BaseModel):

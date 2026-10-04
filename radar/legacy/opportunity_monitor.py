@@ -25,7 +25,6 @@ except ImportError:
 USERNAME = os.getenv("IG_USERNAME", "zero2sudo").lstrip("@")
 APIFY_TOKEN = os.environ.get("APIFY_TOKEN", "").strip()
 TRACKER_PATH = Path(os.getenv("TRACKER_PATH", "Zero2Sudo_Opportunity_Tracker.xlsx"))
-LIVE_VIEW_PATH = Path(os.getenv("LIVE_VIEW_PATH", "LATEST.md"))
 
 ENRICHMENT_PATH = Path(os.getenv("ENRICHMENT_PATH", "enrichment_cache.json"))
 
@@ -36,8 +35,6 @@ LLM_ENABLED = bool(
 
 STORY_ACTOR = os.getenv("STORY_ACTOR", "data-slayer/instagram-stories-scraper")
 
-GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY", "").strip()
-GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "").strip()
 
 REQUEST_TIMEOUT = 180
 
@@ -1107,143 +1104,6 @@ def save_records(records, path=None):
         ws.column_dimensions[get_column_letter(index)].width = width
     write_dashboard(wb, records)
     wb.save(path)
-
-
-def tracker_url():
-    if GOOGLE_SHEET_ID:
-        return f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/edit"
-    if GITHUB_REPOSITORY:
-        return f"https://github.com/{GITHUB_REPOSITORY}/blob/main/{LIVE_VIEW_PATH.name}"
-    return str(LIVE_VIEW_PATH)
-
-PRIORITY_ICONS = {"High": "🔥", "Medium": "⭐"}
-CLOSING_SOON_DAYS = 14
-RECENT_DAYS = 7
-
-def _md(value):
-    return " ".join(str(value or "").split()).replace("|", "\\|")
-
-def _month_day(value):
-    return f"{value:%b} {value.day}"  # portable; "%-d" fails on Windows
-
-def _short_date(value):
-    parsed = parse_iso_date(value)
-    return _month_day(parsed) if parsed else ""
-
-def _deadline_display(value, today):
-    parsed = parse_deadline(value)
-    if not parsed:
-        return _md(value) or "—"
-    days = (parsed - today).days
-    label = _month_day(parsed)
-    if parsed.year != today.year:
-        label += f", {parsed.year}"
-    if 0 <= days <= CLOSING_SOON_DAYS:
-        label += " (today)" if days == 0 else f" ({days}d)"
-    return label
-
-def _link_cell(row, today):
-    application = row.get("Application / Registration Link") or ""
-    if application:
-        return f"[Apply ↗](<{application}>)"
-    source = row.get("Instagram Source") or ""
-    if not source:
-        return "—"
-    if row.get("Source Type") == "Story":
-        seen = parse_iso_date(row.get("First Seen"))
-        if seen and (today - seen).days >= 1:
-            return f"[Story](<{source}>) (expired)"
-        return f"[Story](<{source}>)"
-    return f"[Post](<{source}>)"
-
-def _live_table(rows, today):
-    lines = [
-        "| | Opportunity | Type | Deadline | Seen | Link |",
-        "|---|---|---|---|---|---|",
-    ]
-    for row in rows:
-        icon = PRIORITY_ICONS.get(str(row.get("Priority") or ""), "")
-        title = _md(row.get("Opportunity") or row.get("Category") or "Opportunity")
-        lines.append(
-            f"| {icon} | {title} | {_md(row.get('Category'))} | "
-            f"{_deadline_display(row.get('Deadline'), today)} | "
-            f"{_short_date(row.get('First Seen'))} | {_link_cell(row, today)} |"
-        )
-    return lines
-
-def write_live_view(records, now=None, path=None):
-    now = now or datetime.now(timezone.utc)
-    today = now.date()
-    rows = sorted(records, key=lambda row: str(row.get("First Seen", "") or ""), reverse=True)
-    actioned = [row for row in rows if is_yes(row.get("Actioned?"))]
-    open_rows = [row for row in rows if not is_yes(row.get("Actioned?"))]
-    past = [row for row in open_rows if row.get("Status") in {"Expired", "Closed"}]
-    filtered = [row for row in open_rows if row.get("Status") == "Not actionable"]
-    active = [
-        row for row in open_rows if row.get("Status") not in {"Expired", "Closed", "Not actionable"}
-    ]
-
-    def deadline_in_window(row):
-        parsed = parse_deadline(row.get("Deadline"))
-        return bool(parsed) and 0 <= (parsed - today).days <= CLOSING_SOON_DAYS
-
-    def is_recent(row):
-        seen = parse_iso_date(row.get("First Seen"))
-        return bool(seen) and (today - seen).days < RECENT_DAYS
-
-    closing = sorted(
-        (row for row in active if deadline_in_window(row)),
-        key=lambda row: parse_deadline(row.get("Deadline")),
-    )
-    recent = [row for row in active if is_recent(row) and row not in closing]
-    earlier = [row for row in active if not is_recent(row) and row not in closing]
-
-    lines = [
-        "# Zero2Sudo Opportunity Tracker",
-        "",
-        f"_Updated {_month_day(now)}, {now:%Y %H:%M} UTC · {len(rows)} tracked · "
-        f"{len(recent) + sum(1 for row in closing if is_recent(row))} new this week · "
-        f"{len(actioned)} actioned_",
-        "",
-    ]
-    if GOOGLE_SHEET_ID:
-        lines += [
-            f"Mark rows **Actioned?** or add **Notes** in the "
-            f"[Google Sheet]({tracker_url()}); edits sync back here hourly.",
-            "",
-        ]
-    lines += [
-        "🔥 high priority · ⭐ matches SWE / AI / data interests · "
-        "Deadlines are read from the post and may be missing.",
-        "",
-    ]
-    sections = [
-        (f"⏰ Closing within {CLOSING_SOON_DAYS} days", closing),
-        (f"🆕 New in the last {RECENT_DAYS} days", recent),
-        ("📋 Earlier", earlier),
-    ]
-    for heading, section_rows in sections:
-        if not section_rows:
-            continue
-        lines += [f"## {heading} ({len(section_rows)})", ""]
-        lines += _live_table(section_rows, today)
-        lines.append("")
-    for heading, section_rows in (
-        ("✅ Actioned", actioned),
-        ("⌛ Past deadline or posting closed", past),
-        ("🙈 Probably not an opportunity (Claude)", filtered),
-    ):
-        if not section_rows:
-            continue
-        lines += [
-            f"<details><summary><b>{heading} ({len(section_rows)})</b></summary>",
-            "",
-        ]
-        lines += _live_table(section_rows, today)
-        lines += ["", "</details>", ""]
-    if not rows:
-        lines += ["_Nothing tracked yet. New opportunities appear here after the next check._", ""]
-    (path or LIVE_VIEW_PATH).write_text("\n".join(lines).rstrip() + "\n")
 
 
 _extractor = None

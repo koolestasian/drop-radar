@@ -2,6 +2,41 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## Unreleased
+
+T16.4: `python -m radar.sources.yc_boards` discovers company-linked career boards from the YC
+hiring directory off-box and writes verified nonempty boards to a review queue with provenance.
+It supports bounded batches and a live-watchlist export; nothing is added automatically.
+
+The off-box `python -m radar.sources.aggregator_boards` also feeds the review queue from
+commit-pinned Greenhouse, Lever and Ashby lists in Feashliaa/job-board-aggregator. It records
+CC BY-NC dataset attribution and verifies open postings without guessing company names.
+
+## 0.15.0 (2026-10-04)
+
+**Jobs lists and counts come from an in-memory bitmap index** (T18, `docs/specs/T18-fast-sort.md`). Filtering and paging no longer sort and scan 12,000 postings per request.
+
+- **Compression.** Caddy now sends gzip or zstd: a 50-row page went from 39,122 to 7,721 bytes. This is box config (`encode zstd gzip` in the site block of `/etc/caddy/Caddyfile`), not part of the repo.
+- **Index.** `radar/api/bitindex.py` numbers postings by posted order and keeps one bitset per attribute (level, track, US, per user: yours, new drop, closed, For you), so a filter is an AND, a page is the 30 highest set bits and a count is a popcount. Pages match the SQL path exactly: same twin copy shown, same order, same cursor (checked on the owner's live feed: all 1,558 For you and all 11,398 Everything rows in identical order, and `/summary` totals, levels and tracks equal the counts from those dumps). `tests/test_bitindex.py` pages 250 random filter combinations through both paths and compares every page and cursor.
+- **Timing on the box** (30 rows, end to end): For you 0.78 s to about 15 ms, intern + Software 0.4 s to 13 ms, Quant (7 hits in 12,000) 1.4 s to 5 ms, posted in 7 days 0.6 s to 15 ms, prestige 0.5 s to 11 ms. Those are the numbers between poller bursts. During a burst the scheduler's parsing keeps the shared event loop busy and everything slows, including `/api/me` (2 ms to a 160 ms median): lists then take 150 to 250 ms, so the 20 ms target holds only between bursts.
+- **Counts.** `/api/opportunities/summary` is popcounts, so it answers at once with no 5-minute recount and no first-request 503 once the index is built.
+- **Staying current.** A read-only connection watches `PRAGMA data_version`. The poller commits all day, so a refresh (diff a per-row signature, recompute only changed rows, about 0.6 s on the box) runs when a new posting is stored (at most every 5 s) and every 60 s as the net for other processes such as `fix-pages`. Hides are read per request, so they show at once. A posting stored as a live drop is a promise: until a refresh that started after it has finished and the user's view has caught up, lists read SQL, so a list opened right after the push always shows it (`tests/test_bitindex.py` runs this the way production does, with worker threads). After a restart the index builds for about 75 s for the configured users and the guest (SQL answers meanwhile); an account's view builds on its first request, and a profile or sources change rebuilds only that user.
+- **Still on SQL:** `sort=found`, `since` (the New pill), `source`, `status`, `action` (Hidden) and `closing_within`.
+- 441 backend tests.
+
+## 0.14.0 (2026-10-04)
+
+**One Jobs screen** replaces Feed, New, All matches and All jobs (T17, `docs/specs/T17-feed-redesign.md`). The nav is Jobs, Tracker, Sources, Settings; a guest sees only Jobs.
+
+- **Scope and filters.** A For you / Everything switch, a search box, and pills for New, Level, Track and Posted; Location, US only, Closing soon, Drops only and Sort sit under More (Filters on a phone, where every pill moves into that drawer). The list is flat, newest posted first; level is a badge on the card, not a section. Filters live in the address (`#/jobs?scope=all&level=intern&track=Software`), so reloads, the back button and shared links keep them. `#/feed` opens For you, a bare `#/jobs` (the old All jobs) opens Everything, `#/board` opens the Tracker.
+- **One meaning of "new".** New is a drop (found after its source was already watched) that arrived after your last visit on this device. The yellow card, the New pill and the "N new since Fri 9:46 PM" header line all mean that; it replaces the old 3-hour rule. On a busy day Jobs opens with New selected; on a quiet day the New pill is greyed out and the normal list shows. The "N new drops" pill moved to the Jobs nav item.
+- **One date per card:** when the employer posted it, or "found" when the posting gives none. Found and the lag stay in the detail pane. "Newest found" is gone from Sort (the API keeps `sort=found`).
+- **Tracker** (the old Board) has a collapsed Hidden list; "Ignored" is now "Hidden" everywhere, and the Ignored switch left Filters.
+- **Server-side level, track, posted_within.** `/api/opportunities` takes `level=intern|new_grad`, `track=<name>` and `posted_within=<days>`, and every item carries `level` and `track`; the web no longer classifies the 30 rows it has loaded. Rules live in `radar/pipeline/roles.py`. Fixed two misses: "2027 Grads" and "Early Careers" now count as new grad (13 of the owner's 1,558 matches, 77 of 11,396 jobs); no track changed.
+- **`GET /api/opportunities/summary`** returns counts for For you and Everything, per level and per track (a count reads every posting and takes 6 to 30 s on the box, so a request gets the last count at once and a recount runs in the background; the very first request is a 503 with Retry-After). It feeds the header line and the pill counts, which are exact because they are not computed over a page.
+- **Fast filters.** Level, Track and Posted are decided from the row before any per-posting fetch (picking Intern in For you went from 15 s to 0.7 s on the box), and the old list stays on screen, dimmed, while a new filter loads. The list reads rows as it needs them instead of all 12,000 per request (a plain page: 0.7 s to 0.4 s).
+- 435 backend tests, 58 e2e tests (29 checks on desktop and phone).
+
 ## 0.13.1 (2026-10-04)
 
 The top bar has an appearance menu with Light, Dark, and System options. System follows the device; an explicit choice is remembered in this browser and shared across tabs. The selected theme applies before the first paint and sets the browser chrome and native controls to match.

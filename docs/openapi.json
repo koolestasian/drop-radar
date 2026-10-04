@@ -107,6 +107,37 @@
         "title": "CompanyConfig",
         "type": "object"
       },
+      "Counts": {
+        "properties": {
+          "level": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "intern / new_grad -> how many",
+            "title": "Level",
+            "type": "object"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "track": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "track name -> how many",
+            "title": "Track",
+            "type": "object"
+          }
+        },
+        "required": [
+          "total",
+          "level",
+          "track"
+        ],
+        "title": "Counts",
+        "type": "object"
+      },
       "Credentials": {
         "properties": {
           "password": {
@@ -402,6 +433,12 @@
             "title": "Id",
             "type": "string"
           },
+          "level": {
+            "default": "",
+            "description": "\"intern\", \"new_grad\", or \"\" for anything else (see radar.pipeline.roles)",
+            "title": "Level",
+            "type": "string"
+          },
           "location": {
             "description": "display form: \"City, ST\" in the US, \"City, Country\" elsewhere; \"; \" between several",
             "title": "Location",
@@ -468,6 +505,12 @@
           },
           "title": {
             "title": "Title",
+            "type": "string"
+          },
+          "track": {
+            "default": "Other",
+            "description": "Quant, Software, Finance...; \"Other\" when no rule matches",
+            "title": "Track",
             "type": "string"
           },
           "url": {
@@ -697,6 +740,24 @@
           "p95"
         ],
         "title": "SourceLatency",
+        "type": "object"
+      },
+      "Summary": {
+        "properties": {
+          "everything": {
+            "$ref": "#/components/schemas/Counts",
+            "description": "everything your sources found (the Everything scope)"
+          },
+          "you": {
+            "$ref": "#/components/schemas/Counts",
+            "description": "what matches your profile (the For you scope)"
+          }
+        },
+        "required": [
+          "you",
+          "everything"
+        ],
+        "title": "Summary",
         "type": "object"
       },
       "ValidationError": {
@@ -1567,6 +1628,62 @@
             }
           },
           {
+            "description": "internships or new-grad roles",
+            "in": "query",
+            "name": "level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^(intern|new_grad)$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "internships or new-grad roles",
+              "title": "Level"
+            }
+          },
+          {
+            "description": "one of: Quant, AI / ML / Data, Hardware, Security, Product, Design, Software, Finance, Business, Other",
+            "in": "query",
+            "name": "track",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "one of: Quant, AI / ML / Data, Hardware, Security, Product, Design, Software, Finance, Business, Other",
+              "title": "Track"
+            }
+          },
+          {
+            "description": "posted this many days back or less (the posting date, else a live drop's found time; undated backfill never matches)",
+            "in": "query",
+            "name": "posted_within",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "posted this many days back or less (the posting date, else a live drop's found time; undated backfill never matches)",
+              "title": "Posted Within"
+            }
+          },
+          {
             "in": "query",
             "name": "cursor",
             "required": false,
@@ -1628,6 +1745,47 @@
           }
         },
         "summary": "List Opportunities"
+      }
+    },
+    "/api/opportunities/summary": {
+      "get": {
+        "description": "The numbers behind the Jobs header and filter pills, over everything the list would show.",
+        "operationId": "summary_api_opportunities_summary_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Summary"
       }
     },
     "/api/opportunities/{opp_id}": {

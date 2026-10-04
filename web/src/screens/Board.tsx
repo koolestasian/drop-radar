@@ -86,11 +86,12 @@ export function Board() {
   const setStatus = useSetStatus();
   const [over, setOver] = useState<ActionStatus | null>(null);
   const columns = useQueries({
-    queries: BOARD_COLUMNS.map((c) => ({
-      queryKey: ["opportunities", "board", c.status],
-      queryFn: () => api<Page>(`/api/opportunities${query({ action: c.status, include: "all", limit: 200 })}`),
+    queries: [...BOARD_COLUMNS.map((c) => c.status), "ignored" as const].map((status) => ({
+      queryKey: ["opportunities", "board", status],
+      queryFn: () => api<Page>(`/api/opportunities${query({ action: status, include: "all", limit: 200 })}`),
     })),
   });
+  const hidden = columns[BOARD_COLUMNS.length].data?.items ?? [];
 
   if (columns.some((c) => c.isPending)) return <ListSkeleton rows={3} label="Loading your board" />;
   const failed = columns.find((c) => c.isError);
@@ -104,7 +105,7 @@ export function Board() {
           </EmptyMedia>
           <EmptyTitle>Your board is empty</EmptyTitle>
           <EmptyDescription>
-            Save something from the feed (or press <kbd>s</kbd> on it) and it lands here. Move it along as you apply.
+            Save something from Jobs (or press <kbd>s</kbd> on it) and it lands here. Move it along as you apply.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -120,7 +121,7 @@ export function Board() {
   return (
     <section aria-labelledby="board-title" className="flex flex-col gap-4">
       <h1 id="board-title" className="text-3xl font-bold tracking-tight">
-        Your applications
+        Tracker
       </h1>
       {setStatus.isError && <ErrorNote error={setStatus.error} />}
       <div className="relative -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 lg:mx-0 lg:grid lg:grid-cols-5 lg:overflow-visible lg:px-0">
@@ -157,6 +158,22 @@ export function Board() {
           );
         })}
       </div>
+      <details className="rounded-2xl border border-border bg-muted/60 p-3">
+        <summary className="cursor-pointer text-sm font-semibold">Hidden ({hidden.length})</summary>
+        <ol className="mt-3 flex flex-col gap-2">
+          {hidden.map((o) => (
+            <li key={o.id} className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
+              <p className="min-w-0 flex-1 truncate text-sm">
+                <span className="font-medium">{o.company || "Unknown company"}</span> · {o.title || "Untitled opportunity"}
+              </p>
+              <Button variant="outline" onClick={() => setStatus.mutate({ id: o.id, status: "new" })} aria-label={`Unhide ${o.title || "role"}`}>
+                Unhide
+              </Button>
+            </li>
+          ))}
+          {hidden.length === 0 && <li className="text-sm text-muted-foreground">Roles you hide on Jobs wait here, out of your lists.</li>}
+        </ol>
+      </details>
     </section>
   );
 }

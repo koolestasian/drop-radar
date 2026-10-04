@@ -6,16 +6,16 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { useMediaQuery } from "../hooks";
 
 const STEPS = [
-  { icon: Zap, title: "New drops come first", text: "A yellow card marked New was found in the last 3 hours. The earlier you apply, the better your odds." },
+  { icon: Zap, title: "New drops come first", text: "A yellow card marked New was found since your last visit. The earlier you apply, the better your odds." },
   { icon: SlidersHorizontal, title: "Tell it what you want", text: "Pick your roles and locations in Settings. Only matching postings reach your feed." },
-  { icon: Bookmark, title: "Track what you do", text: "Save, apply and add notes on a role. The Board shows every role by status." },
+  { icon: Bookmark, title: "Track what you do", text: "Save, apply and add notes on a role. The Tracker shows every role by status." },
   { icon: Bell, title: "Get a push on your phone", text: "Turn on alerts in Settings and a new match buzzes your phone within minutes." },
 ];
 
 const GUEST_STEPS = [
   STEPS[0],
-  { icon: List, title: "Browse everything", text: "All jobs lists every posting the radar has found, from tech to finance. Search it and filter it." },
-  { icon: LogIn, title: "Sign in for more", text: "Your own feed and profile, saved roles with notes on a Board, and a phone push when a match appears." },
+  { icon: List, title: "Browse everything", text: "Switch to Everything to see every posting the radar has found, from tech to finance. Search it and filter it." },
+  { icon: LogIn, title: "Sign in for more", text: "Your own feed and profile, saved roles with notes in a Tracker, and a phone push when a match appears." },
 ];
 
 const key = (user: string) => `radar.welcomed.${user}`;
