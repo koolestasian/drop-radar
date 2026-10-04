@@ -262,6 +262,14 @@ class Store:
             "SELECT count(*) FROM items WHERE source = ? AND seen_at >= ?", (source, _iso(since))
         ).fetchone()[0]
 
+    def first_seen_times(self, source):
+        """When this source first saw each posting it has emitted, oldest first. Seed
+        and closed-signal items are left out: neither says when a posting appeared."""
+        rows = self.conn.execute(
+            "SELECT seen_at FROM items WHERE source = ? AND coalesce(json_extract(raw, '$.seed'), 0) = 0 "
+            "AND coalesce(json_extract(raw, '$.closed'), 0) = 0 ORDER BY seen_at", (source,)).fetchall()
+        return [datetime.fromisoformat(row[0]) for row in rows]
+
     # ---- alerts, actions, enrichment -------------------------------------
 
     def record_alert(self, opportunity_id, channel, sent_at=None):

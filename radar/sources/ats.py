@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 
 from radar.errors import SourceError
 from radar.models import Item
+from radar.sources.cadence import interval_for
 
 TIER_INTERVAL_S = {"S": 120.0, "A": 120.0, "B": 300.0, "C": 900.0}
 
@@ -84,6 +85,10 @@ class AtsSource:
         self.company = company
         self.name = f"ats.{self.kind}.{company.slug}"
         self.interval_s = TIER_INTERVAL_S.get(company.tier, 300.0)
+        self.active_hours = None  # UTC hours this board posts in; the runtime fills it from stored history
+
+    def interval_at(self, now) -> float:
+        return interval_for(self.interval_s, self.active_hours, now)
 
     def board_url(self) -> str:
         raise NotImplementedError
