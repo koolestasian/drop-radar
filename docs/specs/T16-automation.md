@@ -67,7 +67,7 @@ extraction model. First use is 16.5 priority, calibrated against Haiku before it
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from fetched page text via Haiku done (6006a83, 2026-10-04, v0.17.0): verified quote/amount/currency/period, shared daily budget, content cache, background calls, Gemini on API failure. Off-box sample: 4 model + 1 regex fills/20 blanks. Approved live backfill added 33/2,403 (31 Haiku + 2 structured/regex); owner stated pay 349 → 360. Owner-approved Codex cached-text completion added another 164 globally; owner feed now 412 stated. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
 | 16.4 | Self-growing watchlist + review queue | **done** (2026-10-04, this commit, v0.16.0): stored-link, YC and pinned aggregator queues; Settings careers URL detection; daily off-box repair/archive review queue |
 | 16.5 | Adaptive polling + learned priority | **done, live** (2026-10-04, this commit); automatic CS-student tiers, budgeted refresh and posting-hour polling (feeds T14) |
-| 16.6 | Learn from the user | **doing**: v0.19.1 validated; schema 5 approved/applied, final deploy verification pending |
+| 16.6 | Learn from the user | **done, live** (`b47049c`, `46afaae`, 2026-10-04), v0.19.1; schema 5 and live feed verified |
 | 16.7 | Maintenance by agent | todo |
 | 16.8 | Company names from source data | todo |
 
@@ -314,7 +314,7 @@ Artifacts: `data/t16/16.5-live-{before.log,after.log,audit.json,tier-diff.json,p
 - **"Why didn't I see this?":** the user pastes a link, it is dry-run through the pipeline, and the
   app says which gate dropped it. This doubles as a T13 audit tool.
 
-#### As built (2026-10-04, v0.19.0; deployment pending)
+#### As built (2026-10-04, v0.19.0 + v0.19.1; done/live `46afaae`)
 
 - A successful hide opens an optional shared feedback sheet, including Tracker and
   the Jobs keyboard shortcut. Feedback accepts a title-matching phrase of at most
@@ -367,7 +367,18 @@ Artifacts: `data/t16/16.5-live-{before.log,after.log,audit.json,tier-diff.json,p
   comparison: same 1,578 IDs/card values/profile, 413 stated pay, 1,165 blank pay,
   53 blank company/107 blank location. No deployment errors.
 - v0.19.1 checks: 504 backend tests, pyflakes, build and 68 e2e pass.
-- Outstanding: final v0.19.1 deployment verification; a real future dismissal pattern and the owner's own phone.
+- Final live verification (restart 2026-10-04 19:27:54 UTC): 1,578 owner IDs and
+  every existing card value unchanged; profile unchanged, summary equals paged totals.
+  413 stated pay/1,165 blank pay; company/location blanks 53/107. Top named companies
+  unchanged: TikTok 93, Palantir 57, RTX 39, ByteDance 31, Microsoft 25.
+  New feedback remains NULL and mute table empty; known-link diagnostic passes.
+  Chrome read-only proxy to the real production API checked Settings and diagnostic
+  results on desktop/phone: no overflow, visible keyboard focus, 44px controls.
+  Deployed code/version/HTML hashes match the committed build; no post-start errors.
+  Corrected real-data local preview predicts exactly 1,011 displayed removals
+  (1,575→564 after three local-only test hides), matching API filtering.
+  Artifacts: `data/t16/16.6-{deploy-migration-audit,live-feed-audit,displayed-preview-check}.json`.
+- Outstanding: a real future dismissal pattern and the owner's own phone.
   Historical rejection logging and company/location exclusion learning are deferred.
 
 ### 16.7 Maintenance by agent
