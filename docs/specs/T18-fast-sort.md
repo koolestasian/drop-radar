@@ -90,6 +90,39 @@ All in `radar/store/__init__.py` unless noted. Reuse `SORT_KEYS["posted"]` verba
 
 Rollback: the column, index and triggers are additive; the old code ignores them. Revert the code and restart.
 
+## Beyond the index: where the rest of the time goes (measured 2026-10-04)
+
+With the index, sorting is solved. The order is maintained at write time (O(log n) per insert), and a read is an index walk,
+O(log n + k / selectivity). Every request has to read the k rows it shows, so no sort can do better. What is left on a filter change:
+
+| Cost | Size |
+|---|---|
+| Network round trip, Mac to box (TLS reused) | 85-150 ms; more on a phone |
+| Response body: **Caddy sends it uncompressed** | 39,122 bytes for 50 rows; 7,196 gzipped (5.4x smaller) |
+| Python per row walked (fetch + match) | ~0.25 ms x r |
+| Typing debounce (search, location only) | 250 ms |
+
+So, in order of payoff per line of code:
+
+0. **Compress responses (one line, do first).** Add `encode zstd gzip` to the site block in `/etc/caddy/Caddyfile`, then
+   `sudo systemctl reload caddy`. Check: `curl -sI -H 'Accept-Encoding: gzip' .../api/opportunities` shows `content-encoding`.
+   This is box config, not `radar.env` or the DB.
+1. **The index above:** it removes the 394 ms server floor.
+2. **For you filters on the device, no request (optional, after 0 and 1 are measured).** For you is 1,558 rows. The
+   background recount behind `/api/opportunities/summary` already visits every row and decides match, level and track. Let
+   it also keep the ordered list of For you ids, and serve `GET /api/opportunities/snapshot` with the full rows, about 220 KB
+   gzipped. The web filters that array in place:
+   - **Filtering:** a filter keeps a subsequence of an already sorted array, so it stays in order with no sort. Finding a
+     page is O(k / selectivity), well under a millisecond for 1,558 rows. A filter change then costs one React render
+     (~15 ms) instead of a round trip (~400 ms).
+   - **Prestige:** the tier has 4 values, so it is a stable counting sort in O(n), with posted order kept within each tier.
+   - **New drops from SSE:** insert by binary search on the posted key (`bisect`, O(log n) to find the spot).
+   - **Everything stays server-side** (12k rows: ~1.7 MB gzipped full, ~330 KB with id, title and dates only). It is too heavy
+     to ship to a phone on every visit.
+   - **Ceiling:** the snapshot costs one full scan per active user every 5 minutes. That is fine for the owner, a friend and
+     the guest. At hundreds of active accounts, store the match per user at write time (the pipeline already decides it per
+     user when it alerts) instead of rescanning.
+
 ## Later (not in this task)
 - **Rare filters still walk everything:** For you + Track: Quant has 7 hits in 12k rows, so r = n (about 1 s today, about 0.6 s after
   this change). Fix: store `level` and `track` columns, written by `Store` at write time (the rules are Python regexes, so no
