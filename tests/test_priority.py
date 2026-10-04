@@ -85,7 +85,7 @@ class PriorityTests(unittest.TestCase):
             return "", 0, []
         priority.refresh(self.store, ["Acme"], key="", ask=fail)
         self.assertEqual(priority.stale(self.store, ["Acme", "New"]), ["New"])
-        self.assertEqual(priority.stale(self.store, ["Acme"], utcnow() + timedelta(days=2)), ["Acme"])
+        self.assertEqual(priority.stale(self.store, ["Acme", "New"], utcnow() + timedelta(days=2)), ["New", "Acme"])
 
     def test_old_rubric_is_refreshed_even_if_recent(self):
         self.store.set_enrichment(priority.cache_key("Google"), {"tier": "A", "checked_at": utcnow().isoformat()})

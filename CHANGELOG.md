@@ -2,7 +2,7 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
-## 0.18.0 (2026-10-04; activation pending)
+## 0.18.0 (2026-10-04)
 
 T16.5 replaces manual company tiers with automatic CS-student ratings. Confident Jev and
 Haiku agreement sets the tier; other names use Haiku web search with cited evidence.

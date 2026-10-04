@@ -66,7 +66,7 @@ extraction model. First use is 16.5 priority, calibrated against Haiku before it
 | 16.2 | Delete `filter.py`'s location lists | **done, live** (5761717, deployed 2026-10-03 20:43 UTC) |
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from fetched page text via Haiku done (6006a83, 2026-10-04, v0.17.0): verified quote/amount/currency/period, shared daily budget, content cache, background calls, Gemini on API failure. Off-box sample: 4 model + 1 regex fills/20 blanks. Approved live backfill added 33/2,403 (31 Haiku + 2 structured/regex); owner stated pay 349 → 360. Owner-approved Codex cached-text completion added another 164 globally; owner feed now 412 stated. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
 | 16.4 | Self-growing watchlist + review queue | **done** (2026-10-04, this commit, v0.16.0): stored-link, YC and pinned aggregator queues; Settings careers URL detection; daily off-box repair/archive review queue |
-| 16.5 | Adaptive polling + learned priority | **ready offline** (2026-10-04); automatic CS-student tiers verified with real providers; server key/cache activation and live checks pending (feeds T14) |
+| 16.5 | Adaptive polling + learned priority | **done, live** (2026-10-04, this commit); automatic CS-student tiers, budgeted refresh and posting-hour polling (feeds T14) |
 | 16.6 | Learn from the user | todo |
 | 16.7 | Maintenance by agent | todo |
 | 16.8 | Company names from source data | todo |
@@ -286,12 +286,27 @@ company stayed unrated. Forced web fallback rated Perplexity A with public citat
 Five Rings search did not produce a valid cited result and preserved its previous S.
 Artifacts: `data/t16/16.5-auto-tier-{sample,web-sample}.json` (local-only).
 
-**Activation remaining:** back up the server env/database, install TYPESAFE_API_KEY from
-`~/.config/drop-radar/llm.env`, deploy and populate the automatic tier cache after the owner's
-approval for the env/database writes. Before/after checks must compare owner feed IDs,
-counts, top 20 companies, every distinct company tier and S/A change, Notes/Actioned? and
-poll counts per board per hour. These live checks have not run; the code sample does not
-prove production ranking or posting-hour behavior.
+**Activated 2026-10-04 with the owner's approval:** installed only TYPESAFE_API_KEY,
+backed up env/database (`data/backups/radar-env-20261004T165857Z-pre-tiers.env` and
+`data/backups/radar-20261004T165857Z-pre-tiers.db`), deployed v0.18.0 and seeded seven
+verified company ratings. The first background pass added four more: 11 cached ratings
+(6 S, 3 A, 2 B). Remaining companies use B until the hourly, budgeted refresh rates them.
+Daily shared usage is 196,492/200,000; no budget reset or extra provider allowance.
+
+Owner feed before/after: identical 1,578 IDs, 412 stated pay, 53 blank companies and 107
+blank locations. Top counts unchanged: TikTok 93, Palantir 57, RTX 39, ByteDance 31.
+Compared all 852 distinct company names; all 36 S/A changes are listed in
+`data/t16/16.5-live-tier-diff.json` (local-only), including temporary defaults after removing
+manual tiers. IDs, first_seen, actions, notes and existing pay stayed unchanged; quick_check
+and healthz passed. All 614 successful post-deploy board schedules matched their expected
+interval within jitter; 11 boards have enough non-seed posting history to adapt. Chrome
+checked the deployed Settings with live owner data through a read-only local proxy:
+602 companies, no tier control/overflow, mobile 44px targets and visible keyboard focus.
+
+A one-hour before/after poll-count window, future alerts, the owner's own browser/phone,
+and complete company-cache coverage remain unverified. Cache filling continues automatically;
+failed/expired ratings go behind companies never attempted, avoiding retry starvation.
+Artifacts: `data/t16/16.5-live-{before.log,after.log,audit.json,tier-diff.json,poll-intervals.json}`.
 
 ### 16.6 Learn from the user
 - **Profile suggestions:** after repeated dismissals with the same pattern, suggest a profile edit

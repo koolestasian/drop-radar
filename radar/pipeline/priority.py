@@ -168,7 +168,7 @@ def stale(store, names, now=None):
         except (KeyError, TypeError, ValueError):
             fresh = False
         if not fresh:
-            todo[name] = cached is not None
+            todo[name] = cached is not None or retry is not None
     return sorted(todo, key=lambda name: todo[name])
 
 
