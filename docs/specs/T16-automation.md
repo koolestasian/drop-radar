@@ -61,7 +61,7 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 | 16.1 | Logos: verified ladder | **done, live**; `fix-logos` ran for real 2026-10-03 21:35 UTC (owner's yes): 110 changed, report `/opt/radar/data/fix-logos-run.txt`, backup `backups/radar-20261003T212612Z-pre-fix-logos.db` |
 | 16.2 | Delete `filter.py`'s location lists | **done, live** (5761717, deployed 2026-10-03 20:43 UTC) |
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from page text via Haiku: not built. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
-| 16.4 | Self-growing watchlist + review queue | doing: `find-boards` built (stored apply links -> unwatched boards -> probe -> `data/t16/16.4-board-queue.tsv` on the box, read-only); owner chose all 213 (watchlist 602 -> 815, tier C, 2026-10-04); YC directory, aggregator, paste-a-URL and self-repair still todo |
+| 16.4 | Self-growing watchlist + review queue | doing: stored-link queue built; owner chose all 213. YC feeder built (2026-10-03 Pacific): off-box, source-linked boards, guarded probes, JSONL review queue. Aggregator, paste-a-URL and self-repair still todo |
 | 16.5 | Adaptive polling + learned priority | todo (feeds T14) |
 | 16.6 | Learn from the user | todo |
 | 16.7 | Maintenance by agent | todo |
@@ -141,6 +141,22 @@ locations: 161 unknown -> US, 83 unknown -> abroad (the direction that can miss 
    fill blanks.
 
 ### 16.4 Self-growing watchlist (everything goes to a review queue, never straight to live)
+**YC feeder (built):** `.venv/bin/python -m radar.sources.yc_boards --limit 50 --offset 0`
+reads the [documented hiring directory](https://github.com/yc-oss/api), checks company homepages
+and one linked careers page, then probes source-linked Greenhouse, Lever, Ashby and
+SmartRecruiters boards through their existing parsers. Every page/redirect uses the pagefacts
+SSRF and robots guards; API requests use the same safe fetcher. No guessed slugs are accepted.
+The directory alone has a 32 MB cap (it currently exceeds the default 2 MB page cap); run off-box.
+Results append to `data/t16/16.4-yc-queue.jsonl` with company website, board link, posting count,
+source, verified flag, checked_at and version. Existing queued/watched boards are skipped;
+misses retry on a later run. `--watched FILE` accepts a JSON array of `[ats, slug]` pairs from
+the live watchlists, including self-service accounts; otherwise only local configured users
+are excluded. Increase `--offset` for the next batch; offsets can shift when the directory updates.
+Live sample: 20 of 1,489 hiring companies, compared with 618 distinct watched boards,
+found Rescale (Ashby, 19 open postings) and Amplitude (Ashby, 36). Review results are on the Mac
+in `data/t16/16.4-yc-live-sample.jsonl`. Nothing was added to live watchlists or changed in the feed.
+Coverage limit: sites needing JavaScript, hiding their ATS links or using other ATSes are skipped.
+
 - **Feeders:**
   - **Community lists:** run Simplify/community-list apply links through
     `discover._slug_from_url`, probe each board, and queue it.

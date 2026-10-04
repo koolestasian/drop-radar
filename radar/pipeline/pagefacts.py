@@ -60,11 +60,13 @@ def _public(host: str) -> bool:
     return bool(infos) and all(ipaddress.ip_address(i[4][0]).is_global for i in infos)
 
 
-def _get(url: str, accept: str = "application/json"):
+def _get(url: str, accept: str = "application/json", *, max_bytes: int = MAX_BYTES, robots: bool = False):
     """GET with every hop checked; returns the final response or None. Never raises."""
     for _ in range(4):
         parts = urlparse(url)
         if parts.scheme not in ("http", "https") or not parts.hostname or not _public(parts.hostname):
+            return None
+        if robots and not _robots_allows(url):
             return None
         wait = _last_hit.get(parts.hostname, 0) + 1.0 - time.monotonic()
         if wait > 0:
@@ -82,9 +84,9 @@ def _get(url: str, accept: str = "application/json"):
         body = b""
         for chunk in r.iter_content(65536):
             body += chunk
-            if len(body) > MAX_BYTES:
+            if len(body) > max_bytes:
                 break
-        r._content = body[:MAX_BYTES]
+        r._content = body[:max_bytes]
         return r
     return None
 

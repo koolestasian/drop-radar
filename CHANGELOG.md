@@ -2,6 +2,12 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## Unreleased
+
+T16.4: `python -m radar.sources.yc_boards` discovers company-linked career boards from the YC
+hiring directory off-box and writes verified nonempty boards to a review queue with provenance.
+It supports bounded batches and a live-watchlist export; nothing is added automatically.
+
 ## 0.15.0 (2026-10-04)
 
 **Jobs lists and counts come from an in-memory bitmap index** (T18, `docs/specs/T18-fast-sort.md`). Filtering and paging no longer sort and scan 12,000 postings per request.
