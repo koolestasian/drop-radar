@@ -13,6 +13,7 @@ KEEPALIVE_S = 15.0
 class EventBus:
     def __init__(self):
         self._queues = set()
+        self.on_publish = []  # callables taking the event: in-process listeners that are not SSE streams
 
     def subscribe(self):
         queue = asyncio.Queue(maxsize=QUEUE_SIZE)
@@ -23,6 +24,8 @@ class EventBus:
         self._queues.discard(queue)
 
     def publish(self, *event):
+        for listener in self.on_publish:
+            listener(event)
         for queue in list(self._queues):
             try:
                 queue.put_nowait(event)

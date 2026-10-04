@@ -1,8 +1,22 @@
 # T18: answer the Jobs list from a bitmap index, not a sort and a scan per request
 
 Owner, 2026-10-04: "find the fastest way to sort" after T17 made Jobs filterable. Design only; build it in a later session.
-Status: proposed. **Build Option A** (no DB change, so no owner's yes needed for data). Option B, the SQL index, is the
+Status: **built as Option A, live 2026-10-04** (see "As built" below; the rest of this file is the design it was built from).
+Original status: proposed. **Build Option A** (no DB change, so no owner's yes needed for data). Option B, the SQL index, is the
 fallback if A is rejected. Step 0 (compression) applies either way.
+
+## As built (2026-10-04)
+
+`radar/api/bitindex.py` (about 260 lines, stdlib), wired into `list_opportunities` and `summary` in `radar/api/app.py`, tests in `tests/test_bitindex.py`.
+Where it differs from the design below:
+
+- **Refresh policy.** `PRAGMA data_version` never rests (the poller commits all day) and a refresh costs about 0.6 s on the box (every scan piece is 100-200 ms of Python row iteration), so refreshing on each change would eat the CPU. A refresh runs on `EventBus` "opportunity" events (`index.nudge()`, at most every 5 s) and every 60 s; the per-row signature diff means an unchanged posting is never recomputed. First build after a restart: 6 s for the snapshot, then 15-30 s per user for the matches (12k `get_opportunity` + `visible_to`, with naps), about 85 s in all for four views. SQL answers meanwhile.
+- **Twins are per user and per backfill filter.** The SQL path dedupes after the owned and `backfill` filters, so a user who owns only the older copy still sees it, and `backfill=false` picks the newest copy among drops. `UserView.shown` holds one mask for each of None, False, True.
+- **`posted_within` is not a prefix of the order.** The list tests the posting's own date in its own UTC offset (and a live drop's first-seen date), which can disagree with the UTC sort key near midnight. The index builds that mask per cutoff date and per user, and caches it.
+- **Prestige is supported** (tier masks, cursor `"<tier>|<key>"`); the ranking is cached per user object because canonicalising 800 watchlist names costs 40-80 ms on the box.
+- **Hides are read per request** from `actions`, not kept in the index. `sort=found`, `since`, `source`, `status`, `action` and `closing_within` stay on SQL.
+- **Measured on the box** (best/median/max over 15 requests, 30 rows, steady state): For you 11/12/66 ms, intern + Software 11/13/76, Quant 4/5/29, Everything posted 7 days + new grad 12/13/58, prestige 10/12/102, location 14/17/241, `q=analyst` 17/20/172, summary 2-34/9-135/280-590 ms. Before: 0.4-1.4 s per list, 6-30 s per summary. The tails line up with the poller's CPU bursts (`/api/me` also reaches 50-190 ms then). Page serialization (30 rows of `get_opportunity` + `serialize`) is now the floor, about 10 ms.
+- **Not done:** step 2 (For you filtered on the device, no request): the server side is now fast enough that it is optional.
 
 ## What it costs today (measured on the box, 2026-10-04, read-only, 12,351 postings, 13,364 items, 578 sources)
 

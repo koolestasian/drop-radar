@@ -25,6 +25,7 @@ import secrets
 import signal
 import sqlite3
 import tempfile
+import threading
 import time
 from collections import Counter
 from pathlib import Path
@@ -40,6 +41,7 @@ from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
 from radar.pipeline import roles
 from radar.pipeline.pay_estimate import estimate_pay
 from radar.api import auth, events
+from radar.api.bitindex import BitIndex, pill_counts
 from radar.api.models import (Action, ActionPatch, AuthResult, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
                               SourceHealth, SourceLatency, Summary, WatchlistConfig)
 from radar.config import GUEST_ID, User, Watchlist, load_guest_profile, load_settings, parse_profile, parse_watchlist
@@ -143,6 +145,9 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     # never fires -- uvicorn would otherwise keep serving a process that stopped polling.
     crash_exit = crash_exit or (lambda: os.kill(os.getpid(), signal.SIGTERM))
     logos = LogoResolver(store)
+    index = BitIndex(store)
+    getattr(bus, "on_publish", []).append(lambda event: index.nudge() if event[0] == "opportunity" else None)
+    background = getattr(runtime, "scheduler", None) is not None  # production: a worker keeps the index fresh; tests build it in the request
 
     def _log_crash(task):
         if task.cancelled() or task.exception() is None:
@@ -157,15 +162,19 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             task = asyncio.create_task(runtime.scheduler.run(stop))
             task.add_done_callback(_log_crash)
             logo_task = asyncio.create_task(logos.run(stop))  # production only: tests stay offline
+            threading.Thread(target=lambda: [index.safely(u, owned(u), refresh=False) for u in (*getattr(runtime, "users", {}).values(), guest)],
+                             daemon=True).start()  # until it is built, lists read SQL
         try:
             yield
         finally:
             if task is not None:
                 stop.set()  # Scheduler.run drains in-flight fetches before returning
                 await asyncio.gather(task, logo_task, return_exceptions=True)
+            index.close()
 
     app = FastAPI(title="Drop Radar", lifespan=lifespan)
     app.state.store, app.state.runtime = store, runtime
+    app.state.index = index
 
     def _session_cutoff():
         return (now() - timedelta(days=SESSION_DAYS)).isoformat()
@@ -187,6 +196,13 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         return user
 
     guest = User(id=GUEST_ID, watchlist=Watchlist(), profile=load_guest_profile())
+    rank_cache = {}  # user id -> (the User it was computed for, ranks): 800 company names are canonicalised per call
+
+    def ranks_of(user):
+        if (hit := rank_cache.get(user.id)) is None or hit[0] is not user:
+            hit = rank_cache[user.id] = (user, _ranks(user))
+        return hit[1]
+
     summaries, counting = {}, {}  # user id -> (time, Summary); user id -> its recount in progress
     hits, cached = {}, {}  # guest rate limit (ip -> request times) and 60s response cache (query -> (time, page))
 
@@ -440,8 +456,33 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         today = now().date()
         items, keys, more, seen = [], [], None, set()
         terms, places = (q or "").split(), (location or "").split()
-        for row in store.iter_opportunities(status=status, since=since, source_names=owned(user),
-                                              backfill=backfill, sort=sort, ranks=_ranks(user)):
+        view = None
+        if sort != "found" and since is None and source is None and status is None and action is None and closing_within is None:
+            view = index.view(user, owned(user), background)  # None while it is still being built: SQL answers
+        if view is not None:
+            snap, ranks = view.snap, ranks_of(user)
+            mask = view.shown[backfill] & ~view.dead & ~index.hidden(store.conn, user.id, snap)
+            for on, bits in ((include == "matches", view.you), (level, snap.level.get(level, 0)),
+                             (track, snap.track.get(track, 0)), (us_only, snap.us)):
+                mask &= bits if on else -1
+            if posted_within is not None:
+                mask &= view.posted_since(today - timedelta(days=posted_within))
+            for i in view.positions(mask, sort, ranks, after):
+                r = snap.recs[i]
+                if (terms and not _has_terms(f"{r['title']} {r['company']}", terms)) or (
+                        places and not _has_terms(r["location"], places)) or (
+                        company and company.lower() not in r["company"].lower()):
+                    continue
+                opp = store.get_opportunity(r["id"], user_id=user.id)
+                if opp is None:  # deleted since the snapshot
+                    continue
+                if len(items) == limit:
+                    more = keys[-1]
+                    break
+                items.append(serialize(opp, user))
+                keys.append((view.sort_key(i, sort, ranks), r["id"]))
+        for row in (() if view is not None else store.iter_opportunities(
+                status=status, since=since, source_names=owned(user), backfill=backfill, sort=sort, ranks=ranks_of(user))):
             # one card per job: Invesco posts the same "Business Trainee, Hyderabad" as five requisitions.
             # Checked before the cursor so every page agrees on which copy is the one shown.
             twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
@@ -511,12 +552,21 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         Counting reads every posting (seconds on the box), so a request never waits for it: it gets the last
         count at once, and an older-than-5-minutes or missing one starts a recount. The first ever request
         is a 503 with Retry-After while the recount runs."""
+        view = index.view(user, owned(user), background)
+        if view is not None:  # popcounts: microseconds, so no cache and no recount
+            base = view.shown[None] & ~view.dead & ~index.hidden(store.conn, user.id, view.snap)
+            return Summary(you=counts(pill_counts(view.snap, base & view.you)),
+                           everything=counts(pill_counts(view.snap, base)))
         hit = summaries.get(user.id)
         if (not hit or time.monotonic() - hit[0] > 300) and user.id not in counting:
             counting[user.id] = asyncio.ensure_future(recount(user))
         if hit:
             return hit[1]
         raise HTTPException(503, "counting your jobs; try again in a few seconds", headers={"Retry-After": "5"})
+
+    def counts(c):
+        return Counts(total=c["total"], level={k[6:]: n for k, n in c.items() if k.startswith("level:")},
+                      track={k[6:]: n for k, n in c.items() if k.startswith("track:")})
 
     async def recount(user):
         mine, path = owned(user), store.conn.execute("PRAGMA database_list").fetchone()["file"]
@@ -545,10 +595,6 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                             scope["level:" + lvl] += 1
                         scope["track:" + trk] += 1
             return you, everything
-
-        def counts(c):
-            return Counts(total=c["total"], level={k[6:]: n for k, n in c.items() if k.startswith("level:")},
-                          track={k[6:]: n for k, n in c.items() if k.startswith("track:")})
 
         try:
             you, everything = await asyncio.to_thread(scan)

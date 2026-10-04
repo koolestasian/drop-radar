@@ -2,6 +2,18 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.15.0 (2026-10-04)
+
+**Jobs lists and counts come from an in-memory bitmap index** (T18, `docs/specs/T18-fast-sort.md`). Filtering and paging no longer sort and scan 12,000 postings per request.
+
+- **Compression.** Caddy now sends gzip or zstd: a 50-row page went from 39,122 to 7,721 bytes. This is box config (`encode zstd gzip` in the site block of `/etc/caddy/Caddyfile`), not part of the repo.
+- **Index.** `radar/api/bitindex.py` numbers postings by posted order and keeps one bitset per attribute (level, track, US, per user: yours, new drop, closed, For you), so a filter is an AND, a page is the 30 highest set bits and a count is a popcount. Pages match the SQL path exactly: same twin copy shown, same order, same cursor (checked on the owner's live feed: all 1,558 For you and all 11,398 Everything rows in identical order, and `/summary` totals, levels and tracks equal the counts from those dumps). `tests/test_bitindex.py` pages 250 random filter combinations through both paths and compares every page and cursor.
+- **Timing on the box** (30 rows, end to end): For you 0.78 s to about 15 ms, intern + Software 0.4 s to 13 ms, Quant (7 hits in 12,000) 1.4 s to 5 ms, posted in 7 days 0.6 s to 15 ms, prestige 0.5 s to 11 ms. Tails reach 100 to 300 ms while the poller is busy.
+- **Counts.** `/api/opportunities/summary` is popcounts, so it answers at once with no 5-minute recount and no first-request 503 once the index is built.
+- **Staying current.** A read-only connection watches `PRAGMA data_version`. The poller commits all day, so a refresh (diff a per-row signature, recompute only changed rows, about 0.6 s on the box) runs when a new posting is stored (at most every 5 s) and every 60 s as the net for other processes such as `fix-pages`. Hides are read per request, so they show at once. After a restart the index builds for about 85 s (SQL answers meanwhile); a profile or sources change rebuilds only that user.
+- **Still on SQL:** `sort=found`, `since` (the New pill), `source`, `status`, `action` (Hidden) and `closing_within`.
+- 440 backend tests.
+
 ## 0.14.0 (2026-10-04)
 
 **One Jobs screen** replaces Feed, New, All matches and All jobs (T17, `docs/specs/T17-feed-redesign.md`). The nav is Jobs, Tracker, Sources, Settings; a guest sees only Jobs.
