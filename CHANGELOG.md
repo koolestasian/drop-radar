@@ -2,6 +2,12 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.14.0 (in progress)
+
+One Jobs screen instead of Feed / New / All matches / All jobs (T17, `docs/specs/T17-feed-redesign.md`). Built in slices; this entry grows with each.
+
+- **17.1 server-side level and track.** `/api/opportunities` takes `level=intern|new_grad`, `track=<name>` and `posted_within=<days>`, and every item carries `level` and `track`, so the web no longer classifies the 30 rows it happens to have loaded. The rules live in `radar/pipeline/roles.py`. Two misses are fixed: "2027 Grads" and "Early Careers" titles now count as new grad (13 of the owner's 1,558 matches, 77 of all 11,396 jobs); no track changed.
+
 ## 0.13.1 (2026-10-04)
 
 The top bar has an appearance menu with Light, Dark, and System options. System follows the device; an explicit choice is remembered in this browser and shared across tabs. The selected theme applies before the first paint and sets the browser chrome and native controls to match.

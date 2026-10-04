@@ -36,6 +36,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse
 
 from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
+from radar.pipeline import roles
 from radar.pipeline.pay_estimate import estimate_pay
 from radar.api import auth, events
 from radar.api.models import (Action, ActionPatch, AuthResult, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
@@ -226,7 +227,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             location_raw=opp["location"], url=opp["url"],
             deadline=opp["deadline"], status=opp["status"], first_seen=opp["first_seen"],
             published_at=opp["published_at"], category=fields.get("Category", ""),
-            role_track=fields.get("Role / Track", ""), season=fields.get("Season / Year", ""), pay=pay,
+            role_track=fields.get("Role / Track", ""), level=roles.level(opp["title"], fields.get("Category", "")),
+            track=roles.track(opp["title"], fields.get("Role / Track", "")), season=fields.get("Season / Year", ""), pay=pay,
             pay_estimate=pay_estimate, pay_estimate_basis=pay_estimate_basis,
             sources=sorted({i["source"] for i in seen_by_me}),
             backfill=bool(seen_by_me) and all(json.loads(i["raw"] or "{}").get("seed") for i in seen_by_me),
@@ -413,11 +415,18 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                                       "or by company prestige (S > A > B > C tiers), newest posted within a tier"),
         backfill: bool | None = Query(None, description="false: only new drops; true: only postings that were "
                                                          "already open when your sources first looked"),
+        level: str | None = Query(None, pattern="^(intern|new_grad)$", description="internships or new-grad roles"),
+        track: str | None = Query(None, description="one of: " + ", ".join(roles.TRACK_NAMES)),
+        posted_within: int | None = Query(None, ge=0, description="posted this many days back or less (the posting "
+                                                                  "date, else a live drop's found time; undated "
+                                                                  "backfill never matches)"),
         cursor: str | None = None,
         limit: int = Query(50, ge=1, le=200),
     ):
         # ponytail: scores every candidate in Python per request (one row fetch each);
         # fine for two users and thousands of rows -- precompute per-user matches if it slows.
+        if track is not None and track not in roles.TRACK_NAMES:
+            raise HTTPException(422, f"track must be one of {roles.TRACK_NAMES}")
         is_guest = user.id == GUEST_ID
         if is_guest:  # every visitor's page is the same: cap it, ignore personal filters, reuse it for a minute
             limit, action = min(limit, 50), None
@@ -466,6 +475,12 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                 continue
             if include == "matches" and not out.match.ok:
                 continue
+            if (level and out.level != level) or (track and out.track != track):
+                continue
+            if posted_within is not None:
+                posted = out.published_at or ("" if out.backfill else out.first_seen)
+                if not posted or datetime.fromisoformat(posted).date() < today - timedelta(days=posted_within):
+                    continue
             if len(items) == limit:
                 more = keys[-1]
                 break

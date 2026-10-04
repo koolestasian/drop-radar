@@ -509,6 +509,12 @@ export interface components {
             /** Id */
             id: string;
             /**
+             * Level
+             * @description "intern", "new_grad", or "" for anything else (see radar.pipeline.roles)
+             * @default
+             */
+            level: string;
+            /**
              * Location
              * @description display form: "City, ST" in the US, "City, Country" elsewhere; "; " between several
              */
@@ -556,6 +562,12 @@ export interface components {
             status: string;
             /** Title */
             title: string;
+            /**
+             * Track
+             * @description Quant, Software, Finance...; "Other" when no rule matches
+             * @default Other
+             */
+            track: string;
             /** Url */
             url: string;
         };
@@ -1172,6 +1184,12 @@ export interface operations {
                 sort?: string;
                 /** @description false: only new drops; true: only postings that were already open when your sources first looked */
                 backfill?: boolean | null;
+                /** @description internships or new-grad roles */
+                level?: string | null;
+                /** @description one of: Quant, AI / ML / Data, Hardware, Security, Product, Design, Software, Finance, Business, Other */
+                track?: string | null;
+                /** @description posted this many days back or less (the posting date, else a live drop's found time; undated backfill never matches) */
+                posted_within?: number | null;
                 cursor?: string | null;
                 limit?: number;
             };
