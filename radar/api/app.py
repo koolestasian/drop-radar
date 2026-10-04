@@ -45,6 +45,7 @@ from radar.api.models import (Action, ActionPatch, AuthResult, Counts, Credentia
 from radar.config import GUEST_ID, User, Watchlist, load_guest_profile, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
 from radar.sources.registry import build_sources
+from radar.store import Store
 from radar.logos import LogoResolver
 from radar.models import utcnow
 from radar.pipeline.filter import is_us_location
@@ -186,7 +187,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         return user
 
     guest = User(id=GUEST_ID, watchlist=Watchlist(), profile=load_guest_profile())
-    summaries = {}  # user id -> (time, Summary), 60s
+    summaries = {}  # user id -> (time, Summary), 5 min: a scan takes seconds
     hits, cached = {}, {}  # guest rate limit (ip -> request times) and 60s response cache (query -> (time, page))
 
     def _client_ip(request):
@@ -500,25 +501,33 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     async def summary(user: User = Depends(viewer)):
         """The numbers behind the Jobs header and filter pills, over everything the list would show."""
         hit = summaries.get(user.id)
-        if hit and time.monotonic() - hit[0] < 60:
+        if hit and time.monotonic() - hit[0] < 300:
             return hit[1]
-        you, everything, seen = Counter(), Counter(), set()
-        for row in store.list_opportunities(source_names=owned(user)):
-            twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
-            if twin in seen:
-                continue
-            seen.add(twin)
-            opp = store.get_opportunity(row["id"], user_id=user.id)
-            if (opp.get("action") or {}).get("status") == HIDDEN_BY_DEFAULT or opp["status"] in DEAD_STATUSES:
-                continue
-            out = serialize(opp, user)
-            if not out.sources:
-                continue
-            for scope in (everything, you) if out.match.ok else (everything,):
-                scope["total"] += 1
-                if out.level:
-                    scope["level:" + out.level] += 1
-                scope["track:" + out.track] += 1
+        mine, path = owned(user), store.conn.execute("PRAGMA database_list").fetchone()["file"]
+
+        def scan():  # its own connection on a worker thread: ~6 s of reading must not stall live updates
+            you, everything, seen = Counter(), Counter(), set()
+            with Store(path) as db:
+                for row in db.list_opportunities(source_names=mine):
+                    twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
+                    if twin in seen:
+                        continue
+                    seen.add(twin)
+                    opp = db.get_opportunity(row["id"], user_id=user.id)
+                    if (opp.get("action") or {}).get("status") == HIDDEN_BY_DEFAULT or opp["status"] in DEAD_STATUSES:
+                        continue
+                    if not any(i["source"] in mine for i in opp["items"]):
+                        continue
+                    ok = visible_to(opp, user.profile, mine)[1]
+                    lvl, trk = roles.level(opp["title"], opp["fields"].get("Category", "")), roles.track(opp["title"], opp["fields"].get("Role / Track", ""))
+                    for scope in (everything, you) if ok else (everything,):
+                        scope["total"] += 1
+                        if lvl:
+                            scope["level:" + lvl] += 1
+                        scope["track:" + trk] += 1
+            return you, everything
+
+        you, everything = await asyncio.to_thread(scan)
         def counts(c):
             return Counts(total=c["total"], level={k[6:]: n for k, n in c.items() if k.startswith("level:")},
                           track={k[6:]: n for k, n in c.items() if k.startswith("track:")})

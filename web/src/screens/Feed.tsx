@@ -80,7 +80,7 @@ export function Feed({ incoming = [], clearIncoming = () => {}, guest = false }:
   const active = useMemo(() => ({ ...filters, q, location }), [filters, q, location]);
   const setStatus = useSetStatus();
   const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me") });
-  const summary = useQuery({ queryKey: ["summary"], queryFn: () => api<Summary>("/api/opportunities/summary"), refetchInterval: 60_000 });
+  const summary = useQuery({ queryKey: ["summary"], queryFn: () => api<Summary>("/api/opportunities/summary"), refetchInterval: 300_000 });
   const wide = useMediaQuery("(min-width: 1024px)");
   const roomy = useMediaQuery("(min-width: 640px)");
   const [density, setDensity] = useDensity();
