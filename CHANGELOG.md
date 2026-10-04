@@ -2,7 +2,7 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
-## 0.20.0 (pending deployment)
+## 0.20.0 (2026-10-04)
 
 Career adds a private library of career facts and reusable answers. Records begin
 as drafts; approval requires a source or personal confirmation note. Every revision
