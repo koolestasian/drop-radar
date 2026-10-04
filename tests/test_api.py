@@ -650,6 +650,10 @@ class OpenApiAndWebTests(unittest.IsolatedAsyncioTestCase):
             self.assertNotIn("nope", (await client.get("/..%2Fsecret.txt")).text)
             self.assertEqual((await client.get("/api/nope")).status_code, 404)
             self.assertEqual((await client.get("/healthz")).json(), {"ok": True})
+            # a release must reach browsers at once: the entry page always revalidates, hashed assets may be cached
+            self.assertEqual((await client.get("/")).headers["cache-control"], "no-cache")
+            self.assertEqual((await client.get("/pipeline")).headers["cache-control"], "no-cache")
+            self.assertNotIn("cache-control", (await client.get("/assets/app.js")).headers)
 
 
 if __name__ == "__main__":

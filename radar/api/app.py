@@ -636,7 +636,9 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                 raise HTTPException(404)
             candidate = (root / path).resolve()
             if path and candidate.is_file() and candidate.is_relative_to(root):  # no ../ escapes
-                return FileResponse(candidate)
-            return FileResponse(root / "index.html")
+                # assets/ files are named by content hash, so they never go stale; everything else (index.html,
+                # sw.js, the manifest) must be re-checked, or a browser keeps the old app for hours after a release
+                return FileResponse(candidate, headers={} if path.startswith("assets/") else {"Cache-Control": "no-cache"})
+            return FileResponse(root / "index.html", headers={"Cache-Control": "no-cache"})
 
     return app
