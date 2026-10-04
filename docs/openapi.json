@@ -138,6 +138,254 @@
         "title": "BoardDiscovery",
         "type": "object"
       },
+      "CareerInput": {
+        "additionalProperties": false,
+        "properties": {
+          "context": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Context",
+            "type": "string"
+          },
+          "fact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/FactReference"
+            },
+            "maxItems": 50,
+            "title": "Fact Refs",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "fact",
+              "answer"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "source_note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Source Note",
+            "type": "string"
+          },
+          "state": {
+            "default": "draft",
+            "enum": [
+              "draft",
+              "approved",
+              "retired"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "text"
+        ],
+        "title": "CareerInput",
+        "type": "object"
+      },
+      "CareerPage": {
+        "properties": {
+          "next_after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next After"
+          },
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/CareerRecord"
+            },
+            "title": "Records",
+            "type": "array"
+          }
+        },
+        "required": [
+          "records"
+        ],
+        "title": "CareerPage",
+        "type": "object"
+      },
+      "CareerRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "context": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Context",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "fact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/FactReference"
+            },
+            "maxItems": 50,
+            "title": "Fact Refs",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "fact",
+              "answer"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "reusable": {
+            "description": "Current owner-approved revision with current approved supporting facts; context matching and action authorization still required",
+            "title": "Reusable",
+            "type": "boolean"
+          },
+          "review_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Review Reasons",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source_note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Source Note",
+            "type": "string"
+          },
+          "state": {
+            "default": "draft",
+            "enum": [
+              "draft",
+              "approved",
+              "retired"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "text",
+          "id",
+          "revision",
+          "created_at",
+          "reusable",
+          "review_reasons"
+        ],
+        "title": "CareerRecord",
+        "type": "object"
+      },
+      "CareerRevision": {
+        "additionalProperties": false,
+        "properties": {
+          "context": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Context",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "fact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/FactReference"
+            },
+            "maxItems": 50,
+            "title": "Fact Refs",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "fact",
+              "answer"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "source_note": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Source Note",
+            "type": "string"
+          },
+          "state": {
+            "default": "draft",
+            "enum": [
+              "draft",
+              "approved",
+              "retired"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "text",
+          "expected_revision"
+        ],
+        "title": "CareerRevision",
+        "type": "object"
+      },
       "CareersURL": {
         "properties": {
           "url": {
@@ -263,6 +511,28 @@
           "explanation"
         ],
         "title": "DiagnosticCheck",
+        "type": "object"
+      },
+      "FactReference": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "revision"
+        ],
+        "title": "FactReference",
         "type": "object"
       },
       "FeedConfig": {
@@ -1337,6 +1607,270 @@
           }
         },
         "summary": "Signup"
+      }
+    },
+    "/api/career": {
+      "get": {
+        "operationId": "list_records_api_career_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 64,
+              "title": "After",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CareerPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Records",
+        "tags": [
+          "career"
+        ]
+      },
+      "post": {
+        "operationId": "create_record_api_career_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CareerInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CareerRecord"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Record",
+        "tags": [
+          "career"
+        ]
+      }
+    },
+    "/api/career/{record_id}": {
+      "put": {
+        "operationId": "revise_record_api_career__record_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CareerRevision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CareerRecord"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revise Record",
+        "tags": [
+          "career"
+        ]
+      }
+    },
+    "/api/career/{record_id}/history": {
+      "get": {
+        "operationId": "record_history_api_career__record_id__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CareerRecord"
+                  },
+                  "title": "Response Record History Api Career  Record Id  History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record History",
+        "tags": [
+          "career"
+        ]
       }
     },
     "/api/config/profile": {

@@ -36,6 +36,15 @@ MIGRATIONS = (
        CREATE TABLE muted_profile_terms (
            user_id TEXT NOT NULL, term TEXT NOT NULL, PRIMARY KEY (user_id, term)
        )""",  # 5: explicit, per-user hide feedback (T16.6)
+    """CREATE TABLE career_records (
+           user_id TEXT NOT NULL,
+           id TEXT NOT NULL,
+           revision INTEGER NOT NULL CHECK (revision > 0),
+           kind TEXT NOT NULL CHECK (kind IN ('fact', 'answer')),
+           body TEXT NOT NULL,
+           created_at TEXT NOT NULL,
+           PRIMARY KEY (user_id, id, revision)
+       )""",  # 6: private, immutable career fact/answer revisions (T20.1)
 )
 
 

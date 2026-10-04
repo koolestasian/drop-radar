@@ -1,7 +1,13 @@
 # T20: personal opportunity action engine
 
-Status: todo; owner-requested plan saved 2026-10-04. Not implemented or deployed.
+Status: doing; owner-adopted goal active 2026-10-04. Career-library foundation
+implemented and validated locally; full action engine and deployment remain incomplete.
 Branch: claude/trim-drop-radar-plan. Foundation audit: T19-trusted-discovery.md.
+Owner-adopted product goal: [GOAL.md](GOAL.md), saved October 4, 2026.
+The [product ambition review](../../reports/Drop%20Radar%20product%20ambition%20review.md)
+extends this vision with coordinated campaigns, candidate development, shared action
+state and offer/career continuity. Existing slices remain implementation candidates;
+goal adoption does not imply shipped features or external-action activation.
 The owner asked for a useful first version next week, plus longer-term brainstorming.
 Competitor research and automation priorities were added 2026-10-04. Read the
 [app-focused research report](../../reports/Drop%20Radar%20competitor%20automation%20review.md)
@@ -25,9 +31,17 @@ This research does not connect accounts, activate a policy or authorize real sen
 
 ## Product outcome
 
-Owner clarified the sequence: personal workflow first, invite-only beta for close
-friends once useful, then potential wider scale and monetization. The first release
-is optimized for the owner's actual job search, not a public self-service platform.
+Owner clarified the scope on 2026-10-04: Drop Radar is a personal project and
+internship-search system. Optimize and extend it where improvements save effort,
+improve application quality, uncover relevant opportunities or build meaningful
+professional relationships. Optional private access for a few friends is secondary;
+public launch, commercialization and growth are outside the current roadmap.
+
+Prioritize features and fine-tuning by demonstrated personal usefulness, reliability,
+time saved and operating cost. Personal customization is welcome; generalized
+onboarding and commercial infrastructure are deferred. Existing delivery slices
+remain candidates, not a commitment to build every feature. This scope clarification
+adds no deadline; earlier prototype timing remains an estimate, not a commitment.
 
 Every promising new or existing job can produce an action packet: why it fits,
 what is uncertain, the strongest referral routes, supported recruiter candidates,
@@ -240,39 +254,26 @@ task status initially; SSE can notify without becoming the source of truth.
 Regenerate OpenAPI/types. Failure results distinguish no evidence, provider blocked,
 budget exhausted, missing facts, stale packet and send outcome unknown.
 
-## Personal use, friend beta and commercial gates
+## Personal use and optional private friend access
 
-- **Personal first:** calibrate roles, ranking, career facts, contacts and templates
-  against the owner's real inputs. Flexible imports and manual corrections are fine;
-  generalized onboarding, billing, growth features and a trained universal ranker
-  do not belong in the first-week scope.
-- Measure time to prepare a useful application packet, owner acceptance of top-ten
-  recommendations, unsupported resume claims, contact accuracy and actual conversations.
-  Record weekly outcomes for at least two weeks before broadening the beta. Interviews
-  are an outcome metric, not a fixed short-term promise.
-- **Friend beta:** start with three to five manually invited friends. Each supplies
-  their own goals, career facts, contacts and mail authorization. Close friendship
-  does not imply permission to share resumes, contacts, relationship notes or outcomes.
-  Rank per user; share permitted public job facts, never personal networks by default.
-- User ownership/access checks are required from day one, even while there is one
-  active user. Invite-only enrollment is a planned beta control, not a current app change.
-  No public paid launch or signup expansion until explicitly chosen.
-- Track per-user research/model/render cost, queue delay and limits from the first
-  release. Separate cached public evidence from private artifacts. These simple
-  boundaries enable later scale without requiring new infrastructure now.
-- Beta gate: packet/resume/send isolation tests pass, policy/review authorization works, costs are bounded,
-  and each invited user has completed an assisted workflow with feedback. Review after
-  two weeks: regular voluntary use, measured time savings, quality defects and support
-  burden determine whether to expand or fix the experience first.
-- **Commercial experiment:** after repeat usage and demonstrated value, interview
-  beta users about willingness to pay and offer a small explicitly agreed paid pilot.
-  Define the paid unit and price from observed cost/value; do not assume willingness
-  to pay from compliments or registrations. Keep monetization separate from outreach
-  behavior; sending more messages is not the success metric.
-- Before a public paid launch, complete tenant isolation review, portable export/deletion,
-  provider production authorization, backup/restore checks, usage metering, billing,
-  support/retention policies and measured load validation. Sequence these later rather
-  than making them prerequisites for the owner's prototype.
+- **Personal workflow:** calibrate roles, ranking, career facts, contacts and templates
+  against the owner's internship search. Improve discovery, applications, networking,
+  scheduling and preparation according to actual bottlenecks and observed usefulness.
+- Measure total owner time saved, application quality, contact accuracy, useful
+  conversations, referrals, interviews, reliability and operating cost. Generated
+  drafts, application volume and connection counts alone do not establish value.
+- **Optional friend access:** invite a few friends only when the owner wants to.
+  Sharing is not a prerequisite for improving the personal workflow or a planned
+  progression toward a public product. Assisted setup is sufficient.
+- Each friend supplies their own goals, career facts, contacts and account permissions.
+  Keep private facts, resumes, artifacts, contacts, relationship notes and outcomes
+  isolated per user. Share permitted public job facts, not personal networks by default.
+- Before granting access, verify private packet/artifact/action isolation and each
+  user's policy/review authorization. Keep costs bounded and pause controls available.
+  Friend access does not authorize use of the owner's mail or calendar accounts.
+- Keep research/model/render costs and queue limits visible for personal operation
+  and optional friends. Public signup, billing, paid pilots, growth and commercial
+  infrastructure are outside the current roadmap.
 
 ## Larger high-agency ideas, ranked for later experiments
 
@@ -436,6 +437,13 @@ recheck current Google publishing requirements during setup. No provider account
 API access, accurate recruiter assignment or next-week authorization is assumed.
 
 ## Handoff
+
+Goal continuation (2026-10-04): [career-library foundation](T20.1-career-library.md)
+adds private immutable fact/answer revisions, current-evidence checks, authenticated
+API and Career screen. 516 backend + pyflakes + build + 74 e2e pass; isolated local
+Chrome desktop/mobile-viewport pass. Live schema 5→6 requires approval and backup;
+not deployed. T20.1 packet/action foundations and the broader goal remain incomplete.
+The following earlier research handoff describes the saved planning history.
 
 Docs-only planning/research save on claude/trim-drop-radar-plan; competitor/autonomous
 networking reports, research notes, this spec and PROGRESS.md updated. Public source,

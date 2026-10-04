@@ -2,6 +2,15 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.20.0 (pending deployment)
+
+Career adds a private library of career facts and reusable answers. Records begin
+as drafts; approval requires a source or personal confirmation note. Every revision
+is preserved, conflicting edits cannot overwrite newer work, and answers referencing
+changed or retired facts require review. Answer context is explicit; approval does
+not authorize applications, messages or spending. This is the first T20 foundation;
+ranking, packets and external execution are still pending.
+
 ## 0.19.1 (2026-10-04)
 
 Profile suggestion previews now count displayed jobs with the same duplicate-requisition

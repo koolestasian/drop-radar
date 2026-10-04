@@ -13,6 +13,9 @@ export type CompanyConfig = S["CompanyConfig"];
 export type BoardDiscovery = S["BoardDiscovery"];
 export type ProfileSuggestions = S["ProfileSuggestions"];
 export type LinkDiagnostic = S["LinkDiagnostic"];
+export type CareerRecord = S["CareerRecord"];
+export type CareerInput = S["CareerInput"];
+export type CareerPage = S["CareerPage"];
 export type ActionStatus = NonNullable<S["ActionPatch"]["status"]>;
 
 const TOKEN_KEY = "radar.token";

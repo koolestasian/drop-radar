@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { Activity, BellOff, CircleUser, KanbanSquare, List, LogOut, Moon, Sun, Settings as SettingsIcon, type LucideIcon } from "lucide-react";
+import { Activity, BellOff, CircleUser, FileCheck2, KanbanSquare, List, LogOut, Moon, Sun, Settings as SettingsIcon, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import { api, authHeaders, setUnauthorizedHandler, token, type Me, type Opportunity } from "./api/client";
 import { openStream, type StreamStatus } from "./api/stream";
@@ -17,14 +17,16 @@ import { HideFeedback } from "./components/HideFeedback";
 const Board = lazy(() => import("./screens/Board").then((m) => ({ default: m.Board })));
 const Settings = lazy(() => import("./screens/Settings").then((m) => ({ default: m.Settings })));
 const Sources = lazy(() => import("./screens/Sources").then((m) => ({ default: m.Sources })));
+const Career = lazy(() => import("./screens/Career").then((m) => ({ default: m.Career })));
 
 const ROUTES: { id: string; label: string; icon: LucideIcon }[] = [
   { id: "jobs", label: "Jobs", icon: List },
   { id: "tracker", label: "Tracker", icon: KanbanSquare },
+  { id: "career", label: "Career", icon: FileCheck2 },
   { id: "sources", label: "Sources", icon: Activity },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
-type Route = "jobs" | "tracker" | "sources" | "settings" | "login";
+type Route = "jobs" | "tracker" | "career" | "sources" | "settings" | "login";
 const GUEST_ROUTES: Route[] = ["jobs"]; // what a visitor who is not signed in can open
 const JOBS = "#/jobs?scope=you";
 const hrefOf = (id: string) => (id === "jobs" ? JOBS : `#/${id}`);
@@ -136,7 +138,7 @@ export function App() {
                 aria-label={r.label}
                 title={r.label}
                 aria-current={route === r.id ? "page" : undefined}
-                className={cn(link, "h-10 gap-1.5 px-3.5 text-sm", route === r.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
+                className={cn(link, "h-11 gap-1.5 px-3.5 text-sm", route === r.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
               >
                 <r.icon aria-hidden className="size-4" />
                 <span className="hidden lg:inline">{r.label}</span>
@@ -212,6 +214,7 @@ export function App() {
         {route === "jobs" && <Feed guest={guest} incoming={incoming} clearIncoming={() => setIncoming([])} />}
         <Suspense fallback={<ListSkeleton rows={3} />}>
           {route === "tracker" && <Board />}
+          {route === "career" && <Career />}
           {route === "sources" && <Sources />}
           {route === "settings" && <Settings />}
         </Suspense>

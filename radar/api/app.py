@@ -41,7 +41,7 @@ from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
 from radar.pipeline import roles
 from radar.pipeline.pay_estimate import estimate_pay
 from radar.pipeline import priority
-from radar.api import auth, events
+from radar.api import auth, career, events
 from radar.api import diagnostics, feedback
 from radar.api.bitindex import BitIndex, pill_counts
 from radar.api.models import (Action, ActionPatch, AuthResult, BoardDiscovery, CareersURL, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
@@ -195,6 +195,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         if user is None:
             raise HTTPException(401, "missing or invalid bearer token", headers={"WWW-Authenticate": "Bearer"})
         return user
+
+    app.include_router(career.router(store, current_user, now))
 
     guest = User(id=GUEST_ID, watchlist=Watchlist(), profile=load_guest_profile())
     rank_cache = {}  # user id -> (the User it was computed for, when, ranks): 800 company names are canonicalised per call

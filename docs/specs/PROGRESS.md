@@ -30,9 +30,50 @@ Status: `todo` | `doing` | `done` (with commit hash and date) | `deferred` (not 
 | T17 feed redesign | done | `T17-feed-redesign.md`. Owner said go 2026-10-04; built with the spec's six default decisions; live on the box 2026-10-04 04:53 UTC (commits 703757f 17.1, 961f8d3 17.2-17.6, 55c6aa1 and the fix commit after it), v0.14.0. 17.1: server-side level/track/posted_within in `radar/pipeline/roles.py`; old vs new classifier differ on 13 of 1,558 matches and 77 of 11,396 jobs, all `Other` to new grad ("2027 Grads", "Early Careers", "College Grad"), no track changed. Checked on the box: For you 1,558, Everything 11,397 (one row added meanwhile), level=intern 1,112, new_grad 311, Software 1,016-1,017, posted_within=7 254 (recomputed independently from a full dump), drops 64, 11 since Oct 3 equal to the `backfill=false&since=` count. 17.2-17.6 shipped in one commit: one Jobs screen (For you/Everything, filters in the hash, `#/feed` and bare `#/jobs` keep working), one meaning of New (per-device last visit, `localStorage`), one date per card, Tracker > Hidden, `/api/opportunities/summary`. 435 backend tests, 58 e2e (29 on desktop and phone). Deviations: the summary scan takes 6 s warm and 23 s cold on the box (spec guessed 1.4 s) because it reads every posting, so a request never waits for it: it gets the last count at once (the first ever request is a 503 with Retry-After), a recount of 5+ minutes old numbers runs on its own thread with naps, one per user; on the box `/api/me` stayed 0.3 s during a count (it was 7.7 s when the count ran inline on request); pills are native selects (a phone gets its own picker) and sit in the Filters drawer on a phone. An e2e flake (Feed writing its address after you left Jobs) is fixed in `update()`. Checked as a guest on the live site (redirect from `#/feed`, header numbers, New pre-selected, no stale bundle). Not verified: the owner's signed-in screen (his token was not used), his phone, and the T14 digest still needs to reuse these words. Owner decisions left open: none (defaults used). |
 | T18 fast sort | done | `T18-fast-sort.md`, built as Option A, v0.15.0 (dbcf2f2), live on the box 2026-10-04 06:04 UTC. Step 0 done: Caddy `encode zstd gzip` (backup `/etc/caddy/Caddyfile.bak-pre-encode`), a 50-row page 39,122 to 7,721 bytes. Index in `radar/api/bitindex.py`, no DB change. Checked on the live feed: For you (1,558) and Everything (11,398) dumps identical in ids and order before and after, `/summary` equals counts computed from the dumps. Typical filtered page 5-30 ms end to end between poller bursts (was 0.4-1.4 s); during a burst everything on the loop slows (`/api/me` 160 ms median) and lists take 150-250 ms; RSS unchanged (about 150-173 MB). Deviations and measurements are in the spec's As built section. Not verified: the owner's signed-in screen and phone, and a real drop arriving (the nudge path is covered by a production-shaped test, not a live drop). Follow-up, not started: the poller's parsing shares the API's event loop and causes the latency bursts. |
 | T19 trusted discovery and optimization | todo | `T19-trusted-discovery.md`. Saved principal-engineer audit: job lifecycle/identity, collection recall, matching, grouping/count parity, alert delivery, performance, security and recovery. Implement in reviewable slices; planning complete, implementation not started. |
-| T20 personal opportunity action engine | todo | `T20-opportunity-action-engine.md`. Personal autonomous workflow: rank jobs/people/routes/actions; reuse private facts/answers; execute permitted outreach, reply handling, agreed scheduling, event/introduction follow-through and supported applications after account/policy activation. Review mode remains optional. Competitor report plus `reports/Drop Radar autonomous networking.md`; T20.1–20.8 phased plan. First prototype: verified contact → policy checks → real reply → agreed calendar meeting → brief. Friend beta/scale follow useful owner outcomes. Implementation not started. |
+| T20 personal opportunity action engine | doing | `T20-opportunity-action-engine.md`. Personal autonomous workflow: rank jobs/people/routes/actions; reuse private facts/answers; execute permitted outreach, reply handling, agreed scheduling, event/introduction follow-through and supported applications after account/policy activation. Review mode remains optional. Competitor report plus `reports/Drop Radar autonomous networking.md`; T20.1–20.8 phased plan. First prototype: verified contact → policy checks → real reply → agreed calendar meeting → brief. Personal internship workflow; optional private friend access is secondary. Public launch/commercialization/growth are outside the roadmap. Delivery slices remain candidates, with no new deadline or commitment to every feature. Career-library foundation implemented/validated locally (516 backend, 74 e2e); schema approval/deploy and remaining T20 work pending. |
 
 ## Latest handoff
+T20 career-library foundation implemented locally (2026-10-04, this commit), branch
+`claude/trim-drop-radar-plan`, v0.20.0 pending deployment: `radar/api/career.py`,
+schema 5→6, authenticated API/OpenAPI/types, Career screen/navigation, revision and
+isolation tests, release notes and `T20.1-career-library.md`. Private facts/answers
+have immutable revisions, explicit approval/context, conflict rejection and stale
+supporting-evidence checks. 516 backend + pyflakes + build + 74 e2e pass. Isolated
+Chrome desktop/390px mobile, light/dark, labels/focus/touch/no-overflow pass; inspected
+light text contrast ≥6.6:1. Owner career facts/phone and production remain unverified.
+Live migration requires approval and backup; no deployment, sends or account connection.
+Next: approved release of this slice; packet/artifact/action foundations and the full
+coordinated opportunity-engine goal remain incomplete. T16.7/T19 unchanged.
+
+Product ambition adopted as the owner's goal (2026-10-04), branch
+`claude/trim-drop-radar-plan`: saved `docs/specs/GOAL.md`, linked it from T20,
+and retained `reports/Drop Radar product ambition review.md` plus all three research
+notes in `research_notes/Drop Radar product ambition review/`. Vision: a coordinated
+personal opportunity engine spanning campaigns, demonstrated readiness, relationships,
+permitted execution, interviews, offers and future cycles. Owner rejects the earlier
+cut/freeze direction and wants continued ambitious feature development. Codex chat
+goal marked active. Existing uncommitted edits preserved; implementation/task statuses
+unchanged. Checks: documentation whitespace and local links. Private live screens
+and physical phone remain unverified. Next: implement a connected slice when requested;
+no accounts, external actions, spending, deployment, PR or tag activated by this save.
+
+Model-training discussion wrapped (2026-10-04), branch `claude/trim-drop-radar-plan`:
+local continuation notes in `research_notes/Drop Radar autonomous networking/model training.md`.
+Next session: choose a narrow training task/evaluation and UW/rented/desktop compute
+before selecting PC parts. No training, spending, accounts or app/live changes.
+Concurrent plan edits preserved; this wrap-up is local/uncommitted.
+
+Personal internship scope clarified (2026-10-04), branch `claude/trim-drop-radar-plan`:
+updated T20 product outcome/private friend access and added a scope note to the
+networking report. Priorities are personal usefulness, application quality,
+relationships, reliability, time saved and operating cost. Public launch,
+commercialization and growth are outside the roadmap; friend access is optional
+with private data/account isolation. Autonomous workflows still require configured
+accounts and an explicit policy. No new deadline or commitment to all delivery slices.
+Checks: documentation diff, whitespace and local links. No code, deployment, account
+activation or external actions. T20 remains todo; T16.7/T19 status unchanged.
+Next: choose a useful implementation slice when requested. Changes are uncommitted.
+
 T20 autonomy research continued (2026-10-04), branch `claude/trim-drop-radar-plan`:
 saved `reports/Drop Radar autonomous networking.md` and private research notes under
 `research_notes/Drop Radar autonomous networking/`; updated T20 policy-based execution
