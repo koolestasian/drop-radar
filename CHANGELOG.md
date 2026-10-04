@@ -2,6 +2,17 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.12.0 (2026-10-04)
+
+**A pay column.** Where a posting states its pay, the card shows it ("$62-$72/hr", "$120,000-$165,000/yr"), the compact row has it as a column, and the detail pane lists it. Nothing is shown when the posting states none.
+
+- **Where pay comes from:** the posting's own page, never a guess. Structured data first (Lever's salary range, SmartRecruiters' compensation, Greenhouse pay ranges, schema.org `baseSalary` on Ashby and company pages), then a conservative read of the description text for a range with a currency mark and a stated or obvious period. Bonuses, stipends, relocation money, company funding and benefit amounts are never read as pay; a posting listing several regional ranges shows the widest.
+- **New drops** get their pay in the background, so a push never waits for it. `python -m radar fix-pay [--dry-run]` fills it for stored postings that match someone's profile. On 80 live postings 19 (24%) state a range.
+- API: `pay` on every opportunity. 425 backend tests, 38 e2e tests.
+- The account button's accessible name is the username (as the visible label already was).
+
+Released together with 0.11.0 below, which was deployed on 2026-10-04 before the merge.
+
 ## 0.11.0 (2026-10-04)
 
 Fixes from the owner's full audit of the live app.

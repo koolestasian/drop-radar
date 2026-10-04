@@ -350,6 +350,20 @@ test("a new user gets the welcome explainer once; the work model shows only when
   await expect(page.getByRole("dialog", { name: "Welcome to Drop Radar" })).toBeHidden();
 });
 
+test("pay shows on a card and in the detail pane only when the posting states it", async ({ page }) => {
+  await mockApi(page, [
+    opp("p1", "Harvey", "Software Engineering Intern", { pay: "$62–$72/hr" }),
+    opp("p2", "Brex", "Backend Engineer New Grad"),
+  ]);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  await expect(page.getByRole("article", { name: /^Harvey/ })).toContainText("$62–$72/hr");
+  await expect(page.getByRole("article", { name: /^Brex/ })).not.toContainText("$");
+  await page.getByRole("article", { name: /^Harvey/ }).click();
+  await expect(page.getByText("Pay", { exact: true })).toBeVisible();
+  await expect(page.getByText("$62–$72/hr").first()).toBeVisible();
+});
+
 test("Sources shows the radar's own numbers in plain words", async ({ page }) => {
   await mockApi(page);
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
@@ -425,7 +439,7 @@ test("create an account, sign out, sign back in with the password; wrong passwor
   await expect(page.getByRole("alert")).toContainText("at least 10 characters");
   await page.getByLabel("Password").fill("correct horse battery");
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page.getByRole("button", { name: /^Account: u_ab12cd34ef/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Account: sam_smith/ })).toBeVisible();
   await page.getByRole("button", { name: /^Account/ }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await page.goto("/#/login");

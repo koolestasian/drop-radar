@@ -77,6 +77,7 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
           </Badge>
         )}
         <WorkModelBadge o={o} className="hidden bg-background/60 md:inline-flex" />
+        {o.pay && <span className="stamp hidden shrink-0 font-medium tabular-nums md:inline">{o.pay}</span>}
         {due && <span className={cn("stamp hidden font-medium sm:inline", DEADLINE_TONE[due.tone])}>{due.label}</span>}
         {onStatus && (
           <Button
@@ -144,6 +145,7 @@ export const RoleCard = forwardRef<HTMLElement, Props>(function RoleCard({ oppor
           </Badge>
         )}
         <WorkModelBadge o={o} className="bg-background/60" />
+        {o.pay && <span className="stamp font-medium tabular-nums">{o.pay}</span>}
         {due && <span className={cn("stamp font-medium", DEADLINE_TONE[due.tone])}>{due.label}</span>}
         <span className="stamp min-w-0 truncate text-muted-foreground">found {ago(o.first_seen)}</span>
         {onStatus && (

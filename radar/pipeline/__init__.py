@@ -14,7 +14,7 @@ from radar.pipeline.dedupe import resolve_opportunity_id
 from radar.pipeline.enrich import Enricher
 from radar.pipeline.filter import matches_profile
 from radar.pipeline.normalize import canonical_company, canonical_url
-from radar.pipeline.pagefacts import needs_facts
+from radar.pipeline.pagefacts import needs_facts, needs_pay
 
 log = logging.getLogger(__name__)
 
@@ -78,25 +78,28 @@ class Pipeline:
 
     async def _fill_from_page(self, opportunity_id, item):
         """A drop waits briefly for its link (so the push and the feed show the real location); a first-poll
-        backfill row is filled in the background, so a board's first poll isn't held up at one request a second."""
+        backfill row is filled in the background, so a board's first poll isn't held up at one request a second.
+        A drop's stated pay is looked for in the same read, or, when nothing else is missing, in the background:
+        the push never waits for it. Backfill rows get their pay from `python -m radar fix-pay`."""
         if self.pagefacts is None:
             return
         opp = self.store.get_opportunity(opportunity_id)
-        if opp is None or not needs_facts(opp):
+        seed = item.raw.get("seed")
+        if opp is None or not (needs_facts(opp) or (not seed and needs_pay(opp))):
             return
-        if item.raw.get("seed"):
-            task = asyncio.create_task(self._safe_fill(opportunity_id))
+        if seed or not needs_facts(opp):
+            task = asyncio.create_task(self._safe_fill(opportunity_id, pay=not seed))
             self._background.add(task)
             task.add_done_callback(self._background.discard)
         else:
             try:
-                await asyncio.wait_for(self._safe_fill(opportunity_id), 15)
+                await asyncio.wait_for(self._safe_fill(opportunity_id, pay=True), 15)
             except asyncio.TimeoutError:
                 log.info("page facts for %s took too long; the drop goes out as it is", opportunity_id)
 
-    async def _safe_fill(self, opportunity_id):
+    async def _safe_fill(self, opportunity_id, pay=False):
         try:
-            await self.pagefacts.fill(opportunity_id)
+            await self.pagefacts.fill(opportunity_id, pay=pay)
         except asyncio.CancelledError:
             raise
         except Exception:

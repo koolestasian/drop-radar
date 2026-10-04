@@ -520,6 +520,12 @@ export interface components {
              */
             location_raw: string;
             match: components["schemas"]["Match"];
+            /**
+             * Pay
+             * @description the pay range the posting states, e.g. "$62–$72/hr" or "$120,000–$165,000/yr"; empty when it states none
+             * @default
+             */
+            pay: string;
             /** Published At */
             published_at: string | null;
             /** Role Track */

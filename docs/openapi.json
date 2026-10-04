@@ -416,6 +416,12 @@
           "match": {
             "$ref": "#/components/schemas/Match"
           },
+          "pay": {
+            "default": "",
+            "description": "the pay range the posting states, e.g. \"$62\u2013$72/hr\" or \"$120,000\u2013$165,000/yr\"; empty when it states none",
+            "title": "Pay",
+            "type": "string"
+          },
           "published_at": {
             "anyOf": [
               {

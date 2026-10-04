@@ -15,6 +15,9 @@
           and fill what the page says (never changes a value a source stated clearly)
   fix-logos [--dry-run] [--limit N]
           check every company's logo domain: replace ones whose homepage names someone else, look up misses
+  fix-pay [--dry-run] [--limit N]
+          read the link of every open posting that matches someone's profile and fill the pay range it states
+          (one request a second per site; a posting that states none is left without pay)
   fix-stories [--dry-run]
           ask Claude for the real title of Instagram Story rows whose title is composed or OCR junk
           ("Other Opportunity · 2026"); also fills their blank company/location/deadline
@@ -52,6 +55,9 @@ def main(argv=None):
     logos = sub.add_parser("fix-logos", parents=[db], help="check every company's logo domain; fill misses")
     logos.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
     logos.add_argument("--limit", type=int, default=None, help="only look at this many companies")
+    pay = sub.add_parser("fix-pay", parents=[db], help="fill stated pay ranges from the posting links")
+    pay.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
+    pay.add_argument("--limit", type=int, default=None, help="only look at this many postings")
     stories = sub.add_parser("fix-stories", parents=[db], help="give Story rows with junk titles their real title")
     stories.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
     sub.add_parser("openapi", help="print the API's OpenAPI schema as JSON")
@@ -130,6 +136,38 @@ def main(argv=None):
         replaced = sum(1 for c in changes if c["old"])
         print(f"{'would change' if args.dry_run else 'changed'} {len(changes)}: {replaced} replaced or dropped, "
               f"{len(changes) - replaced} newly found")
+    elif args.command == "fix-pay":
+        import asyncio
+
+        from radar.config import account_user, load_users
+        from radar.pipeline.filter import matches_profile
+        from radar.pipeline.pagefacts import PageFacts, needs_pay
+
+        async def run():
+            with Store(db_path) as store:
+                profiles = [u.profile for u in (*load_users(None), *(account_user(r) for r in store.list_accounts()))]
+                todo = []
+                for (opp_id,) in store.conn.execute("SELECT id FROM opportunities WHERE url != '' ORDER BY first_seen DESC").fetchall():
+                    opp = store.get_opportunity(opp_id)
+                    if needs_pay(opp) and any(matches_profile(opp, p)[0] for p in profiles):
+                        todo.append(opp)
+                    if args.limit is not None and len(todo) >= args.limit:
+                        break
+                pages, looked, found, examples = PageFacts(store), 0, 0, 0
+
+                async def one(opp):
+                    return opp, await pages.fill(opp["id"], dry_run=args.dry_run, pay=True)
+
+                for finished in asyncio.as_completed([one(o) for o in todo]):
+                    opp, changes = await finished
+                    looked += 1
+                    if changes.get("pay"):
+                        found += 1
+                        if examples < 15:
+                            examples += 1
+                            print(f"  {opp['company'] or '?':24.24} {opp['title'][:48]!r:52} {changes['pay']}")
+                print(f"{'would fill' if args.dry_run else 'filled'} pay on {found} of {looked} matching postings looked at")
+        asyncio.run(run())
     elif args.command == "fix-stories":
         import asyncio
         import json

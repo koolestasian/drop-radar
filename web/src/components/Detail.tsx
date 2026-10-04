@@ -127,6 +127,7 @@ export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus?: (s
           {after && <span className="text-muted-foreground"> ({after})</span>}
         </Fact>
         {due && <Fact label="Deadline">{due.label}</Fact>}
+        {o.pay && <Fact label="Pay">{o.pay}</Fact>}
         {o.season && <Fact label="Season">{o.season}</Fact>}
         <Fact label="Seen on">{o.sources.map(sourceLabel).join(", ")}</Fact>
       </dl>
