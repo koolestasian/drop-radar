@@ -31,6 +31,15 @@ Status: `todo` | `doing` | `done` (with commit hash and date) | `deferred` (not 
 | T18 fast sort | done | `T18-fast-sort.md`, built as Option A, v0.15.0 (dbcf2f2), live on the box 2026-10-04 06:04 UTC. Step 0 done: Caddy `encode zstd gzip` (backup `/etc/caddy/Caddyfile.bak-pre-encode`), a 50-row page 39,122 to 7,721 bytes. Index in `radar/api/bitindex.py`, no DB change. Checked on the live feed: For you (1,558) and Everything (11,398) dumps identical in ids and order before and after, `/summary` equals counts computed from the dumps. Typical filtered page 5-30 ms end to end between poller bursts (was 0.4-1.4 s); during a burst everything on the loop slows (`/api/me` 160 ms median) and lists take 150-250 ms; RSS unchanged (about 150-173 MB). Deviations and measurements are in the spec's As built section. Not verified: the owner's signed-in screen and phone, and a real drop arriving (the nudge path is covered by a production-shaped test, not a live drop). Follow-up, not started: the poller's parsing shares the API's event loop and causes the latency bursts. |
 
 ## Latest handoff
+Planning saved (2026-10-04): `ROADMAP-trusted-discovery.md` contains the code/production
+audit and staged reliability roadmap. `PLAN-opportunity-action-engine.md` proposes
+ranked For you, imported referral connections, recruiter evidence, truthful resume
+variants and approved outreach packets for an owner-only first-week slice.
+Owner confirmed fit/interview reachability and per-send approval; sender/resume/contact
+metadata remain pending. Drafts stay in-app initially. Docs only; no app/live
+changes, outreach, deployment, PR or tag. Next: refine inputs, then choose a fresh
+implementation thread; current T16.7 status is unchanged.
+
 T16.6 done/live (2026-10-04, `b47049c` + `46afaae`), v0.19.1, branch
 `claude/trim-drop-radar-plan`: schema/action feedback/mutes, approved exclusions,
 read-only diagnostic, shared hide sheet and Settings tools. Deployment verification
