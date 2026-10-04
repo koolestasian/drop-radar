@@ -31,12 +31,13 @@ Status: `todo` | `doing` | `done` (with commit hash and date) | `deferred` (not 
 | T18 fast sort | done | `T18-fast-sort.md`, built as Option A, v0.15.0 (dbcf2f2), live on the box 2026-10-04 06:04 UTC. Step 0 done: Caddy `encode zstd gzip` (backup `/etc/caddy/Caddyfile.bak-pre-encode`), a 50-row page 39,122 to 7,721 bytes. Index in `radar/api/bitindex.py`, no DB change. Checked on the live feed: For you (1,558) and Everything (11,398) dumps identical in ids and order before and after, `/summary` equals counts computed from the dumps. Typical filtered page 5-30 ms end to end between poller bursts (was 0.4-1.4 s); during a burst everything on the loop slows (`/api/me` 160 ms median) and lists take 150-250 ms; RSS unchanged (about 150-173 MB). Deviations and measurements are in the spec's As built section. Not verified: the owner's signed-in screen and phone, and a real drop arriving (the nudge path is covered by a production-shaped test, not a live drop). Follow-up, not started: the poller's parsing shares the API's event loop and causes the latency bursts. |
 
 ## Latest handoff
-T16.4 continuation (2026-10-03 Pacific): YC feeder done (this commit) on `claude/trim-drop-radar-plan`;
-changed `radar/sources/yc_boards.py`, `radar/pipeline/pagefacts.py`, `tests/test_yc_boards.py`
-and task/release notes. All 445 backend tests and pyflakes passed; live 20-company sample
-queued 2 boards, and the final CLI sample queued Rescale. Changed-file whitespace checks passed.
-Off-box tool only; no service deploy or live data write required. Next: review the YC queue,
-then the pinned aggregator feeder; paste-a-URL and self-repair remain unfinished.
+T16.4 continuation (2026-10-03 Pacific): pinned aggregator feeder done (this commit) on
+`claude/trim-drop-radar-plan`; YC feeder is done at 98df41f. Changed
+`radar/sources/aggregator_boards.py`, `tests/test_aggregator_boards.py` and task/changelog notes.
+All 449 backend tests and pyflakes passed. Live sample: 30 source entries, 12 distinct
+unwatched boards queued (Ashby 7, Greenhouse 3, Lever 2); names deliberately unknown.
+Off-box tools only; no service deploy or live data write required. Next: paste a careers URL
+in Settings, then self-repair; review queues await owner selection before live additions.
 
 ## Decisions (defaults until the user changes them)
 - Deploy target: systemd on a ~$5 VPS, no Docker (was: Docker on a VPS; changed 2026-09-30 in the plan trim). Home server is best for Instagram.

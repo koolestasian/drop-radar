@@ -61,7 +61,7 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 | 16.1 | Logos: verified ladder | **done, live**; `fix-logos` ran for real 2026-10-03 21:35 UTC (owner's yes): 110 changed, report `/opt/radar/data/fix-logos-run.txt`, backup `backups/radar-20261003T212612Z-pre-fix-logos.db` |
 | 16.2 | Delete `filter.py`'s location lists | **done, live** (5761717, deployed 2026-10-03 20:43 UTC) |
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from page text via Haiku: not built. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
-| 16.4 | Self-growing watchlist + review queue | doing: stored-link queue built; owner chose all 213. YC feeder built (2026-10-03 Pacific): off-box, source-linked boards, guarded probes, JSONL review queue. Aggregator, paste-a-URL and self-repair still todo |
+| 16.4 | Self-growing watchlist + review queue | doing: stored-link and YC queues built. Pinned aggregator feeder built (2026-10-03 Pacific): Greenhouse, Lever, Ashby; off-box, guarded probes, attributed JSONL review queue. Paste-a-URL and self-repair still todo |
 | 16.5 | Adaptive polling + learned priority | todo (feeds T14) |
 | 16.6 | Learn from the user | todo |
 | 16.7 | Maintenance by agent | todo |
@@ -156,6 +156,27 @@ Live sample: 20 of 1,489 hiring companies, compared with 618 distinct watched bo
 found Rescale (Ashby, 19 open postings) and Amplitude (Ashby, 36). Review results are on the Mac
 in `data/t16/16.4-yc-live-sample.jsonl`. Nothing was added to live watchlists or changed in the feed.
 Coverage limit: sites needing JavaScript, hiding their ATS links or using other ATSes are skipped.
+
+**Aggregator feeder (built):** `.venv/bin/python -m radar.sources.aggregator_boards --ats ashby --limit 50`
+reads the Greenhouse, Lever or Ashby company lists at pinned commit
+`4bee912c68ca7549ce202db19c61dacded0baaf6` of
+[Feashliaa/job-board-aggregator](https://github.com/Feashliaa/job-board-aggregator).
+Dataset attribution: Riley Dorrington / Feashliaa; [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
+Dataset fetches honour robots and use pagefacts' SSRF guard; candidates have validated simple
+slugs and are checked through the existing ATS parsers using public APIs. Only nonempty,
+parseable boards enter `data/t16/16.4-aggregator-queue.jsonl`, with source URL, pinned commit,
+license, attribution and verification time. The dataset has no company names, so `company`
+stays blank and `company_verified` is false; `verified` refers to the board's open postings.
+Use `--watched FILE` for live watchlists (including self-service accounts), `--offset` for
+the next source batch, and `--out` for another queue. Batch offsets remain stable against
+the pinned lists even as watched/queued boards are skipped. Nothing is added to live watchlists.
+Coverage limit: Workday needs POST probes; the other upstream ATSes have no radar source.
+This slice handles the three existing sources that support safe GET probes.
+Live validation (2026-10-03 Pacific): first 10 source entries per ATS, compared with the
+owner's current watchlists, queued 12 distinct unwatched boards (Ashby 7, Greenhouse 3,
+Lever 2). All 12 have blank company names as intended. Report:
+`data/t16/16.4-aggregator-live-sample.jsonl` on the Mac. One unreadable Lever response was
+skipped without interrupting the batch; empty/error boards were not queued.
 
 - **Feeders:**
   - **Community lists:** run Simplify/community-list apply links through
