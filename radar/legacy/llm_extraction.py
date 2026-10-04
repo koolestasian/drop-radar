@@ -5,12 +5,14 @@ Turns noisy caption/OCR text (plus the job page, when it could be read) into
 validated fields. `extract` never raises: any API problem returns None and the
 monitor keeps its regex-based fields.
 """
+import base64
 import json
 import os
 import re
 import threading
 
-MODEL = os.getenv("ANTHROPIC_MODEL", "claude-opus-5-5").strip() or "claude-opus-5-5"
+# Claude Haiku 4.5 (owner's choice, T16 bake-off: tied with Sonnet on Story facts, never slower than 3.5 s).
+MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5").strip() or "claude-haiku-4-5"
 
 SYSTEM_PROMPT = """You read posts from @zero2sudo, an Instagram account that shares \
 career opportunities with university students: internships, new-grad roles, \
@@ -20,6 +22,8 @@ The post text combines the caption and OCR of the Story image, so expect OCR \
 noise, broken lines, and fragments of the account's own commentary. When the \
 job page behind the post's application link could be read, its facts are given \
 too; they are authoritative for title, organization, location and deadline.
+When the Story image itself is attached, read it: it beats the OCR text, which \
+is often garbled.
 
 Extract facts about the opportunity itself:
 - is_opportunity: true only when the post offers something a student can \
@@ -97,23 +101,19 @@ class Extractor:
         parts.append("<post>\n" + text + "\n</post>")
         return "\n\n".join(parts)
 
-    def extract(self, text, link="", posted="", page=None):
+    def extract(self, text, link="", posted="", page=None, image=None):
+        """image: (media_type, bytes) of the Story picture, which Haiku reads directly."""
         import anthropic
 
         try:
-            response = self.client.beta.messages.create(
+            # No `effort` and no server-side fallback: Haiku 4.5 rejects the first (400); a refusal
+            # just returns None below and the regex fields stand.
+            response = self.client.messages.create(
                 model=MODEL,
-                max_tokens=16000,
+                max_tokens=2000,
                 system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": self.prompt(text, link, posted, page)}],
-                output_config={
-                    "effort": "low",
-                    "format": {"type": "json_schema", "schema": self.schema},
-                },
-                # Re-run a safety-classifier decline on Anthropic's recommended
-                # fallback model instead of losing the extraction.
-                betas=["server-side-fallback-2026-07-01"],
-                fallbacks="default",
+                messages=[{"role": "user", "content": self.content(self.prompt(text, link, posted, page), image)}],
+                output_config={"format": {"type": "json_schema", "schema": self.schema}},
             )
         except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
             self._record(failures=1)
@@ -134,6 +134,15 @@ class Extractor:
         except (ValueError, TypeError):
             self._record(failures=1)
             return None
+
+    @staticmethod
+    def content(prompt, image):
+        if not image:
+            return prompt
+        media_type, data = image
+        return [{"type": "image", "source": {"type": "base64", "media_type": media_type,
+                                             "data": base64.standard_b64encode(data).decode()}},
+                {"type": "text", "text": prompt}]
 
     def validate(self, data):
         if not isinstance(data, dict):

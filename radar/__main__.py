@@ -15,6 +15,9 @@
           and fill what the page says (never changes a value a source stated clearly)
   fix-logos [--dry-run] [--limit N]
           check every company's logo domain: replace ones whose homepage names someone else, look up misses
+  fix-stories [--dry-run]
+          ask Claude for the real title of Instagram Story rows whose title is composed or OCR junk
+          ("Other Opportunity · 2026"); also fills their blank company/location/deadline
   openapi print the API schema; docs/openapi.json is this output (the web
           app's types are generated from it)
 """
@@ -49,6 +52,8 @@ def main(argv=None):
     logos = sub.add_parser("fix-logos", parents=[db], help="check every company's logo domain; fill misses")
     logos.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
     logos.add_argument("--limit", type=int, default=None, help="only look at this many companies")
+    stories = sub.add_parser("fix-stories", parents=[db], help="give Story rows with junk titles their real title")
+    stories.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
     sub.add_parser("openapi", help="print the API's OpenAPI schema as JSON")
     args = parser.parse_args(argv)
 
@@ -125,6 +130,45 @@ def main(argv=None):
         replaced = sum(1 for c in changes if c["old"])
         print(f"{'would change' if args.dry_run else 'changed'} {len(changes)}: {replaced} replaced or dropped, "
               f"{len(changes) - replaced} newly found")
+    elif args.command == "fix-stories":
+        import asyncio
+        import json
+
+        from radar.models import Item
+        from radar.pipeline.enrich import CATEGORY, Enricher, generic_title
+
+        async def run():
+            with Store(db_path) as store:
+                enricher, fixed = Enricher(store), 0
+                rows = store.conn.execute("SELECT opportunity_id, source, external_id, url, title, raw FROM items "
+                                          "WHERE source LIKE 'instagram.%'").fetchall()
+                for opp_id, source, external_id, url, title, raw in rows:
+                    opp = store.get_opportunity(opp_id)
+                    text = (json.loads(raw or "{}") or {}).get("text") or ""
+                    if not opp or not text or not generic_title(opp["title"], (opp.get("fields") or {}).get(CATEGORY, "")):
+                        continue
+                    item = Item(source=source, external_id=external_id, url=url, title=title, text=text,
+                                raw=json.loads(raw or "{}") or {})
+                    if args.dry_run:  # straight to the model: no cache write either
+                        from radar.pipeline.enrich import _story_image
+
+                        image = await asyncio.to_thread(_story_image, item)
+                        facts = await asyncio.to_thread(enricher.extractor().extract, text, url, "",
+                                                        **({"image": image} if image else {}))
+                        facts = facts or {}
+                        new = facts.get("title") or ""
+                        hide = (facts.get("is_opportunity") is False and (facts.get("confidence") or 0) >= 0.8
+                                and "instagram.com/" in (url or "instagram.com/"))
+                    else:
+                        await enricher.enrich(opp_id, item)
+                        after = store.get_opportunity(opp_id)
+                        new, hide = after["title"], after["status"] == "Not actionable" != opp["status"]
+                    if hide or (new and new != opp["title"]):
+                        fixed += 1
+                        print(f"  {opp['company'] or '?':22.22} {opp['title'][:45]!r:48} -> "
+                              f"{'hidden: not an opportunity' if hide else repr(new[:60])}")
+                print(f"{'would fix' if args.dry_run else 'fixed'} {fixed} Story titles")
+        asyncio.run(run())
     elif args.command == "openapi":
         import json
 

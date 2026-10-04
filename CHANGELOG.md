@@ -2,6 +2,17 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.11.0 (2026-10-04)
+
+Fixes from the owner's full audit of the live app.
+
+- **A city in your profile now takes in its metro area.** "Seattle" matches Redmond, Bellevue, Kirkland; "New York" matches NYC, Jersey City, Brooklyn (within 50 km, GeoNames coordinates). Microsoft's Redmond new-grad role had been dropped by a Seattle/New York profile; over the stored postings, 410 more now match.
+- **The US check reads GeoNames instead of hand-typed city lists** (T16.2): "Atlanta, Georgia" is the state, "New Brunswick, NJ" is New Jersey, "SGP - Woodlands" is Singapore.
+- **Instagram Stories are read by Claude Haiku 4.5**, picture included (T16.3). A junk title ("Other Opportunity · 2026", "= 3 hackathon teams") is replaced by the real one; a Story with no application link that Claude is sure is a meme or a tweet screenshot becomes "Not actionable" (out of the feed, never pushed). `python -m radar fix-stories [--dry-run]` repairs stored rows.
+- The same job posted as several requisitions shows as one card.
+- The top bar shows your username, not the internal id; the feed says "nothing new for 23h" instead of "30+ new roles" when quiet; opening `/settings` directly works.
+- `radar/data/` (places.json, build_places.py) is now tracked; `.gitignore`'s `data/` rule had hidden it.
+
 ## 0.10.1 (2026-10-03)
 
 Location format changed from "City - Country" to what the owner asked for: **US places as "City, ST"** ("Seattle, WA"), **everywhere else as "City, Country"** ("Barcelona, Spain").
