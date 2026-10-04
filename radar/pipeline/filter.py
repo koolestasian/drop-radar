@@ -78,7 +78,7 @@ def _location_matches(location: str, wanted: str) -> bool:
         return us is not False  # unknown is accepted: missing a real drop is worse than one extra
     if w == "remote":
         return "remote" in location.lower() and us is not False
-    return w in location.lower()
+    return w in location.lower() or places.near(location, wanted)  # "Seattle" takes in Redmond
 
 
 def matches_profile(opp: dict, profile, level_implied: bool = False) -> tuple[bool, list[str]]:

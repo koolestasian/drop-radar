@@ -131,6 +131,15 @@ class SemanticsTests(unittest.TestCase):
         self.assertFalse(matches_profile(opp("Software Engineer"), p)[0])
         self.assertFalse(matches_profile(opp("Marketing Intern"), p)[0])
 
+    def test_a_city_takes_in_its_metro_area(self):
+        """The owner's "Seattle, New York" profile dropped Microsoft's Redmond new-grad role (2026-10-03)."""
+        p = Profile(keywords=("intern",), locations=("Seattle", "New York"))
+        for location, expected in [("Redmond", True), ("Bellevue, WA", True), ("NYC", True), ("Jersey City, NJ", True),
+                                   ("Brooklyn", True), ("Portland, OR", False), ("Redmond, OR", False),
+                                   ("Rochester, NY", False), ("Austin, TX", False)]:
+            with self.subTest(location=location):
+                self.assertIs(matches_profile(opp("Intern", location), p)[0], expected)
+
     def test_either_list_alone_is_enough_when_the_other_is_empty(self):
         self.assertTrue(matches_profile(opp("Marketing Intern"), Profile(keywords=("intern",)))[0])
         self.assertTrue(matches_profile(opp("Software Engineer"), Profile(roles=("software engineer",)))[0])

@@ -12,6 +12,7 @@ state anywhere keeps "United States" rather than a guessed state. A city we can'
 from __future__ import annotations
 
 import json
+import math
 import re
 import unicodedata
 from functools import lru_cache
@@ -21,6 +22,7 @@ _DATA = json.loads(Path(__file__).resolve().parent.parent.joinpath("data", "plac
 COUNTRIES: dict[str, str] = _DATA["countries"]  # ISO2 -> English name
 _CITY_COUNTRY: dict[str, str] = _DATA["cities"]  # folded name -> ISO2 of its biggest city
 _ISO3 = _DATA["iso3"]
+_COORDS: dict[str, list] = _DATA["coords"]  # "seattle|WA" / "london|GB" -> [lat, lon]
 _US_STATE: dict[str, str] = _DATA["us_state"]  # folded city name -> state abbreviation of the biggest US city of that name
 
 
@@ -245,6 +247,30 @@ def scan_countries(text: str, cities: bool = True) -> set[str]:
         else:
             i += 1
     return found
+
+
+def _coords(city: str, iso: str, state: str):
+    return _COORDS.get(f"{_fold(city)}|{state if iso == 'US' else iso}") if city and iso else None
+
+
+def near(raw: str, wanted: str, km: float = 50) -> bool:
+    """Any place in raw within km of the place `wanted` names: "Seattle" takes in "Redmond, WA" and "Bellevue",
+    "New York" takes in "Jersey City" and "Brooklyn". False when either side can't be placed."""
+    # ponytail: straight-line radius around one point; per-metro shapes if 50 km proves wrong somewhere
+    centers = [c for p in parse_places(wanted) if (c := _coords(p[0], p[1], p[3]))]
+    if not centers:
+        return False
+    for city, iso, _, state in parse_places(raw):
+        here = _coords(city, iso, state)
+        if here and any(_km(here, c) <= km for c in centers):
+            return True
+    return False
+
+
+def _km(a, b) -> float:
+    lat1, lon1, lat2, lon2 = map(math.radians, (*a, *b))
+    h = math.sin((lat2 - lat1) / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
+    return 12742 * math.asin(math.sqrt(h))
 
 
 def has_us_namesake(city: str) -> bool:
