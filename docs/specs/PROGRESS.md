@@ -59,8 +59,29 @@ Database quick_check and service health OK, no traceback/service errors. Owner f
 Artifacts: `data/t16/16.3-backfill-{live.log,audit.json,owner-feed-check.jsonl}`; no secrets.
 Budget remained intact: 193,287 tokens used today, 95 new unique text results cached;
 most remaining blanks were not model-read once the request reservation no longer fit.
-A later budgeted pass can use retained page text. Branch `claude/trim-drop-radar-plan`;
+The approved Codex pass below completed the retained-text review. Branch `claude/trim-drop-radar-plan`;
 changed only progress/spec docs for this operation. Next: T16.5.
+
+Owner-approved Codex completion (2026-10-04, this commit): off-box, background,
+Sol low, cached source text only. Screened 1,290 unique unpaid text records, deduplicated
+and sent short compensation excerpts; 362 initial candidates plus 173 targeted wider
+context reviews. Source payload cut from 6.6M to 376K characters. Codex usage: 396,346
+input (91,520 cached), 11,782 output tokens. No model tools or new page fetches.
+Thirty proposals failed the existing source-evidence validator. Applied 164 additional
+blank-only Pay values across 152 unique source texts; all revalidated on the box against
+current cached text hashes. Atomic JSON field updates preserved all other fields.
+Backup: `backups/radar-20261004T154908Z-pre-codex-pay.db`. All 746 previously paid rows
+(377 distinct values), every other opportunity column/field, IDs and user notes/actions
+unchanged. All 164 fills have verified Codex evidence (86 distinct pay values); DB
+quick_check and service health OK. Owner feed now 1,578 rows, 412 stated/1,166 blank pay
+(was 360 stated on the same current IDs); 53 blank companies/107 blank locations.
+Top named companies: TikTok 93, Palantir 57, RTX 39, ByteDance 31. Haiku's shared budget
+unchanged at 193,287; its automatic model and 200K cap remain. One-off Codex evidence
+is cached with honest model/method provenance; no live code or environment changes.
+Artifacts: `data/t16/codex-pay/` (inputs, batches, approved payload, apply/audit/feed reports).
+Remaining blanks lack accepted source evidence in this cached-text pass; unavailable
+pages and ambiguous/rejected pay stay blank. Branch `claude/trim-drop-radar-plan`,
+changed spec/progress docs only. Cached-text backfill is finished. Next: T16.5.
 
 ## Decisions (defaults until the user changes them)
 - Deploy target: systemd on a ~$5 VPS, no Docker (was: Docker on a VPS; changed 2026-09-30 in the plan trim). Home server is best for Instagram.

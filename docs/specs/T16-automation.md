@@ -64,7 +64,7 @@ extraction model. First use is 16.5 priority, calibrated against Haiku before it
 |---|---|---|
 | 16.1 | Logos: verified ladder | **done, live**; `fix-logos` ran for real 2026-10-03 21:35 UTC (owner's yes): 110 changed, report `/opt/radar/data/fix-logos-run.txt`, backup `backups/radar-20261003T212612Z-pre-fix-logos.db` |
 | 16.2 | Delete `filter.py`'s location lists | **done, live** (5761717, deployed 2026-10-03 20:43 UTC) |
-| 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from fetched page text via Haiku done (6006a83, 2026-10-04, v0.17.0): verified quote/amount/currency/period, shared daily budget, content cache, background calls, Gemini on API failure. Off-box sample: 4 model + 1 regex fills/20 blanks. Approved live backfill added 33/2,403 (31 Haiku + 2 structured/regex); owner stated pay 349 → 360. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
+| 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from fetched page text via Haiku done (6006a83, 2026-10-04, v0.17.0): verified quote/amount/currency/period, shared daily budget, content cache, background calls, Gemini on API failure. Off-box sample: 4 model + 1 regex fills/20 blanks. Approved live backfill added 33/2,403 (31 Haiku + 2 structured/regex); owner stated pay 349 → 360. Owner-approved Codex cached-text completion added another 164 globally; owner feed now 412 stated. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
 | 16.4 | Self-growing watchlist + review queue | **done** (2026-10-04, this commit, v0.16.0): stored-link, YC and pinned aggregator queues; Settings careers URL detection; daily off-box repair/archive review queue |
 | 16.5 | Adaptive polling + learned priority | todo (feeds T14) |
 | 16.6 | Learn from the user | todo |
@@ -157,7 +157,16 @@ locations: 161 unknown -> US, 83 unknown -> abroad (the direction that can miss 
    `backups/radar-20261004T073856Z-pre-haiku-pay.db`. All 685 pre-existing pay values,
    IDs, first_seen and user notes/actions unchanged. Owner feed: 360 stated/1,198 blank,
    was 349 stated on the same 1,558 IDs. Budget stayed intact (193,287 tokens today);
-   remaining blanks were not all model-read. Later passes reuse retained page text.
+   remaining blanks were not all model-read in that first pass.
+   **Codex completion, owner-approved 2026-10-04:** background Sol-low batches reviewed
+   compact pay excerpts from retained pages and filled 164 more rows (152 unique texts).
+   Source quote/amount/currency/period and current source hash checked before each atomic
+   blank-only Pay write. Thirty invalid proposals rejected. Backup:
+   `backups/radar-20261004T154908Z-pre-codex-pay.db`; all 746 existing paid rows, other
+   fields/columns, IDs and notes/actions preserved. Owner feed now 412 stated/1,166 blank
+   across 1,578 rows (360 stated before on the same IDs). No extra Haiku spend or cap change;
+   automatic enrichment stays Haiku. Artifacts: `data/t16/codex-pay/`. Cached-text review
+   is finished; missing pages and unverified/ambiguous pay remain blank.
 
 ### 16.4 Self-growing watchlist (everything goes to a review queue, never straight to live)
 **Settings (built):** a signed-in user pastes a public careers/job-board URL and clicks
