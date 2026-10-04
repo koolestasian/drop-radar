@@ -2,7 +2,7 @@
 
 One always-on process (`python -m radar serve`: scheduler + pipeline + API,
 serving the built web app) on one small host, replacing the original hourly GitHub
-Actions job. See `../docs/specs/00-overview.md` and `../docs/specs/T10-deploy-scale.md`.
+Actions job. See `../docs/specs/00-overview.md` and `../docs/specs/archive/T10-deploy-scale.md`.
 
 A home server or Raspberry Pi on your home network, not a VPS, is the better
 host **if you use the Instagram source**: Instagram is far more likely to
@@ -247,4 +247,4 @@ Never print either topic or token to logs.
 
 Docker/compose, Fly.io, S3 uploads, Postgres/Redis, sharding, and anything
 multi-box: add when one box or one user is no longer enough
-(`docs/specs/T10-deploy-scale.md`).
+(`docs/specs/archive/T10-deploy-scale.md`).
