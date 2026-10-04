@@ -1,7 +1,7 @@
-# Drop Radar: trusted discovery first, excellent tracking next
+# T19: trusted discovery and codebase optimization
 
 Saved 2026-10-04 from the owner's requested principal-engineer audit.
-Status: proposed roadmap, not implemented. This is not a replacement for current
+Status: todo; roadmap saved, implementation not started. This is not a replacement for current
 task status in PROGRESS.md. Assigned branch: claude/trim-drop-radar-plan.
 
 ## Direction and chosen defaults

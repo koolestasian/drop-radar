@@ -1,7 +1,7 @@
-# Opportunity action engine: ranked discovery, people, outreach and resumes
+# T20: personal opportunity action engine
 
-Owner-requested planning draft, 2026-10-04. Not implemented or deployed.
-Branch: claude/trim-drop-radar-plan. Foundation audit: ROADMAP-trusted-discovery.md.
+Status: todo; owner-requested plan saved 2026-10-04. Not implemented or deployed.
+Branch: claude/trim-drop-radar-plan. Foundation audit: T19-trusted-discovery.md.
 The owner asked for a useful first version next week, plus longer-term brainstorming.
 
 ## Product outcome
