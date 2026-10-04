@@ -6,6 +6,8 @@ Versions follow the web app (`web/package.json`). Every merge to `main` adds an 
 
 When a posting gives no pay, US roles with a recognizable occupation now show a clearly labeled national wage benchmark. The detail pane names the occupation, 2025 BLS OEWS source, 10th–25th percentiles, and links to WageDex's CC BY 4.0 compilation. Employer-stated pay always takes priority. The benchmark covers all workers in an occupation, so it is not a company offer or an internship-specific wage. On the owner's live feed it would cover 851 of 1,209 blank-pay cards; 358 remain blank for uncertain roles or locations outside the US.
 
+Store-level postings no longer enter the feed: the shared ATS title gate rejects titles with a store number, a street address, or franchise job names (Domino's "Customer Service Rep(05261) - 107 E University Ave", "Entry Level Manager (05443)"). Checked over 12,546 live titles: it rejects exactly the 199 Domino's store rows and nothing else.
+
 ## 0.12.0 (2026-10-04)
 
 **A pay column.** Where a posting states its pay, the card shows it ("$62-$72/hr", "$120,000-$165,000/yr"), the compact row has it as a column, and the detail pane lists it. Nothing is shown when the posting states none.

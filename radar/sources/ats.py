@@ -39,8 +39,20 @@ _TITLE_RE = re.compile(
 )
 
 
+# Store-level postings (Domino's "Customer Service Rep(05261) - 107 E University Ave") only match
+# above because a street name or "Entry Level" is in the title: a store number in parens (not a
+# year), a street address, or one of the franchise job names. Corporate roles at the same company carry none of these.
+_STORE_RE = re.compile(
+    r"\(\s*(?!20[2-3]\d\b)\d{4,6}\b|\b(?!20[2-3]\d\b)\d{2,5}\s+(?:[nsew]\.?\s+)?[\w.]+(?:\s[\w.]+)?\s+"
+    r"(?:dr|drive|ave|avenue|rd|road|st|street|blvd|boulevard|hwy|highway|pkwy|ln|lane|way)\b|"
+    r"\b(?:delivery expert|delivery driver|customer service rep|entry[- ]level manag(?:er|ment))\b",
+    re.IGNORECASE,
+)
+
+
 def matches_title(title: str) -> bool:
-    return bool(_TITLE_RE.search(title or ""))
+    title = title or ""
+    return bool(_TITLE_RE.search(title)) and not _STORE_RE.search(title)
 
 
 def parse_date(value) -> datetime | None:
