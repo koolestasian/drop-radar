@@ -31,6 +31,18 @@ Status: `todo` | `doing` | `done` (with commit hash and date) | `deferred` (not 
 | T18 fast sort | done | `T18-fast-sort.md`, built as Option A, v0.15.0 (dbcf2f2), live on the box 2026-10-04 06:04 UTC. Step 0 done: Caddy `encode zstd gzip` (backup `/etc/caddy/Caddyfile.bak-pre-encode`), a 50-row page 39,122 to 7,721 bytes. Index in `radar/api/bitindex.py`, no DB change. Checked on the live feed: For you (1,558) and Everything (11,398) dumps identical in ids and order before and after, `/summary` equals counts computed from the dumps. Typical filtered page 5-30 ms end to end between poller bursts (was 0.4-1.4 s); during a burst everything on the loop slows (`/api/me` 160 ms median) and lists take 150-250 ms; RSS unchanged (about 150-173 MB). Deviations and measurements are in the spec's As built section. Not verified: the owner's signed-in screen and phone, and a real drop arriving (the nudge path is covered by a production-shaped test, not a live drop). Follow-up, not started: the poller's parsing shares the API's event loop and causes the latency bursts. |
 
 ## Latest handoff
+Trading classification fix (2026-10-04, this commit), v0.18.1, branch
+`claude/trim-drop-radar-plan`: narrowed Quant detection, put titles before stored role
+categories, retained spelled-out AI titles. Shared classifier serves SQL/index/feed summaries.
+Compared all 1,056 distinct title/category pairs on the owner's 1,578-row feed: three changes
+(DIV Marketing/Trading → Finance, Microsoft Financial Analyst → Finance, Amazon Software
+Development Engineer Robotics → Software). Quant 7→6; Finance 0→2; Software 1,032→1,033;
+AI/Data 321→319. Other tracks unchanged. Counts/pay/company/location blanks unchanged.
+Regression cases include ordinary trading, trading software, explicit quant trading and
+stored Quant tags contradicted by the title. No database repair needed.
+Validation: 490 backend tests, pyflakes, web build and 60 e2e tests pass.
+Next: T16.6; long-window tier/poll verification remains recorded above.
+
 T16.5 activated (2026-10-04, this commit), branch `claude/trim-drop-radar-plan`, v0.18.0.
 Server TypeSafe key installed with approval; env/DB backups are recorded in the spec.
 Seven verified tiers seeded, four added by the background pass; shared usage 196,492/200K.

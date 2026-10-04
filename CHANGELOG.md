@@ -2,6 +2,13 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.18.1 (2026-10-04)
+
+Trading/trader alone now classifies as Finance rather than Quant. Quant requires explicit
+quant or quantitative/algorithmic/systematic/high-frequency trading language. Titles take
+precedence over stored role tags; spelled-out artificial intelligence remains AI / ML / Data.
+This applies consistently to feed filters, summaries and the bitmap index.
+
 ## 0.18.0 (2026-10-04)
 
 T16.5 replaces manual company tiers with automatic CS-student ratings. Confident Jev and

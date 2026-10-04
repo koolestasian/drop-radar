@@ -10,14 +10,14 @@ NEW_GRAD = re.compile(r"\b(new (college )?grad(uate)?s?|grads?|graduate|early ca
 
 # First match wins, so the order matters ("Quant Developer" is Quant, not Software).
 TRACKS = [
-    ("Quant", r"\b(quant|trading|trader)\b"),
-    ("AI / ML / Data", r"\b(machine learning|ml|ai|data (scien|eng|analy)\w*|research scientist|nlp|llm)\b"),
+    ("Quant", r"\b(quant|quantitative trad(?:ing|er)|algorithmic trading|systematic trading|high[- ]frequency trading|hft)\b"),
+    ("AI / ML / Data", r"\b(machine learning|artificial intelligence|ml|ai|data (scien|eng|analy)\w*|research scientist|nlp|llm)\b"),
     ("Hardware", r"\b(hardware|electrical|embedded|firmware|silicon|asic|fpga|mechanical)\b"),
     ("Security", r"\b(security|cyber|infosec)\b"),
     ("Product", r"\b(product|program) (manag|design)"),
     ("Design", r"\b(design|ux|ui)\b"),
     ("Software", r"\b(software|swe|developer|engineer|backend|frontend|full[- ]?stack|devops|sre|platform)\b"),
-    ("Finance", r"\b(invest\w*|banking|banker|bank|finance|financial|equity|asset|wealth|fp&a|m&a|treasury|credit|risk|accounting|accountant|audit|tax|actuarial)\b"),
+    ("Finance", r"\b(invest\w*|banking|banker|bank|trading|trader|finance|financial|equity|asset|wealth|fp&a|m&a|treasury|credit|risk|accounting|accountant|audit|tax|actuarial)\b"),
     ("Business", r"\b(consult\w*|strategy|business (analyst|operations|development|intelligence)|operations|marketing|sales|supply chain|logistics|hr|human resources|underwriting|insurance|project manag\w*)\b"),
 ]
 _TRACKS = [(name, re.compile(rx, re.I)) for name, rx in TRACKS]
@@ -35,5 +35,7 @@ def level(title, category=""):
 
 
 def track(title, role_track=""):
-    text = f"{title} {role_track}"
-    return next((name for name, rx in _TRACKS if rx.search(text)), "Other")
+    for text in (title, role_track):
+        if match := next((name for name, rx in _TRACKS if rx.search(text)), None):
+            return match
+    return "Other"
