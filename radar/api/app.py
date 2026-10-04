@@ -42,9 +42,10 @@ from radar.pipeline import roles
 from radar.pipeline.pay_estimate import estimate_pay
 from radar.pipeline import priority
 from radar.api import auth, events
+from radar.api import diagnostics, feedback
 from radar.api.bitindex import BitIndex, pill_counts
 from radar.api.models import (Action, ActionPatch, AuthResult, BoardDiscovery, CareersURL, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
-                              SourceHealth, SourceLatency, Summary, WatchlistConfig)
+                              SourceHealth, SourceLatency, Summary, WatchlistConfig, ProfileSuggestions, SuggestionDecision, LinkDiagnostic)
 from radar.config import GUEST_ID, User, Watchlist, load_guest_profile, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
 from radar.sources.registry import build_sources
@@ -253,7 +254,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             sources=sorted({i["source"] for i in seen_by_me}),
             backfill=bool(seen_by_me) and all(json.loads(i["raw"] or "{}").get("seed") for i in seen_by_me),
             match=Match(ok=ok, reasons=reasons),
-            action=Action(status=action["status"], notes=action["notes"]) if action else None,
+            action=Action(status=action["status"], notes=action["notes"], hide_term=action.get("hide_term"),
+                          hide_term_at=action.get("hide_term_at")) if action else None,
             company_domain=logos.domain(opp["company"]),
         )
 
@@ -611,9 +613,17 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
 
     @app.patch("/api/opportunities/{opp_id}", response_model=Opportunity)
     async def update_opportunity(opp_id: str, patch: ActionPatch, user: User = Depends(current_user)):
-        visible_opportunity(opp_id, user)
-        if patch.status is not None or patch.notes is not None:
-            store.set_action(opp_id, user.id, status=patch.status, notes=patch.notes)
+        opp = visible_opportunity(opp_id, user)
+        term = None
+        if patch.hide_term is not None:
+            if (patch.status or (opp.get("action") or {}).get("status")) != "ignored":
+                raise HTTPException(422, "Hide the job before adding feedback.")
+            try:
+                term = feedback.validate_feedback(patch.hide_term, opp["title"])
+            except ValueError as exc:
+                raise HTTPException(422, str(exc)) from None
+        if patch.status is not None or patch.notes is not None or term is not None:
+            store.set_action(opp_id, user.id, status=patch.status, notes=patch.notes, hide_term=term)
             bus.publish("action", opp_id, user.id)
         return serialize(store.get_opportunity(opp_id, user_id=user.id), user)
 
@@ -720,6 +730,73 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         else:
             replace_config(user, "profile", body.model_dump(), parse_profile, user.profile_path)
         return ProfileConfig(**dataclasses.asdict(runtime.users[user.id].profile))
+
+    @app.get("/api/profile/suggestions", response_model=ProfileSuggestions)
+    async def profile_suggestions(user: User = Depends(current_user)):
+        return feedback.suggestions(store, user, owned(user), now())
+
+    @app.post("/api/profile/suggestions", response_model=ProfileSuggestions)
+    async def decide_suggestion(body: SuggestionDecision, user: User = Depends(current_user)):
+        term = feedback.normalize_term(body.term)
+        current = feedback.suggestions(store, user, owned(user), now())
+        if body.decision == "apply":
+            if term not in {s.term for s in current.suggestions}:
+                raise HTTPException(409, "This suggestion is no longer available. Refresh Settings.")
+            profile = ProfileConfig(**dataclasses.asdict(user.profile))
+            profile.exclude.append(term)
+            await put_profile(profile, user)
+        else:
+            if (body.decision == "mute" and term not in {s.term for s in current.suggestions}) or (
+                    body.decision == "restore" and term not in current.muted):
+                raise HTTPException(409, "This suggestion is no longer available. Refresh Settings.")
+            with store.conn:
+                if body.decision == "mute":
+                    store.conn.execute("INSERT OR IGNORE INTO muted_profile_terms VALUES (?, ?)", (user.id, term))
+                else:
+                    store.conn.execute("DELETE FROM muted_profile_terms WHERE user_id=? AND term=?", (user.id, term))
+        latest = runtime.users[user.id]
+        return feedback.suggestions(store, latest, owned(latest), now())
+
+    diagnostic_slots = asyncio.Semaphore(2)
+
+    async def preview(url):
+        try:
+            return await asyncio.to_thread(diagnostics.fetch_preview, url)
+        except Exception:
+            log.warning("diagnostic preview failed", exc_info=True)
+            return None
+        finally:
+            diagnostic_slots.release()
+
+    @app.post("/api/diagnostics/link", response_model=LinkDiagnostic)
+    async def diagnose_link(body: CareersURL, user: User = Depends(current_user)):
+        throttle(("diagnostic", user.id), 10, 3600)
+        try:
+            valid = await asyncio.to_thread(diagnostics.public_url, body.url)
+        except ValueError:
+            valid = False
+        if not valid:
+            raise HTTPException(422, "Use a public HTTP(S) job URL without embedded credentials.")
+        url = diagnostics.canonical_url(body.url)
+        opp = diagnostics.stored_link(store, url, owned(user), user.id)
+        facts, recorded = None, []
+        if opp is None:
+            if diagnostic_slots.locked():
+                raise HTTPException(429, "Two posting previews are already running; try again shortly.")
+            await diagnostic_slots.acquire()
+            # Timeout does not free the slot while the blocking guarded fetch is still running.
+            task = asyncio.create_task(preview(url))
+            try:
+                facts = await asyncio.wait_for(asyncio.shield(task), 25)
+            except asyncio.TimeoutError:
+                facts = None
+        else:
+            dispatchers = getattr(getattr(getattr(runtime, "pipeline", None), "alerter", None), "dispatchers", {})
+            for channel in getattr(dispatchers.get(user.id), "channels", ()):
+                alert = store.get_alert(opp["id"], channel.name)
+                if alert:
+                    recorded.append(alert)
+        return diagnostics.explain(url, user, owned(user), opp, facts, recorded)
 
     @app.get("/api/stream", response_class=StreamingResponse,
              responses={200: {"content": {"text/event-stream": {}},

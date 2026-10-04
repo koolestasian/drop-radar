@@ -185,6 +185,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diagnostics/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Diagnose Link */
+        post: operations["diagnose_link_api_diagnostics_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/instagram/relay": {
         parameters: {
             query?: never;
@@ -294,6 +311,24 @@ export interface paths {
         patch: operations["update_opportunity_api_opportunities__opp_id__patch"];
         trace?: never;
     };
+    "/api/profile/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Profile Suggestions */
+        get: operations["profile_suggestions_api_profile_suggestions_get"];
+        put?: never;
+        /** Decide Suggestion */
+        post: operations["decide_suggestion_api_profile_suggestions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sources/health": {
         parameters: {
             query?: never;
@@ -354,6 +389,10 @@ export interface components {
     schemas: {
         /** Action */
         Action: {
+            /** Hide Term */
+            hide_term?: string | null;
+            /** Hide Term At */
+            hide_term_at?: string | null;
             /** Notes */
             notes: string;
             /**
@@ -364,6 +403,8 @@ export interface components {
         };
         /** ActionPatch */
         ActionPatch: {
+            /** Hide Term */
+            hide_term?: string | null;
             /** Notes */
             notes?: string | null;
             /** Status */
@@ -435,6 +476,25 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** DiagnosticCheck */
+        DiagnosticCheck: {
+            /** Explanation */
+            explanation: string;
+            /**
+             * Facts
+             * @default {}
+             */
+            facts: {
+                [key: string]: string;
+            };
+            /** Stage */
+            stage: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "passed" | "blocked" | "unknown";
+        };
         /** FeedConfig */
         FeedConfig: {
             /**
@@ -479,6 +539,17 @@ export interface components {
             }[];
             /** Username */
             username: string;
+        };
+        /** LinkDiagnostic */
+        LinkDiagnostic: {
+            /** Checks */
+            checks: components["schemas"]["DiagnosticCheck"][];
+            /** Collected */
+            collected: boolean;
+            /** Summary */
+            summary: string;
+            /** Url */
+            url: string;
         };
         /** Login */
         Login: {
@@ -678,6 +749,13 @@ export interface components {
              */
             roles: string[];
         };
+        /** ProfileSuggestions */
+        ProfileSuggestions: {
+            /** Muted */
+            muted: string[];
+            /** Suggestions */
+            suggestions: components["schemas"]["Suggestion"][];
+        };
         /** RepoConfig */
         RepoConfig: {
             /**
@@ -725,6 +803,29 @@ export interface components {
             p95: number;
             /** Source */
             source: string;
+        };
+        /** Suggestion */
+        Suggestion: {
+            /** Affected Count */
+            affected_count: number;
+            /** Examples */
+            examples: string[];
+            /** Support Count */
+            support_count: number;
+            /** Supporting Titles */
+            supporting_titles: string[];
+            /** Term */
+            term: string;
+        };
+        /** SuggestionDecision */
+        SuggestionDecision: {
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "apply" | "mute" | "restore";
+            /** Term */
+            term: string;
         };
         /** Summary */
         Summary: {
@@ -1166,6 +1267,41 @@ export interface operations {
             };
         };
     };
+    diagnose_link_api_diagnostics_link_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CareersURL"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkDiagnostic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     relay_instagram_api_instagram_relay_post: {
         parameters: {
             query?: never;
@@ -1413,6 +1549,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Opportunity"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    profile_suggestions_api_profile_suggestions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileSuggestions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_suggestion_api_profile_suggestions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestionDecision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileSuggestions"];
                 };
             };
             /** @description Validation Error */

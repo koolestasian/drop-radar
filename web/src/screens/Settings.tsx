@@ -6,6 +6,7 @@ import { ErrorNote, ListSkeleton } from "../components/common";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProfileTools } from "../components/ProfileTools";
 
 const ATS = ["greenhouse", "lever", "ashby", "smartrecruiters", "workday", "workable", "oracle", "eightfold", "amazon", "google", "apple", "avature", "sitemap"];
 const SLUG_HINT: Record<string, string> = {
@@ -343,9 +344,11 @@ export function Settings() {
           <p className="mt-1 text-sm text-muted-foreground">Changes apply to your feed and your phone alerts right away.</p>
         </div>
         {profile.isPending ? <ListSkeleton rows={2} /> : profile.isError ? <ErrorNote error={profile.error} retry={() => profile.refetch()} /> : (
-          <ProfileForm key={me.data?.user} initial={profile.data} />
+          <ProfileForm key={JSON.stringify(profile.data)} initial={profile.data} />
         )}
       </section>
+
+      <ProfileTools />
 
       <section aria-labelledby="alerts-title" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
         <h2 id="alerts-title" className={h2}>Phone alerts</h2>

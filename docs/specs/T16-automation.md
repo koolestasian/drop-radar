@@ -67,7 +67,7 @@ extraction model. First use is 16.5 priority, calibrated against Haiku before it
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from fetched page text via Haiku done (6006a83, 2026-10-04, v0.17.0): verified quote/amount/currency/period, shared daily budget, content cache, background calls, Gemini on API failure. Off-box sample: 4 model + 1 regex fills/20 blanks. Approved live backfill added 33/2,403 (31 Haiku + 2 structured/regex); owner stated pay 349 → 360. Owner-approved Codex cached-text completion added another 164 globally; owner feed now 412 stated. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
 | 16.4 | Self-growing watchlist + review queue | **done** (2026-10-04, this commit, v0.16.0): stored-link, YC and pinned aggregator queues; Settings careers URL detection; daily off-box repair/archive review queue |
 | 16.5 | Adaptive polling + learned priority | **done, live** (2026-10-04, this commit); automatic CS-student tiers, budgeted refresh and posting-hour polling (feeds T14) |
-| 16.6 | Learn from the user | todo |
+| 16.6 | Learn from the user | **doing**: v0.19.0 implemented/validated; live schema approval and deployment pending |
 | 16.7 | Maintenance by agent | todo |
 | 16.8 | Company names from source data | todo |
 
@@ -313,6 +313,54 @@ Artifacts: `data/t16/16.5-live-{before.log,after.log,audit.json,tier-diff.json,p
   the user approves ("add 'sales' to exclude?").
 - **"Why didn't I see this?":** the user pastes a link, it is dry-run through the pipeline, and the
   app says which gate dropped it. This doubles as a T13 audit tool.
+
+#### As built (2026-10-04, v0.19.0; deployment pending)
+
+- A successful hide opens an optional shared feedback sheet, including Tracker and
+  the Jobs keyboard shortcut. Feedback accepts a title-matching phrase of at most
+  80 characters, lowercased with collapsed whitespace. Failure never reverses the hide.
+- Three distinct currently hidden jobs with explicit feedback in the last 30 days
+  suggest adding the phrase to `profile.exclude`. Settings shows three supporting
+  titles, the affected For you count and up to three examples. Existing exclusions
+  are omitted; curated Stories retain their bypass. Apply uses the current validated
+  profile writer. Mute lasts until manually restored. Notes edits preserve feedback;
+  unhiding clears it. Old hides without feedback do not count.
+- Schema migration 5 adds nullable `actions.hide_term`/`hide_term_at` and the empty
+  per-user `muted_profile_terms(user_id, term)` table. Existing IDs, actions, notes,
+  opportunities and profile values are preserved. No backfill of inferred reasons.
+- Authenticated `GET/POST /api/profile/suggestions` lists suggestions/muted terms
+  and accepts `apply`, `mute`, or `restore`. Action PATCH/response includes optional
+  feedback. OpenAPI and generated frontend types are updated.
+- Authenticated `POST /api/diagnostics/link` canonicalizes a public URL, checks the
+  user's collected posting/sighting aliases first, then previews unknown links with
+  guarded ATS/JSON-LD readers in a worker. Checks cover source coverage, applicable
+  ATS titles, profile matching, hidden/dead state, recorded backfill and own-channel
+  alert evidence. Current gates are not presented as historical rejection decisions.
+  Unavailable facts/history stay inconclusive; active Jobs filters are called out.
+- Diagnostics consume no model tokens, import no jobs, persist no preview cache,
+  send no alerts and make no source repairs. Ten requests per user per hour, including
+  invalid URLs; two concurrent fetches. Timed-out requests retain their slot until the
+  guarded worker finishes. Existing SSRF/redirect/robots/size/time guards are reused.
+- Read-only production snapshot copied off-box: migration 4→5 preserved checksums
+  of all existing table values; old/new matching agreed on 11,519 distinct posting
+  values. Snapshot owner feed: 1,727 visible, 441 stated pay, 1,286 blank pay,
+  65 blank company/130 blank location; top companies TikTok 105, RTX 58,
+  Palantir 58, ByteDance 31, Microsoft 29. No automatic suggestions without feedback.
+  Empty-suggestion query took 1.4 ms locally. Artifacts:
+  `data/t16/16.6-local-{live-audit,diagnostics}.json`.
+- Chrome desktop/phone inspected against real owner snapshot data: Settings,
+  known-link results and keyboard hide feedback; mute/restore/apply exercised on
+  local-only feedback. No overflow; new controls at least 44px. Phone focus restoration
+  after Escape has a regression check. No production tokens were used.
+- Validation: 503 backend tests, pyflakes, web build and all 68 desktop/phone e2e
+  tests pass. The API privacy regression includes the new nullable feedback fields.
+  Local approval removed exactly the previewed 1,092 jobs (1,723→631 after local
+  test hides), preserving all other profile fields. Settings text contrast measured
+  6.6:1 or better; keyboard/phone focus and all new 44px controls checked in Chrome.
+  Existing Ponytail markers reviewed; no new deliberate shortcuts added.
+- Outstanding: production schema approval/backup/deploy and live
+  verification; a real future dismissal pattern and the owner's own phone.
+  Historical rejection logging and company/location exclusion learning are deferred.
 
 ### 16.7 Maintenance by agent
 - **Weekly routine:** a scheduled cloud agent runs `discover --check` and opens a PR with dead-slug

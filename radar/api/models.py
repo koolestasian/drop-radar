@@ -20,6 +20,8 @@ class BoardDiscovery(BaseModel):
 class Action(BaseModel):
     status: str = Field(description="this user's status; legacy imports may say 'actioned'")
     notes: str
+    hide_term: str | None = None
+    hide_term_at: str | None = None
 
 
 class Match(BaseModel):
@@ -74,6 +76,39 @@ class Summary(BaseModel):
 class ActionPatch(BaseModel):
     status: ActionStatus | None = None
     notes: str | None = Field(default=None, max_length=10_000)
+    hide_term: str | None = Field(default=None, max_length=80)
+
+
+class Suggestion(BaseModel):
+    term: str
+    support_count: int
+    supporting_titles: list[str]
+    affected_count: int
+    examples: list[str]
+
+
+class ProfileSuggestions(BaseModel):
+    suggestions: list[Suggestion]
+    muted: list[str]
+
+
+class SuggestionDecision(BaseModel):
+    term: str = Field(min_length=1, max_length=80)
+    decision: Literal["apply", "mute", "restore"]
+
+
+class DiagnosticCheck(BaseModel):
+    stage: str
+    verdict: Literal["passed", "blocked", "unknown"]
+    explanation: str
+    facts: dict[str, str] = {}
+
+
+class LinkDiagnostic(BaseModel):
+    url: str
+    collected: bool
+    summary: str
+    checks: list[DiagnosticCheck]
 
 
 class Me(BaseModel):

@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Button } from "@/components/ui/button";
 import { Welcome } from "./components/Welcome";
 import { ListSkeleton } from "./components/common";
+import { HideFeedback } from "./components/HideFeedback";
 
 // Screens you don't open first load on demand, so the feed's first paint ships less code.
 const Board = lazy(() => import("./screens/Board").then((m) => ({ default: m.Board })));
@@ -116,6 +117,7 @@ export function App() {
 
   return (
     <div className="min-h-dvh pb-24 sm:pb-8">
+      {!guest && <HideFeedback key={me.data?.user} />}
       <header className="sticky top-0 z-20 border-b border-border bg-background">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-4">
           <a href={JOBS} className="flex items-center gap-2 text-lg font-bold tracking-tight">

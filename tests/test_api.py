@@ -305,12 +305,12 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         r = await self.client.patch(f"/api/opportunities/{swe}", headers=auth(FRIEND),
                                     json={"status": "saved", "notes": "ask Kevin about this"})
         self.assertEqual(r.status_code, 200, r.text)
-        self.assertEqual(r.json()["action"], {"status": "saved", "notes": "ask Kevin about this"})
+        self.assertEqual(r.json()["action"], {"status": "saved", "notes": "ask Kevin about this", "hide_term": None, "hide_term_at": None})
         mine = (await self.get(f"/api/opportunities/{swe}", KEVIN)).json()
         self.assertIsNone(mine["action"])
         await self.client.patch(f"/api/opportunities/{swe}", headers=auth(FRIEND), json={"status": "applied"})
         theirs = (await self.get(f"/api/opportunities/{swe}", FRIEND)).json()["action"]
-        self.assertEqual(theirs, {"status": "applied", "notes": "ask Kevin about this"}, "omitted notes are kept")
+        self.assertEqual(theirs, {"status": "applied", "notes": "ask Kevin about this", "hide_term": None, "hide_term_at": None}, "omitted notes are kept")
 
     async def test_patch_rejects_unknown_statuses_and_invisible_opportunities(self):
         r = await self.client.patch(f"/api/opportunities/{self.ids['swe']}", headers=auth(KEVIN),

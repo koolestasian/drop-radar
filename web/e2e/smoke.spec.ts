@@ -190,6 +190,7 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
     if (!guest && given !== `Bearer ${TOKEN}`) return json(route, { detail: "missing or invalid bearer token" }, 401);
     if (path === "/api/me" && guest) return json(route, { user: "guest", sources: 3, alerts_enabled: false, notification_url: null, guest: true });
     if (path === "/api/me" && asAccount) return json(route, ME);
+    if (path === "/api/profile/suggestions") return json(route, { suggestions: [], muted: [] });
     if (path === "/api/me") return json(route, { user: "kevin", sources: 3, alerts_enabled: false, notification_url: null, guest: false });
     if (path === "/api/stream")
       return route.fulfill({
@@ -513,6 +514,7 @@ test("hiding a role sends it to Tracker > Hidden, where it can be unhidden", asy
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
   await page.goto("/");
   await page.getByRole("article", { name: /^NVIDIA/ }).getByRole("button", { name: "Hide" }).click();
+  await page.getByRole("button", { name: "Skip feedback" }).click();
   await expect(page.getByRole("article", { name: /^NVIDIA/ })).toHaveCount(0);
   await page.getByRole("link", { name: /Tracker/ }).last().click();
   await page.getByText(/^Hidden \(1\)/).click();
@@ -734,4 +736,90 @@ test("an account adds extra companies on the allowed boards only; a bad board sa
   await page.getByRole("button", { name: "Save extra companies" }).click();
   await expect(page.getByText("Saved — polling now.")).toBeVisible();
   await expect(page.getByText("1 of 10 extra companies")).toBeVisible();
+});
+
+test("hide feedback is optional and retry does not undo the hide", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  let attempts = 0;
+  await page.route("**/api/opportunities/o2", async (route) => {
+    const body = route.request().postDataJSON();
+    if (!body?.hide_term) return route.fallback();
+    attempts++;
+    if (attempts === 1) return route.fulfill({ status: 422, contentType: "application/json", body: JSON.stringify({ detail: "Choose a phrase from the title." }) });
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify(opp("o2", "NVIDIA", "Systems Software Engineer - New College Grad 2026", { action: { status: "ignored", notes: "" } })) });
+  });
+  await page.goto("/");
+  await page.getByRole("article", { name: /^NVIDIA/ }).getByRole("button", { name: "Hide" }).click();
+  await expect(page.getByRole("dialog", { name: "Job hidden" })).toBeVisible();
+  await page.getByRole("textbox", { name: "Title word or phrase" }).fill("software");
+  await page.getByRole("button", { name: "Save feedback" }).click();
+  await expect(page.getByText("Choose a phrase from the title.")).toBeVisible();
+  await expect(page.getByRole("article", { name: /^NVIDIA/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Retry feedback" }).click();
+  await expect(page.getByRole("dialog", { name: "Job hidden" })).toHaveCount(0);
+  expect(attempts).toBe(2);
+});
+
+test("profile suggestions preview, mute, restore and apply", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  const suggestion = { term: "sales", support_count: 3, supporting_titles: ["Sales Intern", "Sales Engineer Intern", "Sales Graduate"], affected_count: 2, examples: ["Software Sales Intern"] };
+  let muted = false, applied = false;
+  await page.route("**/api/profile/suggestions", async (route) => {
+    if (route.request().method() === "POST") {
+      const { decision } = route.request().postDataJSON();
+      if (decision === "apply") applied = true;
+      else muted = decision === "mute";
+    }
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ suggestions: muted || applied ? [] : [suggestion], muted: muted ? ["sales"] : [] }) });
+  });
+  await page.goto("/#/settings");
+  await expect(page.getByText("This would remove 2 currently visible For you jobs.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Affected job examples" })).toContainText("Software Sales Intern");
+  await page.getByRole("button", { name: "Dismiss suggestion" }).click();
+  await expect(page.getByRole("button", { name: "Restore", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Restore", exact: true }).click();
+  await page.getByRole("button", { name: "Add exclusion" }).click();
+  await expect(page.getByText("Exclusion added to your profile.")).toBeVisible();
+  expect(applied).toBe(true);
+});
+
+test("link diagnostic distinguishes current rejection from missing history", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  let calls = 0;
+  await page.route("**/api/diagnostics/link", async (route) => {
+    calls++;
+    expect(route.request().postDataJSON().url).toBe("https://example.com/job");
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ url: "https://example.com/job", collected: false, summary: "Current rules; historical rejection is unknown.", checks: [
+      { stage: "collection", verdict: "unknown", explanation: "Not collected by your sources.", facts: {} },
+      { stage: "profile", verdict: "blocked", explanation: "Excluded title word: sales", facts: { title: "Sales Intern" } },
+    ] }) });
+  });
+  await page.goto("/#/settings");
+  await page.getByRole("textbox", { name: "Job link" }).fill("https://example.com/job");
+  await page.getByRole("button", { name: "Check link" }).click();
+  await expect(page.getByText("Current rules; historical rejection is unknown.")).toBeVisible();
+  await expect(page.getByText("Inconclusive", { exact: true })).toBeVisible();
+  await expect(page.getByText("Blocked", { exact: true })).toBeVisible();
+  expect(calls).toBe(1);
+});
+
+test("keyboard hide offers feedback and restores usable focus", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  await expect(page.getByRole("article", { name: /^Stripe/ })).toBeVisible();
+  await page.keyboard.press("i");
+  const dialog = page.getByRole("dialog", { name: "Job hidden" });
+  await expect(dialog).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Title word or phrase" })).toBeFocused();
+  for (const control of await dialog.locator("input,button").all()) {
+    const box = await control.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  }
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => document.activeElement !== document.body)).toBe(true);
 });

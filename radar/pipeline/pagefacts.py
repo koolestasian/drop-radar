@@ -141,7 +141,8 @@ def _workday(parts, url):
     if r is None or r.status_code != 200:
         return None
     info = (r.json() or {}).get("jobPostingInfo") or {}
-    return {"location": _join([info.get("location"), *(info.get("additionalLocations") or [])]),
+    return {"title": info.get("title") or "", "source": f"ats.workday.{m.group(1)}.{m.group(2)}/{path[0]}",
+            "location": _join([info.get("location"), *(info.get("additionalLocations") or [])]),
             "description": clean(info.get("jobDescription")),
             "posted": _date(info.get("startDate")), "deadline": "", "pay": pay_from_text(info.get("jobDescription"))}
 
@@ -163,7 +164,8 @@ def _greenhouse(parts, url):
               for x in d.get("pay_input_ranges") or [] if isinstance(x, dict)]
     ranges = [x for x in ranges if x]
     structured = {**ranges[0], "min": min(x["min"] for x in ranges), "max": max(x["max"] for x in ranges)} if ranges else None
-    return {"location": (d.get("location") or {}).get("name") or "", "company": d.get("company_name") or "",
+    return {"title": d.get("title") or "", "source": f"ats.greenhouse.{board}",
+            "location": (d.get("location") or {}).get("name") or "", "company": d.get("company_name") or "",
             "posted": _date(d.get("first_published") or d.get("updated_at")), "deadline": "",
             "description": clean(d.get("content")), "pay": structured or pay_from_text(d.get("content"))}
 
@@ -179,7 +181,8 @@ def _lever(parts, url):
     salary = d.get("salaryRange") or {}
     text = " ".join(str(x or "") for x in (d.get("salaryDescriptionPlain"), d.get("descriptionPlain"),
                                           *(l.get("content") for l in d.get("lists") or [] if isinstance(l, dict))))
-    return {"location": (d.get("categories") or {}).get("location") or "", "posted": _date(d.get("createdAt")),
+    return {"title": d.get("text") or "", "source": f"ats.lever.{path[0]}",
+            "location": (d.get("categories") or {}).get("location") or "", "posted": _date(d.get("createdAt")),
             "company": "", "deadline": "", "description": clean(text),
             "pay": make_pay(salary.get("min"), salary.get("max"), salary.get("currency"), period_of(salary.get("interval")))
             or pay_from_text(text)}
@@ -200,7 +203,8 @@ def _smartrecruiters(parts, url):
     comp = d.get("compensation") or {}
     sections = ((d.get("jobAd") or {}).get("sections") or {}).values()
     text = " ".join(str(s.get("text") or "") for s in sections if isinstance(s, dict))
-    return {"location": place, "company": (d.get("company") or {}).get("name") or "",
+    return {"title": d.get("name") or "", "source": f"ats.smartrecruiters.{path[0]}",
+            "location": place, "company": (d.get("company") or {}).get("name") or "",
             "posted": _date(d.get("releasedDate")), "deadline": "",
             "description": clean(text), "pay": make_pay(comp.get("min"), comp.get("max"), comp.get("currency"), period_of(comp.get("period")))
             or pay_from_text(text)}
@@ -262,7 +266,8 @@ def _from_posting(posting) -> dict:
         places.append("Remote")
     org = posting.get("hiringOrganization")
     org = org.get("name") if isinstance(org, dict) else org
-    return {"location": _join(places), "company": html.unescape(org).strip() if isinstance(org, str) else "",
+    return {"title": clean(posting.get("title")),
+            "location": _join(places), "company": html.unescape(org).strip() if isinstance(org, str) else "",
             "posted": _date(posting.get("datePosted")), "deadline": _date(posting.get("validThrough")),
             "description": clean(posting.get("description")), "pay": pay_from_json_ld(posting) or pay_from_text(posting.get("description"))}
 

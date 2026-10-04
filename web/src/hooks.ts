@@ -31,7 +31,12 @@ export function useSetStatus() {
     onError: (_err, _vars, context) => {
       for (const [key, data] of context?.snapshot ?? []) qc.setQueryData(key, data);
     },
-    onSuccess: (saved) => patchCachedOpportunity(qc, saved.id, () => saved),
+    onSuccess: (saved, variables) => {
+      patchCachedOpportunity(qc, saved.id, () => saved);
+      qc.invalidateQueries({ queryKey: ["profile-suggestions"] });
+      qc.invalidateQueries({ queryKey: ["summary"] });
+      if (variables.status === "ignored") window.dispatchEvent(new CustomEvent("radar:hide", { detail: saved }));
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: ["opportunities", "board"] }),
   });
 }

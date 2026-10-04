@@ -31,6 +31,11 @@ MIGRATIONS = (
        DROP TABLE actions;
        ALTER TABLE actions_new RENAME TO actions""",
     "ALTER TABLE accounts ADD COLUMN ntfy_topic TEXT",  # 4: an account's own phone-alert topic (NULL = alerts off)
+    """ALTER TABLE actions ADD COLUMN hide_term TEXT;
+       ALTER TABLE actions ADD COLUMN hide_term_at TEXT;
+       CREATE TABLE muted_profile_terms (
+           user_id TEXT NOT NULL, term TEXT NOT NULL, PRIMARY KEY (user_id, term)
+       )""",  # 5: explicit, per-user hide feedback (T16.6)
 )
 
 
@@ -321,7 +326,7 @@ class Store:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def set_action(self, opportunity_id, user_id, status=None, notes=None):
+    def set_action(self, opportunity_id, user_id, status=None, notes=None, hide_term=None):
         """Set one user's status and/or notes; None leaves that field as it is.
         user_id has no default, so no caller can write to someone else's row by omission."""
         with self.conn:
@@ -333,6 +338,12 @@ class Store:
                 {"id": opportunity_id, "user_id": user_id, "status": status, "notes": notes,
                  "now": _iso(utcnow())},
             )
+            if status is not None and status != "ignored":
+                self.conn.execute("UPDATE actions SET hide_term=NULL, hide_term_at=NULL WHERE opportunity_id=? AND user_id=?",
+                                  (opportunity_id, user_id))
+            elif hide_term is not None:
+                self.conn.execute("UPDATE actions SET hide_term=?, hide_term_at=? WHERE opportunity_id=? AND user_id=?",
+                                  (hide_term, _iso(utcnow()), opportunity_id, user_id))
 
     def get_enrichment(self, key):
         row = self.conn.execute("SELECT json FROM enrichment WHERE key = ?", (key,)).fetchone()

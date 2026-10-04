@@ -35,7 +35,7 @@ class ReaderTests(unittest.TestCase):
         with mock.patch.object(pf, "_robots_allows", return_value=True), \
              mock.patch.object(pf, "_get", return_value=response(body=ASHBY_HTML.encode())):
             facts = pf.fetch_facts("https://jobs.ashbyhq.com/bedrock-robotics/96a6423e")
-        self.assertEqual(facts, {"location": "San Francisco, California", "company": "Bedrock Robotics Inc",
+        self.assertEqual(facts, {"title": "2027 Internship Behavior ML Engineer", "location": "San Francisco, California", "company": "Bedrock Robotics Inc",
                                  "posted": "2026-10-02", "deadline": "", "description": "", "pay": None})
 
     def test_workday_detail_turns_a_count_into_the_real_places(self):

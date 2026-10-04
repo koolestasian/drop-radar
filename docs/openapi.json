@@ -3,6 +3,28 @@
     "schemas": {
       "Action": {
         "properties": {
+          "hide_term": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hide Term"
+          },
+          "hide_term_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hide Term At"
+          },
           "notes": {
             "title": "Notes",
             "type": "string"
@@ -22,6 +44,18 @@
       },
       "ActionPatch": {
         "properties": {
+          "hide_term": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hide Term"
+          },
           "notes": {
             "anyOf": [
               {
@@ -195,6 +229,42 @@
         "title": "Credentials",
         "type": "object"
       },
+      "DiagnosticCheck": {
+        "properties": {
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "facts": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Facts",
+            "type": "object"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "passed",
+              "blocked",
+              "unknown"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stage",
+          "verdict",
+          "explanation"
+        ],
+        "title": "DiagnosticCheck",
+        "type": "object"
+      },
       "FeedConfig": {
         "properties": {
           "kind": {
@@ -278,6 +348,37 @@
           "stories"
         ],
         "title": "InstagramRelay",
+        "type": "object"
+      },
+      "LinkDiagnostic": {
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/DiagnosticCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "collected": {
+            "title": "Collected",
+            "type": "boolean"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "collected",
+          "summary",
+          "checks"
+        ],
+        "title": "LinkDiagnostic",
         "type": "object"
       },
       "Login": {
@@ -657,6 +758,30 @@
         "title": "ProfileConfig",
         "type": "object"
       },
+      "ProfileSuggestions": {
+        "properties": {
+          "muted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Muted",
+            "type": "array"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/Suggestion"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "suggestions",
+          "muted"
+        ],
+        "title": "ProfileSuggestions",
+        "type": "object"
+      },
       "RepoConfig": {
         "properties": {
           "name": {
@@ -769,6 +894,70 @@
           "p95"
         ],
         "title": "SourceLatency",
+        "type": "object"
+      },
+      "Suggestion": {
+        "properties": {
+          "affected_count": {
+            "title": "Affected Count",
+            "type": "integer"
+          },
+          "examples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "support_count": {
+            "title": "Support Count",
+            "type": "integer"
+          },
+          "supporting_titles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Supporting Titles",
+            "type": "array"
+          },
+          "term": {
+            "title": "Term",
+            "type": "string"
+          }
+        },
+        "required": [
+          "term",
+          "support_count",
+          "supporting_titles",
+          "affected_count",
+          "examples"
+        ],
+        "title": "Suggestion",
+        "type": "object"
+      },
+      "SuggestionDecision": {
+        "properties": {
+          "decision": {
+            "enum": [
+              "apply",
+              "mute",
+              "restore"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "term": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Term",
+            "type": "string"
+          }
+        },
+        "required": [
+          "term",
+          "decision"
+        ],
+        "title": "SuggestionDecision",
         "type": "object"
       },
       "Summary": {
@@ -1376,6 +1565,56 @@
         "summary": "Discover Board"
       }
     },
+    "/api/diagnostics/link": {
+      "post": {
+        "operationId": "diagnose_link_api_diagnostics_link_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CareersURL"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkDiagnostic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Diagnose Link"
+      }
+    },
     "/api/instagram/relay": {
       "post": {
         "operationId": "relay_instagram_api_instagram_relay_post",
@@ -1971,6 +2210,94 @@
           }
         },
         "summary": "Update Opportunity"
+      }
+    },
+    "/api/profile/suggestions": {
+      "get": {
+        "operationId": "profile_suggestions_api_profile_suggestions_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSuggestions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Profile Suggestions"
+      },
+      "post": {
+        "operationId": "decide_suggestion_api_profile_suggestions_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestionDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileSuggestions"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Suggestion"
       }
     },
     "/api/sources/health": {

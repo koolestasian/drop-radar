@@ -2,6 +2,17 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.19.0 (2026-10-04)
+
+T16.6 adds optional title-phrase feedback after hiding a job. Three distinct hides
+within 30 days suggest a profile exclusion in Settings, with supporting jobs and
+an affected-job preview. Suggestions change the profile only when approved;
+dismissed terms stay muted until restored. Unhiding clears feedback and notes stay intact.
+
+Settings also explains a pasted job link using current filters and recorded evidence.
+Unknown links use guarded public posting previews without importing jobs, changing
+model budgets or sending alerts. Missing facts and historical decisions stay inconclusive.
+
 ## 0.18.1 (2026-10-04)
 
 Trading/trader alone now classifies as Finance rather than Quant. Quant requires explicit
