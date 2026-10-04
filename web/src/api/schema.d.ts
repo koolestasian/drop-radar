@@ -388,8 +388,6 @@ export interface components {
             postings: number;
             /** Slug */
             slug: string;
-            /** Tier */
-            tier: string;
         };
         /** CareersURL */
         CareersURL: {
@@ -410,12 +408,6 @@ export interface components {
              * @description board slug; workday: tenant.wdN/site
              */
             slug: string;
-            /**
-             * Tier
-             * @description S | A | B | C (S/A polled every 2 min)
-             * @default B
-             */
-            tier: string;
         };
         /** Counts */
         Counts: {
@@ -657,13 +649,6 @@ export interface components {
         };
         /** ProfileConfig */
         ProfileConfig: {
-            /**
-             * Company Tiers
-             * @default {}
-             */
-            company_tiers: {
-                [key: string]: string;
-            };
             /**
              * Exclude
              * @description any of these in the title rules it out

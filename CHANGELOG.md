@@ -2,6 +2,15 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.18.0 (2026-10-04; activation pending)
+
+T16.5 replaces manual company tiers with automatic CS-student ratings. Confident Jev and
+Haiku agreement sets the tier; other names use Haiku web search with cited evidence.
+Ratings refresh every 30 days within the shared Haiku daily budget. Failed ratings preserve
+the previous tier and retry after a day. Quant firms, frontier AI labs and big tech are S
+candidates. User actions still personalize prestige sorting. Settings no longer asks for a
+tier. Cached ratings set polling intervals, adjusted by each board's observed posting hours.
+
 ## 0.17.0 (2026-10-04)
 
 T16.3 pay extraction now uses Haiku when the fetched posting has no structured/regex pay.

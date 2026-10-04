@@ -24,12 +24,10 @@
   find-boards [--limit N] [--out FILE]
           ATS boards the stored apply links point at that no watchlist has, probed once each and written to a
           review file (T16 16.4); read-only: nothing is added to a watchlist or the db
-  calibrate-tiers
-          ask Jev and Haiku for a tier for every company the owner labelled S, A or C; print agreement per
-          confidence cutoff and the lowest gate reaching 80% within one tier (T16.5; needs TYPESAFE_API_KEY and
-          ANTHROPIC_API_KEY; writes nothing)
-  learn-tiers --gate G [--dry-run]
-          ask Jev about companies with no owner tier and no actions; cache guesses at or above confidence G
+  rate-tiers [--limit N] [--dry-run] [--out FILE]
+          rate every company with postings or on a watchlist that has no tier or one over 30 days old, for a
+          CS student (Jev + Haiku by name, Haiku with web search when they differ; T16.5). Needs TYPESAFE_API_KEY
+          and ANTHROPIC_API_KEY. Writes the tiers to the db unless --dry-run, and a review file either way
   openapi print the API schema; docs/openapi.json is this output (the web
           app's types are generated from it)
 """
@@ -72,10 +70,10 @@ def main(argv=None):
     boards = sub.add_parser("find-boards", parents=[db], help="probe boards the stored links point at that nobody watches")
     boards.add_argument("--limit", type=int, default=None, help="only probe this many boards (most-linked first)")
     boards.add_argument("--out", default="data/t16/16.4-board-queue.tsv", help="review file to write")
-    sub.add_parser("calibrate-tiers", parents=[db], help="compare Jev and Haiku tier guesses with the owner's labels")
-    learn = sub.add_parser("learn-tiers", parents=[db], help="cache Jev tier guesses for unlabelled companies")
-    learn.add_argument("--gate", type=float, required=True, help="lowest confidence to store (from calibrate-tiers)")
-    learn.add_argument("--dry-run", action="store_true", help="show the guesses; write nothing")
+    tiers = sub.add_parser("rate-tiers", parents=[db], help="rate companies S/A/B/C for a CS student")
+    tiers.add_argument("--limit", type=int, default=None, help="only rate this many companies")
+    tiers.add_argument("--dry-run", action="store_true", help="show the tiers; write nothing to the db")
+    tiers.add_argument("--out", default="data/t16/16.5-tiers.tsv", help="review file to write")
     sub.add_parser("openapi", help="print the API's OpenAPI schema as JSON")
     args = parser.parse_args(argv)
 
@@ -201,33 +199,22 @@ def main(argv=None):
         out.write_text("ats\tslug\tcompany\tstored_postings\tstatus\n" + "".join("\t".join(map(str, r)) + "\n" for r in ok))
         print(f"probed {len(found)} unwatched boards: {len(ok)} answer with open postings -> {out}; "
               f"{len(found) - len(ok)} did not (empty, unreadable or no source for that ATS)")
-    elif args.command in ("calibrate-tiers", "learn-tiers"):
+    elif args.command == "rate-tiers":
+        from collections import Counter
+        from pathlib import Path
+
         from radar.config import account_user, load_users
         from radar.pipeline import priority
 
         with Store(db_path) as store:
             users = (*load_users(None), *(account_user(r) for r in store.list_accounts()))
-            owner = {}  # canonical lower company -> tier the owner set (watchlist tier other than B, or a profile override)
-            for u in users:
-                owner.update({priority.canonical_company(c.name).lower(): c.tier for c in u.watchlist.companies if c.tier != "B"})
-                owner.update({priority.canonical_company(n).lower(): t for n, t in u.profile.company_tiers.items()})
-            names = {priority.canonical_company(c.name).lower(): c.name for u in users for c in u.watchlist.companies}
-            if args.command == "calibrate-tiers":
-                labels = {names.get(k, k): t for k, t in owner.items() if t in ("S", "A", "C") and k in names}
-                states = {c: priority.company_state(store, c) for c in labels}
-                for model, guess in (("jev", priority.rate(states)), ("haiku", priority.haiku_rate(states))):
-                    report = priority.agreement(labels, guess)
-                    print(f"{model}: {len(guess)} of {len(labels)} answered")
-                    for cutoff, answered, exact, within in report:
-                        print(f"  confidence >= {cutoff:.1f}: {answered:4d} answered, exact {exact}, within one tier {within}")
-                    print(f"  lowest gate reaching 80% within one tier: {priority.pick_gate(report)}")
-            else:
-                actioned = {priority.canonical_company(c).lower() for u in users for c in store.actioned_companies(u.id)}
-                todo = [n for k, n in names.items() if k not in owner and k not in actioned]
-                stored = priority.learn_tiers(store, todo, args.gate, dry_run=args.dry_run)
-                for company, (tier, confidence) in sorted(stored.items()):
-                    print(f"  {company:30.30} {tier} ({confidence:.2f})")
-                print(f"{'would cache' if args.dry_run else 'cached'} {len(stored)} guesses for {len(todo)} companies asked about")
+            todo = priority.stale(store, priority.company_names(store, users))[:args.limit]
+            rated = priority.refresh(store, todo, dry_run=args.dry_run)
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text("company\ttier\n" + "".join(f"{n}\t{t}\n" for n, t in sorted(rated.items())))
+        print(f"{'would rate' if args.dry_run else 'rated'} {len(rated)} of {len(todo)} companies "
+              f"({dict(Counter(rated.values()))}); unrated ones keep B and are retried -> {out}")
     elif args.command == "fix-stories":
         import asyncio
         import json

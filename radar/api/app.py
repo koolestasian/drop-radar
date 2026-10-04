@@ -40,7 +40,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
 from radar.pipeline import roles
 from radar.pipeline.pay_estimate import estimate_pay
-from radar.pipeline.priority import learned_ranks
+from radar.pipeline import priority
 from radar.api import auth, events
 from radar.api.bitindex import BitIndex, pill_counts
 from radar.api.models import (Action, ActionPatch, AuthResult, BoardDiscovery, CareersURL, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
@@ -52,14 +52,12 @@ from radar.store import Store
 from radar.logos import LogoResolver
 from radar.models import utcnow
 from radar.pipeline.filter import is_us_location
-from radar.pipeline.normalize import canonical_company
 from radar.pipeline.places import format_location
 from radar.pipeline.enrich import DEFAULT_DAILY_TOKEN_BUDGET
 from radar.sources.instagram import story_id
 from radar.stats import latency_by_source
 
 log = logging.getLogger(__name__)
-TIER_RANK = {"S": 3, "A": 2, "B": 1, "C": 0}
 HIDDEN_BY_DEFAULT = "ignored"  # a user's own ignored opportunities leave their feed unless asked for
 WEB_DIST = Path(__file__).resolve().parents[2] / "web" / "dist"
 
@@ -90,15 +88,6 @@ EDITED_HEADER = "# Edited through the API (radar.api); validated by radar.config
 def _has_terms(text, terms):
     """Every term starts a word somewhere: "ny" finds "New York, NY", not "Sunnyvale"."""
     return all(re.search(rf"(?<![a-z0-9]){re.escape(t)}", text, re.I) for t in terms)
-
-
-def _ranks(user, learned=None):
-    """Prestige per company for this user: watchlist tiers, overridden by profile.company_tiers.
-    B (the default rank) is left out unless an override says so. `learned` (T16.5: the user's
-    actions and cached Jev guesses) fills in only companies with no owner tier."""
-    tiers = {canonical_company(c.name).lower(): c.tier for c in user.watchlist.companies if c.tier != "B"}
-    tiers.update({canonical_company(n).lower(): t for n, t in user.profile.company_tiers.items()})
-    return {**(learned or {}), **{name: TIER_RANK[t] for name, t in tiers.items()}}
 
 
 def _atomic_write(path, text):
@@ -157,13 +146,20 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         log.error("scheduler stopped", exc_info=task.exception())
         crash_exit()
 
+    def tiers_updated():
+        runtime.apply_tiers()
+        rank_cache.clear()
+        cached.clear()
+
     @asynccontextmanager
     async def lifespan(app):
-        stop, task, logo_task = asyncio.Event(), None, None
+        stop, task, logo_task, tier_task = asyncio.Event(), None, None, None
         if getattr(runtime, "scheduler", None) is not None:
             task = asyncio.create_task(runtime.scheduler.run(stop))
             task.add_done_callback(_log_crash)
             logo_task = asyncio.create_task(logos.run(stop))  # production only: tests stay offline
+            tier_task = asyncio.create_task(priority.run(store, lambda: tuple(runtime.users.values()), stop,
+                                                         on_rated=tiers_updated))
             # ponytail: accounts build their view on their first request, not here: each is 15-30 s of CPU on the box
             warm = [u for u in getattr(runtime, "users", {}).values() if not store.is_account(u.id)] + [guest]
             threading.Thread(target=lambda: [index.safely(u, owned(u), refresh=False) for u in warm],
@@ -173,7 +169,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         finally:
             if task is not None:
                 stop.set()  # Scheduler.run drains in-flight fetches before returning
-                await asyncio.gather(task, logo_task, return_exceptions=True)
+                await asyncio.gather(task, logo_task, tier_task, return_exceptions=True)
             index.close()
 
     app = FastAPI(title="Drop Radar", lifespan=lifespan)
@@ -205,7 +201,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     def ranks_of(user):
         now = time.monotonic()
         if (hit := rank_cache.get(user.id)) is None or hit[0] is not user or now - hit[1] > 300:  # actions change learned ranks
-            hit = rank_cache[user.id] = (user, now, _ranks(user, learned_ranks(store, user.id)))
+            hit = rank_cache[user.id] = (user, now, priority.learned_ranks(store, user.id))
         return hit[2]
 
     summaries, counting = {}, {}  # user id -> (time, Summary); user id -> its recount in progress

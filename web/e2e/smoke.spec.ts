@@ -231,11 +231,11 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
         items_per_day: { [new Date().toISOString().slice(0, 10)]: 3 }, llm_tokens_today: 1200, llm_daily_budget: 200000 });
     if (path === "/api/config/profile")
       return json(route, { roles: ["software engineer"], keywords: ["intern", "new grad"], exclude: ["senior"], grad_year: 2027,
-        locations: ["Remote", "United States"], company_tiers: {} });
+        locations: ["Remote", "United States"] });
     if (path === "/api/config/watchlist/discover") {
       const body = req.postDataJSON();
       return body.url.includes("missing") ? json(route, { detail: "No supported board with open postings was found." }, 422)
-        : json(route, { name: "", ats: "ashby", slug: "acme", tier: "C", postings: 7 });
+        : json(route, { name: "", ats: "ashby", slug: "acme", postings: 7 });
     }
     if (path === "/api/config/watchlist" && req.method() === "PUT") {
       const body = JSON.parse(req.postData() ?? "{}");
@@ -245,7 +245,7 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
     }
     if (path === "/api/config/watchlist")
       return json(route, asAccount ? { companies: [], instagram: [], feeds: [], repos: [] }
-        : { companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe", tier: "S" }], instagram: [], feeds: [], repos: [] });
+        : { companies: [{ name: "Stripe", ats: "greenhouse", slug: "stripe" }], instagram: [], feeds: [], repos: [] });
     return json(route, { detail: "not found" }, 404);
   });
   return { publish: () => { published = true; } };

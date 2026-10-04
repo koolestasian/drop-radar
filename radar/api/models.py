@@ -14,7 +14,6 @@ class BoardDiscovery(BaseModel):
     name: str
     ats: str
     slug: str
-    tier: str
     postings: int
 
 
@@ -108,12 +107,11 @@ class InstagramRelay(BaseModel):
 
 
 # Config shapes mirror the YAML files; radar.config.parse_watchlist/parse_profile
-# still do the real validation (allowed ATS kinds, tiers, the Instagram cap...).
+# still do the real validation (allowed ATS kinds, the Instagram cap...).
 class CompanyConfig(BaseModel):
     name: str
     ats: str = Field(description="greenhouse | lever | ashby | smartrecruiters | workday")
     slug: str = Field(description="board slug; workday: tenant.wdN/site")
-    tier: str = Field("B", description="S | A | B | C (S/A polled every 2 min)")
 
 
 class InstagramConfig(BaseModel):
@@ -146,7 +144,6 @@ class ProfileConfig(BaseModel):
     exclude: list[str] = Field([], description="any of these in the title rules it out")
     grad_year: int | None = Field(None, description="target season year, e.g. 2027")
     locations: list[str] = []
-    company_tiers: dict[str, str] = {}
 
 
 class SourceHealth(BaseModel):

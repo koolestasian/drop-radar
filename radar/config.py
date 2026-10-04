@@ -13,7 +13,6 @@ CONFIG_DIR = Path(os.getenv("RADAR_CONFIG_DIR", "config"))
 ATS_KINDS = ("greenhouse", "lever", "ashby", "workable", "smartrecruiters", "workday",
              "oracle", "eightfold", "amazon", "google", "apple", "avature", "sitemap")
 FEED_KINDS = ("rss", "atom", "json", "html")
-TIERS = ("S", "A", "B", "C")
 
 
 @dataclass(frozen=True)
@@ -70,7 +69,6 @@ class Company:
     name: str
     ats: str
     slug: str
-    tier: str = "B"
 
 
 @dataclass(frozen=True)
@@ -106,7 +104,6 @@ class Profile:
     roles: tuple[str, ...] = ()
     grad_year: int | None = None
     locations: tuple[str, ...] = ()
-    company_tiers: dict = field(default_factory=dict)   # company name -> tier
     keywords: tuple[str, ...] = ()
     exclude: tuple[str, ...] = ()
 
@@ -199,7 +196,6 @@ def parse_watchlist(data: dict, path) -> Watchlist:
             name=_require_str(e, "name", where, path),
             ats=_choice(e.get("ats"), ATS_KINDS, "ats", where, path),
             slug=_require_str(e, "slug", where, path),
-            tier=_choice(e.get("tier", "B"), TIERS, "tier", where, path),
         ))
     accounts = []
     for i, raw in enumerate(_section(data, "instagram", path)):
@@ -245,16 +241,10 @@ def parse_profile(data: dict, path) -> Profile:
     if grad_year is not None and (isinstance(grad_year, bool) or not isinstance(grad_year, int)
                                   or not 2000 <= grad_year <= 2100):
         raise ConfigError(f"{path}: 'grad_year' must be a year like 2027, got {grad_year!r}")
-    tiers = data.get("company_tiers") or {}
-    if not isinstance(tiers, dict):
-        raise ConfigError(f"{path}: 'company_tiers' must be a mapping of company name to tier")
-    for name, tier in tiers.items():
-        _choice(tier, TIERS, "company_tiers", f"'{name}'", path)
     return Profile(
         roles=_str_list(data, "roles", path),
         grad_year=grad_year,
         locations=_str_list(data, "locations", path),
-        company_tiers=dict(tiers),
         keywords=_str_list(data, "keywords", path),
         exclude=_str_list(data, "exclude", path),
     )

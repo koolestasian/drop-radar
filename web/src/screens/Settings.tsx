@@ -18,7 +18,6 @@ const SLUG_HINT: Record<string, string> = {
   avature: "host/careers/SearchJobs",
   sitemap: "www.example.com/career-sitemap.xml",
 };
-const TIERS = ["S", "A", "B", "C"];
 // An account's extra companies: the boards where the server fixes the host, and its cap (keep both in step with radar/api/app.py).
 const ACCOUNT_ATS = ["greenhouse", "lever", "ashby", "smartrecruiters", "workday"];
 const MAX_EXTRA = 10;
@@ -144,11 +143,11 @@ function ProfileForm({ initial }: { initial: ProfileConfig }) {
 function WatchlistForm({ initial, account }: { initial: WatchlistConfig; account: boolean }) {
   const qc = useQueryClient();
   const [companies, setCompanies] = useState<CompanyConfig[]>(initial.companies ?? []);
-  const [draft, setDraft] = useState<CompanyConfig>({ name: "", ats: "greenhouse", slug: "", tier: "B" });
+  const [draft, setDraft] = useState<CompanyConfig>({ name: "", ats: "greenhouse", slug: "" });
   const [careersURL, setCareersURL] = useState("");
   const check = useMutation({
     mutationFn: (url: string) => api<BoardDiscovery>("/api/config/watchlist/discover", { method: "POST", body: JSON.stringify({ url }) }),
-    onSuccess: (board) => setDraft((previous) => ({ name: previous.name, ats: board.ats, slug: board.slug, tier: board.tier })),
+    onSuccess: (board) => setDraft((previous) => ({ name: previous.name, ats: board.ats, slug: board.slug })),
   });
   const save = useMutation({
     mutationFn: (body: WatchlistConfig) =>
@@ -180,7 +179,7 @@ function WatchlistForm({ initial, account }: { initial: WatchlistConfig; account
         {check.isSuccess && <p role="status" className="text-sm text-muted-foreground">Verified {check.data.ats} board · {check.data.postings} open postings. Nothing added yet.</p>}
       </form>
       <form
-        className="grid gap-2 sm:grid-cols-[1fr_9rem_1fr_5rem_auto]"
+        className="grid gap-2 sm:grid-cols-[1fr_9rem_1fr_auto]"
         onSubmit={(e) => {
           e.preventDefault();
           if (!draft.name.trim() || !draft.slug.trim()) return;
@@ -203,11 +202,6 @@ function WatchlistForm({ initial, account }: { initial: WatchlistConfig; account
           onChange={(e) => setDraft({ ...draft, slug: e.target.value })}
           className="h-11 text-base sm:h-9 sm:text-sm"
         />
-        <select name="tier" aria-label="Tier" value={draft.tier} onChange={(e) => setDraft({ ...draft, tier: e.target.value })} className={select}>
-          {TIERS.map((t) => (
-            <option key={t}>{t}</option>
-          ))}
-        </select>
         <Button type="submit" variant="outline" size="lg" className="sm:h-9" disabled={full}>Add</Button>
       </form>
       <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">
@@ -229,7 +223,6 @@ function WatchlistForm({ initial, account }: { initial: WatchlistConfig; account
             <span className="min-w-0 flex-1 truncate">
               <span className="font-medium">{c.name}</span> <span className="text-muted-foreground">{c.ats} · {c.slug}</span>
             </span>
-            <span className="stamp text-muted-foreground">tier {c.tier}</span>
             <Button variant="ghost" size="icon" aria-label={`Remove ${c.name}`} onClick={() => setCompanies(companies.filter((_, j) => j !== i))}>
               <X />
             </Button>

@@ -1,5 +1,4 @@
 import asyncio
-import dataclasses
 import json
 import tempfile
 import time
@@ -442,8 +441,8 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_prestige_sorts_by_tier_then_newest_posted_across_pages(self):
         users = directory().users
-        users["kevin"] = dataclasses.replace(users["kevin"], profile=dataclasses.replace(
-            PROFILES["kevin"], company_tiers={"Airbnb": "S", "Stripe": "C"}))
+        for company, tier in {"Airbnb": "S", "Stripe": "C"}.items():
+            self.store.set_enrichment("company_tier:" + company.lower(), {"tier": tier})
         app = create_app(self.store, SimpleNamespace(users=users, owned=OWNED, scheduler=None), tokens=TOKENS)
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
             seen, cursor = [], None

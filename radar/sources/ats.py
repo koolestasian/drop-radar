@@ -20,8 +20,6 @@ from radar.errors import SourceError
 from radar.models import Item
 from radar.sources.cadence import interval_for
 
-TIER_INTERVAL_S = {"S": 120.0, "A": 120.0, "B": 300.0, "C": 900.0}
-
 # Early-career terms, case-insensitive, word-ish boundaries. Runs before any
 # user's profile, so it is the union of every user's industry: the spec's CS
 # terms plus business/finance and university-hiring ones (a 2026-10-01 audit of
@@ -84,7 +82,7 @@ class AtsSource:
     def __init__(self, company):
         self.company = company
         self.name = f"ats.{self.kind}.{company.slug}"
-        self.interval_s = TIER_INTERVAL_S.get(company.tier, 300.0)
+        self.interval_s = 300.0  # the runtime sets it from the company's learned tier (radar.pipeline.priority)
         self.active_hours = None  # UTC hours this board posts in; the runtime fills it from stored history
 
     def interval_at(self, now) -> float:

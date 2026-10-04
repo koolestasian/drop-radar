@@ -93,17 +93,12 @@
           "slug": {
             "title": "Slug",
             "type": "string"
-          },
-          "tier": {
-            "title": "Tier",
-            "type": "string"
           }
         },
         "required": [
           "name",
           "ats",
           "slug",
-          "tier",
           "postings"
         ],
         "title": "BoardDiscovery",
@@ -138,12 +133,6 @@
           "slug": {
             "description": "board slug; workday: tenant.wdN/site",
             "title": "Slug",
-            "type": "string"
-          },
-          "tier": {
-            "default": "B",
-            "description": "S | A | B | C (S/A polled every 2 min)",
-            "title": "Tier",
             "type": "string"
           }
         },
@@ -617,14 +606,6 @@
       },
       "ProfileConfig": {
         "properties": {
-          "company_tiers": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "default": {},
-            "title": "Company Tiers",
-            "type": "object"
-          },
           "exclude": {
             "default": [],
             "description": "any of these in the title rules it out",

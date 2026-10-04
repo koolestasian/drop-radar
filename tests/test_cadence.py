@@ -53,7 +53,7 @@ class SchedulerUsesCadenceTests(unittest.IsolatedAsyncioTestCase):
     async def test_next_run_follows_the_hour(self):
         store = Store(Path(tempfile.mkdtemp()) / "radar.db")
         self.addCleanup(store.close)
-        source = AtsSource(Company(name="Acme", ats="greenhouse", slug="acme", tier="B"))
+        source = AtsSource(Company(name="Acme", ats="greenhouse", slug="acme"))
         source.active_hours = frozenset({14})
 
         async def no_items(ctx):

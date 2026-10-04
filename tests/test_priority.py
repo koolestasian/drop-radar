@@ -1,107 +1,151 @@
+import asyncio
 import tempfile
 import unittest
+from datetime import timedelta
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from radar.api.app import _ranks
-from radar.config import Company, Profile, User, Watchlist
-from radar.models import Item
+from radar.api.runtime import Runtime
+from radar.config import Company
+from radar.models import Item, utcnow
 from radar.pipeline import priority
+from radar.pipeline.enrich import _today
+from radar.sources.ats import AtsSource
 from radar.store import Store
 
 
-def answer(score, confidence):
-    return {"type": "score", "score": score, "confidence": confidence, "legend": {}, "probabilities": {}}
+def jev(tier="S", confidence=0.9):
+    def post(payload, key):
+        return {"answers": {qid: {"confidence": confidence, "probabilities": {
+            str(i): float(t == tier) for i, t in enumerate(priority.LEVELS)}} for qid in payload["state"]}}
+    return post
 
 
-class FakeJev:
-    """Stands in for the HTTP call: answers by company name."""
-
-    def __init__(self, answers):
-        self.answers, self.calls = answers, []
-
-    def __call__(self, payload, key):
-        self.calls.append((payload, key))
-        return {"model": "jev-1.13.0", "answers": {
-            qid: answer(*self.answers[q["instructions"]["company"]]) for qid, q in payload["questions"].items()}}
+def ask(prompt, web):
+    return ("TIER: S", 150, ["https://example.com/company"]) if web else ("S", 10, [])
 
 
 class PriorityTests(unittest.TestCase):
     def setUp(self):
         self.store = Store(Path(tempfile.mkdtemp()) / "radar.db")
         self.addCleanup(self.store.close)
-        priority._warned = False
+        priority._warned = set()
 
-    def learn(self, companies, jev, gate=0.7):
-        return priority.learn_tiers(self.store, companies, gate, key="k", post=jev)
+    def refresh(self, **kw):
+        return priority.refresh(self.store, ["Acme"], key="test", post=jev(), ask=ask, **kw)
 
-    def test_confident_guess_is_cached_with_provenance(self):
-        jev = FakeJev({"Acme": (2.9, 0.9)})
-        self.assertEqual(self.learn(["Acme"], jev), {"Acme": ("S", 0.9)})
+    def test_agreement_cached_and_charged(self):
+        calls = []
+        def agreed(prompt, web):
+            calls.append(web)
+            return ask(prompt, web)
+        self.assertEqual(priority.refresh(self.store, ["Acme"], key="test", post=jev(), ask=agreed), {"Acme": "S"})
+        self.assertEqual(calls, [False])
         cached = self.store.get_enrichment(priority.cache_key("Acme"))
-        self.assertEqual((cached["tier"], cached["source"], cached["model"], cached["confidence"]),
-                         ("S", "jev", "jev-1.13.0", 0.9))
-        self.assertIn("checked_at", cached)
+        self.assertEqual(cached["source"], "jev+haiku")
+        self.assertEqual(cached["haiku_model"], priority.HAIKU)
+        self.assertEqual(self.store.get_enrichment(f"llm_budget:{_today()}")["tokens"], 10)
+        self.assertEqual(priority.stale(self.store, ["Acme"]), [])
 
-    def test_below_the_gate_stores_nothing(self):
-        self.assertEqual(self.learn(["Acme"], FakeJev({"Acme": (2.9, 0.4)})), {})
-        self.assertIsNone(self.store.get_enrichment(priority.cache_key("Acme")))
+    def test_disagreement_or_low_confidence_uses_web(self):
+        for post in (jev("C"), jev("S", 0.3)):
+            calls = []
+            def search(prompt, web):
+                calls.append(web)
+                return ask(prompt, web)
+            rated = priority.rate(["Acme"], key="test", post=post, ask=search)
+            self.assertEqual(rated["Acme"]["source"], "haiku+web")
+            self.assertEqual(calls, [False, True])
 
-    def test_cached_company_is_not_asked_again(self):
-        jev = FakeJev({"Acme": (1.0, 0.9)})
-        self.learn(["Acme"], jev)
-        self.learn(["Acme"], jev)
-        self.assertEqual(len(jev.calls), 1)
+    def test_web_requires_cited_evidence_and_strict_final_line(self):
+        for response in ("S", "TIER: Sorry", "TIER: S extra"):
+            self.assertIsNone(priority.haiku_rate("Acme", web=True, ask=lambda *_: (response, 1, ["https://x.example"])))
+        self.assertIsNone(priority.haiku_rate("Acme", web=True, ask=lambda *_: ("TIER: S", 1, [])))
+        self.assertIsNone(priority.haiku_rate("Acme", ask=lambda *_: ("Sorry", 1, [])))
+
+    def test_malformed_jev_fails_open_per_company(self):
+        def malformed(payload, key):
+            answers = jev()(payload, key)["answers"]
+            answers["c0"]["probabilities"]["0"] = float("nan")
+            return {"answers": answers}
+        self.assertEqual(priority.jev_rate(["Bad", "Good"], key="test", post=malformed), {"Good": ("S", 0.9)})
+        self.assertEqual(priority.jev_rate(["Acme"], key=""), {})
+
+    def test_failure_keeps_existing_rating(self):
+        existing = {"tier": "A", "checked_at": "2020-01-01T00:00:00+00:00"}
+        self.store.set_enrichment(priority.cache_key("Acme"), existing)
+        def fail(*_):
+            raise ConnectionError("unavailable")
+        self.assertEqual(priority.refresh(self.store, ["Acme"], key="test", post=fail, ask=fail), {})
+        self.assertEqual(self.store.get_enrichment(priority.cache_key("Acme")), existing)
+
+    def test_failed_companies_wait_a_day_without_starving_new_names(self):
+        def fail(*_):
+            return "", 0, []
+        priority.refresh(self.store, ["Acme"], key="", ask=fail)
+        self.assertEqual(priority.stale(self.store, ["Acme", "New"]), ["New"])
+        self.assertEqual(priority.stale(self.store, ["Acme"], utcnow() + timedelta(days=2)), ["Acme"])
+
+    def test_old_rubric_is_refreshed_even_if_recent(self):
+        self.store.set_enrichment(priority.cache_key("Google"), {"tier": "A", "checked_at": utcnow().isoformat()})
+        self.assertEqual(priority.stale(self.store, ["Google"]), ["Google"])
 
     def test_dry_run_writes_nothing(self):
-        stored = priority.learn_tiers(self.store, ["Acme"], 0.7, key="k", post=FakeJev({"Acme": (0.0, 0.9)}), dry_run=True)
-        self.assertEqual(stored, {"Acme": ("C", 0.9)})
+        self.assertEqual(self.refresh(dry_run=True), {"Acme": "S"})
         self.assertIsNone(self.store.get_enrichment(priority.cache_key("Acme")))
+        self.assertIsNone(self.store.get_enrichment(f"llm_budget:{_today()}"))
 
-    def test_missing_key_transport_error_and_bad_answer_fail_open(self):
-        self.assertEqual(priority.learn_tiers(self.store, ["Acme"], 0.7, key=""), {})
+    def test_exhausted_shared_budget_makes_no_requests(self):
+        self.store.set_enrichment(f"llm_budget:{_today()}", {"tokens": priority.DEFAULT_DAILY_TOKEN_BUDGET})
+        with patch.object(priority, "rate") as rate:
+            self.assertEqual(self.refresh(), {})
+            rate.assert_not_called()
 
-        def boom(payload, key):
-            raise ConnectionError("down")
-        self.assertEqual(self.learn(["Acme"], boom), {})
-        self.assertEqual(self.learn(["Acme"], lambda payload, key: {"model": "m", "answers": {}}), {})
-        self.assertIsNone(self.store.get_enrichment(priority.cache_key("Acme")))
+    def test_no_allowance_for_web_skips_request(self):
+        calls = []
+        meter = priority._Meter(4096, lambda *args: calls.append(args))
+        self.assertEqual(meter("company", True), ("", 0, []))
+        self.assertEqual(calls, [])
 
-    def test_request_carries_public_postings_only(self):
-        self.store.upsert_item(Item(source="s", external_id="1", url="https://a/1", title="Intern", company="Acme",
-                                    location="NYC"))
-        opp = self.store.item_opportunity_id("s", "1")
-        self.store.set_action(opp, "kevin", status="Applied", notes="secret note")
-        jev = FakeJev({"Acme": (1.0, 0.9)})
-        self.learn(["Acme"], jev)
-        payload, key = jev.calls[0]
-        self.assertEqual(payload["model"], "jev-latest")
-        self.assertEqual(payload["state"], {"Acme": {"postings": [{"title": "Intern", "location": "NYC"}]}})
-        self.assertNotIn("secret", str(payload))
+    def test_stale_deduplicates_aliases_and_retries_invalid_cache(self):
+        now = utcnow()
+        self.store.set_enrichment(priority.cache_key("Acme"), {"tier": "S", "checked_at": (now - timedelta(days=31)).isoformat()})
+        self.store.set_enrichment(priority.cache_key("Beta"), {"tier": "Q", "checked_at": now.isoformat()})
+        self.assertEqual(priority.stale(self.store, ["Acme", "acme", "Beta", "New"], now), ["New", "Acme", "Beta"])
 
-    def test_actions_rank_a_company_up_and_beat_jev(self):
+    def test_only_company_names_leave_the_machine(self):
+        self.store.upsert_item(Item(source="s", external_id="1", url="https://a/1", title="Intern", company="Acme"))
+        self.store.set_action(self.store.item_opportunity_id("s", "1"), "kevin", status="Applied", notes="secret")
+        calls = []
+        def post(payload, key):
+            calls.append(payload)
+            return jev()(payload, key)
+        priority.refresh(self.store, ["Acme"], key="test", post=post, ask=ask)
+        self.assertEqual(calls[0]["state"], {"c0": "Acme"})
+        self.assertNotIn("secret", str(calls))
+
+    def test_actions_personalize_ranks_without_changing_company_tier(self):
         self.store.upsert_item(Item(source="s", external_id="1", url="https://a/1", title="Intern", company="Acme"))
         self.store.set_action(self.store.item_opportunity_id("s", "1"), "kevin", status="Applied")
-        self.store.set_enrichment(priority.cache_key("Acme"), {"tier": "C", "source": "jev"})
-        self.store.set_enrichment(priority.cache_key("Beta"), {"tier": "S", "source": "jev"})
-        ranks = priority.learned_ranks(self.store, "kevin")
-        self.assertEqual((ranks["acme"], ranks["beta"]), (2, 3))
-        self.assertEqual(priority.learned_ranks(self.store, "someone else")["acme"], 0)  # another user: Jev only
+        self.store.set_enrichment(priority.cache_key("Acme"), {"tier": "C"})
+        self.assertEqual(priority.learned_ranks(self.store, "kevin")["acme"], 2)
+        self.assertEqual(priority.learned_ranks(self.store, "other")["acme"], 0)
+        self.assertEqual(priority.tier_of(self.store, "Acme"), "C")
 
-    def test_owner_tier_always_wins(self):
-        user = User(id="kevin", watchlist=Watchlist(companies=(
-            Company("Acme", "greenhouse", "acme", tier="C"), Company("Beta", "greenhouse", "beta"))),
-            profile=Profile(company_tiers={"Gamma": "B"}))
-        learned = {"acme": 3, "beta": 3, "gamma": 3}
-        self.assertEqual(_ranks(user, learned), {"acme": 0, "beta": 3, "gamma": 1})
+    def test_runtime_applies_cached_poll_intervals(self):
+        source = AtsSource(Company("Acme", "greenhouse", "acme"))
+        runtime = SimpleNamespace(store=self.store, scheduler=SimpleNamespace(sources={source.name: source}))
+        for tier, interval in priority.TIER_INTERVAL_S.items():
+            self.store.set_enrichment(priority.cache_key("Acme"), {"tier": tier})
+            Runtime.apply_tiers(runtime)
+            self.assertEqual(source.interval_s, interval)
 
-    def test_agreement_and_gate(self):
-        labels = {"a": "S", "b": "A", "c": "C"}
-        guesses = {"a": ("S", 0.9, "m"), "b": ("S", 0.6, "m"), "c": ("A", 0.3, "m")}
-        report = priority.agreement(labels, guesses, cutoffs=(0.0, 0.5, 0.8))
-        self.assertEqual(report, [(0.0, 3, 1, 2), (0.5, 2, 1, 2), (0.8, 1, 1, 1)])
-        self.assertEqual(priority.pick_gate(report), 0.5)
-        self.assertIsNone(priority.pick_gate([(0.0, 3, 0, 1)]))
-
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_background_network_runs_off_thread_but_store_stays_on_owner_thread(self):
+        self.store.upsert_item(Item(source="s", external_id="1", url="https://a/1", title="Intern", company="Acme"))
+        async def check():
+            stop = asyncio.Event()
+            with patch.object(priority, "rate", return_value={"Acme": {"tier": "S", "source": "test"}}):
+                await priority.run(self.store, lambda: [], stop, on_rated=stop.set)
+            self.assertEqual(priority.tier_of(self.store, "Acme"), "S")
+        asyncio.run(asyncio.wait_for(check(), timeout=2))

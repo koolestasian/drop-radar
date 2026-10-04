@@ -24,8 +24,7 @@ NOW = datetime(2026, 10, 1, tzinfo=timezone.utc)
 KEVIN, FRIEND = "k" * 24, "f" * 24
 TOKENS = {KEVIN: "kevin", FRIEND: "friend"}
 PROFILES = {
-    "kevin": Profile(roles=("software engineer", "quant"), keywords=("intern", "new grad"),
-                     company_tiers={"Stripe": "S", "Citadel": "A", "Airbnb": "C"}),
+    "kevin": Profile(roles=("software engineer", "quant"), keywords=("intern", "new grad")),
     "friend": Profile(roles=("investment banking",), keywords=("summer analyst", "intern")),
 }
 OWNED = {"kevin": frozenset({"ats.greenhouse.stripe", "ats.greenhouse.airbnb", "ats.lever.citadel"}),
@@ -38,6 +37,8 @@ PLACES = ["New York, NY", "Toronto, ON, Canada", "", "London, UK", "Remote"]
 
 
 def seed_store(store, rng, n=90):
+    for company, tier in {"Stripe": "S", "Citadel": "A", "Airbnb": "C"}.items():
+        store.set_enrichment("company_tier:" + company.lower(), {"tier": tier})
     ids = []
     for k in range(n):
         posted = rng.choice([None, None, datetime(2026, 9, rng.randint(1, 30), tzinfo=timezone.utc),

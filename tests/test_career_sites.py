@@ -54,7 +54,7 @@ def ctx(http, cursor=None):
 
 def source(ats, slug):
     registry._import_source_modules()
-    return registry.FACTORIES[ats](Company(name="Acme", ats=ats, slug=slug, tier="B"), None)
+    return registry.FACTORIES[ats](Company(name="Acme", ats=ats, slug=slug), None)
 
 
 class WindowedContract:

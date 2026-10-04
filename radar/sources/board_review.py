@@ -80,7 +80,7 @@ def discover_url(url):
     for ats, slug in sorted(pairs):
         result = probe(Company("", ats, slug))
         if result["status"] == "ok":
-            found.append({"name": "", "ats": ats, "slug": slug, "tier": "C", "postings": result["postings"]})
+            found.append({"name": "", "ats": ats, "slug": slug, "postings": result["postings"]})
     if len(found) > 1:
         raise ValueError("Several boards are linked here. Paste the direct job-board URL.")
     if not found:

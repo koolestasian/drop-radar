@@ -28,7 +28,7 @@ def variants(company):
         if ats == "workday":
             continue  # a Workday tenant/site can't be inferred from a company name
         for slug in slugs[:3]:
-            candidate = Company(company.name, ats, slug, company.tier)
+            candidate = Company(company.name, ats, slug)
             if valid(candidate) and (ats, slug.lower()) != (company.ats, company.slug.lower()):
                 yield candidate
 

@@ -66,7 +66,7 @@ extraction model. First use is 16.5 priority, calibrated against Haiku before it
 | 16.2 | Delete `filter.py`'s location lists | **done, live** (5761717, deployed 2026-10-03 20:43 UTC) |
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from fetched page text via Haiku done (6006a83, 2026-10-04, v0.17.0): verified quote/amount/currency/period, shared daily budget, content cache, background calls, Gemini on API failure. Off-box sample: 4 model + 1 regex fills/20 blanks. Approved live backfill added 33/2,403 (31 Haiku + 2 structured/regex); owner stated pay 349 → 360. Owner-approved Codex cached-text completion added another 164 globally; owner feed now 412 stated. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
 | 16.4 | Self-growing watchlist + review queue | **done** (2026-10-04, this commit, v0.16.0): stored-link, YC and pinned aggregator queues; Settings careers URL detection; daily off-box repair/archive review queue |
-| 16.5 | Adaptive polling + learned priority | **code done offline** (2026-10-04); calibration, `learn-tiers` and live checks still to run, see PROGRESS.md (feeds T14) |
+| 16.5 | Adaptive polling + learned priority | **ready offline** (2026-10-04); automatic CS-student tiers verified with real providers; server key/cache activation and live checks pending (feeds T14) |
 | 16.6 | Learn from the user | todo |
 | 16.7 | Maintenance by agent | todo |
 | 16.8 | Company names from source data | todo |
@@ -248,63 +248,50 @@ archive timing, error resets and review-only behavior are covered by offline tes
 - **Self-repair:** a board that 404s gets slug variants tried across ATSes. A board with 0
   postings for 30 days is archived and logged.
 
-### 16.5 Adaptive polling + learned priority (feeds T14's priority push)
-- **The problem:** `TIER_INTERVAL_S` (`radar/sources/ats.py:22`) ties poll speed to a hand-set
-  S/A/B/C tier.
-- **Change:** learn each board's posting hours from its `first_seen` history. Get priority from a
-  Jev tier guess (cached on the company) plus the user's actions, with an override in Settings.
+### 16.5 Adaptive polling + automatic company tiers (feeds T14's priority push)
 
-**Two separate parts, built in this order:**
-1. **Adaptive polling (no model).** Plain stats on `first_seen` per board: the hours it posts,
-   how often. Poll faster in those hours, slower outside them. Keep `TIER_INTERVAL_S` as the
-   floor until history exists (fewer than ~10 postings means keep the tier interval).
-2. **Learned priority (Jev).** The ladder from "The pattern every slice follows":
-   - **Source fact:** an owner-set tier (watchlist `tier:` other than the default `B`,
-     `profile.company_tiers`, or the Settings override) always wins. Jev never overwrites it.
-   - **User actions:** a company the user has actioned before ranks up. Count actions per
-     company in SQL; no model needed for that part.
-   - **Jev:** only for companies with no owner tier and no action history. One Score question per
-     company, cached on the company with `source=jev`, the model version from the response,
-     `confidence` and `checked_at`. Below the confidence gate, store nothing and keep the current
-     tier (the fallback rung).
+The owner changed the tier definition on 2026-10-04: remove hand-set tiers and rate
+companies for a US CS student seeking software, ML or quant internships/new-grad roles.
+S includes quant trading firms, frontier AI labs, big tech and top-paying unicorns;
+A includes strong tech employers and growing AI companies; B is an ordinary engineering
+employer; C is staffing/outsourcing or little relevant engineering. Unknowns default to B.
 
-**Jev call** (TypeSafe's typed decision model, owner's go 2026-10-04):
-- `POST https://api.typesafe.ai/v1/systemone`, `Authorization: Bearer $TYPESAFE_API_KEY`,
-  `model: jev-latest`. Use the already-installed `httpx`/`requests`, not `typesafe-sdk`.
-- State: company name, its last ~10 posting titles and locations, plus any YC/Wikidata fact
-  already stored. Public data only: never send Notes, emails or action history.
-- Question: `{"tier": {"type": "score", "instructions": "How competitive and sought-after an
-  early-career role at this company is", "criteria": [C, B, A, S descriptions]}}`. The response
-  gives `score`, `confidence` and per-level `probabilities`.
-- Batch several companies' questions per request where the state allows. Expected cost is about
-  400 input tokens per company at $0.042/M, so under $0.05 for the whole watchlist.
-  Output is free.
-- Key: `~/.config/drop-radar/llm.env` on the Mac. Adding it to `radar.env` on the box needs the
-  owner's yes.
-- Fail open: missing key, timeout or malformed answer means keep the current tier and log once.
+- Jev (`jev-latest`, TypeSafe SystemOne) and Haiku (`claude-haiku-4-5`) each rate the
+  company name. Use Jev's most likely level from valid probabilities, not its weighted score.
+  Agreement is accepted when Jev confidence is at least 0.6. Otherwise Haiku searches the
+  web once; accept only an exact final tier and cited HTTPS sources. No private user data
+  leaves the machine.
+- Cache in `enrichment` under `company_tier:<canonical name>`, with rubric version,
+  providers, confidence when applicable, web citations when applicable and UTC checked_at.
+  Refresh after 30 days; old-rubric entries are stale. Failed companies retry after a day,
+  keeping their last tier. Canonical aliases share one cache entry.
+- Rate at most 10 stale companies per hourly pass. Haiku shares the existing 200,000-token
+  daily budget with Stories/pay; reserve before yielding and refund unused tokens afterward.
+  Web search is capped at one use per request. Transport failures retain their reservation.
+  Jev sends at most one ten-company batch per background pass. SQLite stays on its owning
+  thread while network requests run in a worker. Shutdown stops between companies.
+- `python -m radar rate-tiers [--limit N] [--dry-run] [--out FILE]` writes a TSV review.
+  Dry runs make model requests within the remaining allowance but do not update SQLite.
+- Manual watchlist/profile/API/Settings tiers are removed. Old live YAML still loads and
+  loses these ignored fields on its next normal save. User actions personalize sorting to
+  at least A without changing a company's cached rating.
+- Cached tiers set baseline polling: S 120 s, A/B 300 s, C 900 s. Posting-hour history from
+  non-seed `items.seen_at` halves the interval during active UTC hours and triples it outside
+  those hours (60–1,800 s bounds); insufficient history keeps the baseline. History refreshes
+  at startup/config reload. Newly rated companies immediately invalidate API ranking caches.
 
-**Calibrate before turning it on** (the same way 16.3 ran its bake-off):
-- **Labels:** `config/watchlist.yaml` has 11 S, 27 A, 213 C and 565 B. B is the default, so treat
-  only S/A/C as real labels (251 rows). The friend's watchlist adds 13 S/A.
-- **Run:** ask Jev about the labeled companies offline. Report exact and within-one-tier agreement
-  at each confidence cutoff. Run Haiku on the same set as the baseline.
-- **Pick:** the lowest confidence gate that reaches at least 80% within-one-tier agreement.
-  With fewer than about 100 labels in a class, treat that class's gate as rough.
-- **Ship rule:** if Jev doesn't beat Haiku at the gate, use Haiku through the 16.3 budget path
-  and record why here.
+**Off-box verification, 2026-10-04:** Google, Microsoft, OpenAI, Jane Street and Five Rings
+Capital rated S; Capital One B; Perplexity A, all by confident Jev/Haiku agreement. A fictitious
+company stayed unrated. Forced web fallback rated Perplexity A with public citations; a
+Five Rings search did not produce a valid cited result and preserved its previous S.
+Artifacts: `data/t16/16.5-auto-tier-{sample,web-sample}.json` (local-only).
 
-**Tests (offline):** a fake transport for owner-tier precedence, action-history precedence,
-confidence gate, fail-open and cache reuse. No network in `tests/`.
-
-**Verify live:**
-- Compare the owner's feed order before and after: top 20 companies, how many changed tier, every
-  S/A change listed.
-- Poll counts per board per hour, before and after.
-- No change to row IDs, Actioned?/Notes or alert timing.
-
-**Later Jev candidates (not this slice):**
-- T14 push gate: one yes/no question per new drop, "worth a phone push now?", confidence-gated.
-- 16.6 "why didn't I see this?": for title-vocabulary misses that `_TITLE_RE` can't match.
+**Activation remaining:** back up the server env/database, install TYPESAFE_API_KEY from
+`~/.config/drop-radar/llm.env`, deploy and populate the automatic tier cache after the owner's
+approval for the env/database writes. Before/after checks must compare owner feed IDs,
+counts, top 20 companies, every distinct company tier and S/A change, Notes/Actioned? and
+poll counts per board per hour. These live checks have not run; the code sample does not
+prove production ranking or posting-hour behavior.
 
 ### 16.6 Learn from the user
 - **Profile suggestions:** after repeated dismissals with the same pattern, suggest a profile edit

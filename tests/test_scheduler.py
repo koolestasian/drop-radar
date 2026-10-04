@@ -349,7 +349,7 @@ class RegistryTests(unittest.TestCase):
             return FakeSource(f"ats.greenhouse.{company.slug}", 120)
 
         watchlist = Watchlist(
-            companies=(Company("Stripe", "greenhouse", "stripe", "S"), Company("Ramp", "ashby", "ramp")),
+            companies=(Company("Stripe", "greenhouse", "stripe"), Company("Ramp", "ashby", "ramp")),
             instagram=(InstagramAccount("zero2sudo"),),
         )
         sources, skipped = registry.build_sources(watchlist)
