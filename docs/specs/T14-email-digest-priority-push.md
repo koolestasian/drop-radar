@@ -26,7 +26,8 @@ Retire GitHub Actions as the notification path (user, 2026-10-02):
 ## Design (defaults)
 - **Push:** add a priority gate to the one shared predicate (`should_alert` /
   `visible_to`), so the feed and the phone still agree on "what alerts this user".
-  Keep claim-before-send.
+  Keep claim-before-send. The priority list comes from 16.5's learned priority. An optional Jev
+  yes/no "worth a push now?" with a confidence gate can tighten it later (see T16 16.5).
 - **Digest:** one hourly scheduler job per user.
   - Content: New (non-backfill) matches first seen since that user's last digest,
     grouped by company: title, location, posted-ago, link.

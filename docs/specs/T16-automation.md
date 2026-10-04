@@ -42,6 +42,10 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 | Haiku | Never took more than 3.5 s. |
 | GPT-5.6 Luna | Untested: the OpenAI account has no credit. |
 
+**Jev (TypeSafe), added 2026-10-04 (owner's go):** used only for typed decisions (pick a tier,
+answer yes/no), never for extraction, because it can't quote text back. Haiku stays the
+extraction model. First use is 16.5 priority, calibrated against Haiku before it goes on.
+
 **Haiku gotchas:**
 - Haiku 4.5 **rejects the `effort` parameter** (it returns a 400).
 - The legacy extractor (`radar/legacy/llm_extraction.py`) sends `effort` and the
@@ -238,8 +242,60 @@ archive timing, error resets and review-only behavior are covered by offline tes
 ### 16.5 Adaptive polling + learned priority (feeds T14's priority push)
 - **The problem:** `TIER_INTERVAL_S` (`radar/sources/ats.py:22`) ties poll speed to a hand-set
   S/A/B/C tier.
-- **Change:** learn each board's posting hours from its `first_seen` history. Get priority from an
-  LLM prestige guess (cached on the company) plus the user's actions, with an override in Settings.
+- **Change:** learn each board's posting hours from its `first_seen` history. Get priority from a
+  Jev tier guess (cached on the company) plus the user's actions, with an override in Settings.
+
+**Two separate parts, built in this order:**
+1. **Adaptive polling (no model).** Plain stats on `first_seen` per board: the hours it posts,
+   how often. Poll faster in those hours, slower outside them. Keep `TIER_INTERVAL_S` as the
+   floor until history exists (fewer than ~10 postings means keep the tier interval).
+2. **Learned priority (Jev).** The ladder from "The pattern every slice follows":
+   - **Source fact:** an owner-set tier (watchlist `tier:` other than the default `B`,
+     `profile.company_tiers`, or the Settings override) always wins. Jev never overwrites it.
+   - **User actions:** a company the user has actioned before ranks up. Count actions per
+     company in SQL; no model needed for that part.
+   - **Jev:** only for companies with no owner tier and no action history. One Score question per
+     company, cached on the company with `source=jev`, the model version from the response,
+     `confidence` and `checked_at`. Below the confidence gate, store nothing and keep the current
+     tier (the fallback rung).
+
+**Jev call** (TypeSafe's typed decision model, owner's go 2026-10-04):
+- `POST https://api.typesafe.ai/v1/systemone`, `Authorization: Bearer $TYPESAFE_API_KEY`,
+  `model: jev-latest`. Use the already-installed `httpx`/`requests`, not `typesafe-sdk`.
+- State: company name, its last ~10 posting titles and locations, plus any YC/Wikidata fact
+  already stored. Public data only: never send Notes, emails or action history.
+- Question: `{"tier": {"type": "score", "instructions": "How competitive and sought-after an
+  early-career role at this company is", "criteria": [C, B, A, S descriptions]}}`. The response
+  gives `score`, `confidence` and per-level `probabilities`.
+- Batch several companies' questions per request where the state allows. Expected cost is about
+  400 input tokens per company at $0.042/M, so under $0.05 for the whole watchlist.
+  Output is free.
+- Key: `~/.config/drop-radar/llm.env` on the Mac. Adding it to `radar.env` on the box needs the
+  owner's yes.
+- Fail open: missing key, timeout or malformed answer means keep the current tier and log once.
+
+**Calibrate before turning it on** (the same way 16.3 ran its bake-off):
+- **Labels:** `config/watchlist.yaml` has 11 S, 27 A, 213 C and 565 B. B is the default, so treat
+  only S/A/C as real labels (251 rows). The friend's watchlist adds 13 S/A.
+- **Run:** ask Jev about the labeled companies offline. Report exact and within-one-tier agreement
+  at each confidence cutoff. Run Haiku on the same set as the baseline.
+- **Pick:** the lowest confidence gate that reaches at least 80% within-one-tier agreement.
+  With fewer than about 100 labels in a class, treat that class's gate as rough.
+- **Ship rule:** if Jev doesn't beat Haiku at the gate, use Haiku through the 16.3 budget path
+  and record why here.
+
+**Tests (offline):** a fake transport for owner-tier precedence, action-history precedence,
+confidence gate, fail-open and cache reuse. No network in `tests/`.
+
+**Verify live:**
+- Compare the owner's feed order before and after: top 20 companies, how many changed tier, every
+  S/A change listed.
+- Poll counts per board per hour, before and after.
+- No change to row IDs, Actioned?/Notes or alert timing.
+
+**Later Jev candidates (not this slice):**
+- T14 push gate: one yes/no question per new drop, "worth a phone push now?", confidence-gated.
+- 16.6 "why didn't I see this?": for title-vocabulary misses that `_TITLE_RE` can't match.
 
 ### 16.6 Learn from the user
 - **Profile suggestions:** after repeated dismissals with the same pattern, suggest a profile edit
@@ -264,7 +320,8 @@ archive timing, error resets and review-only behavior are covered by offline tes
 - **Code:** `radar/logos.py`, `radar/pipeline/pagefacts.py` (`_get`, `_robots_allows`,
   `org_site`), `radar/pipeline/enrich.py`, `radar/legacy/llm_extraction.py`,
   `radar/pipeline/filter.py`, `radar/pipeline/places.py`, `radar/sources/discover.py`,
-  `radar/sources/ats.py`.
+  `radar/sources/ats.py`, `radar/config.py` (`tier`, `company_tiers`).
+- **Jev docs:** <https://docs.typesafe.ai/introduction/quickstart> and <https://docs.typesafe.ai/api>.
 - **Release:** each slice merged to `main` gets a `CHANGELOG.md` entry, a `web/package.json` bump
   and a `vX.Y.Z` tag (owner's rule). 16.1 isn't merged yet; the branch is
   `claude/trim-drop-radar-plan`.
