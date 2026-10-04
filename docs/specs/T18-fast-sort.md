@@ -100,6 +100,15 @@ highest position. Each attribute is one Python `int` used as a bitset, with bit 
 - **Counts:** `counts()` equals the paged totals per scope, level and track.
 - **Inserts:** an out-of-order insert, a new twin, an unhide and a write from another connection (data_version) all show up correctly.
 
+### Scripts (in `docs/specs/`, run from the repo root)
+- `t18-dump.py <matches|all>`: pages the live API on the box and prints one JSON line per row. It reads the token from
+  `radar.env` and never prints it. Run it through ssh:
+  `ssh drop-radar "sudo -u radar bash -c 'set -a && . /opt/radar/radar.env && set +a && python3 - all'" < docs/specs/t18-dump.py > DIR/all.jsonl`.
+  Do the same for `matches`. Keep the dumps out of git (scratchpad).
+- `t18-bitmap-bench.py DIR`: the benchmark above, run on those two dumps.
+- `t18-timing-probe.py`: times 12 filter combinations through the live API (same ssh pattern, no argument). Run it before
+  and after the change.
+
 ### Verify on the box
 - Dump For you and Everything (all pages) through the API before and after the change: identical ids and order.
 - Timing probe: every filter combination under 20 ms end to end on the server; `/summary` under 20 ms after startup.
