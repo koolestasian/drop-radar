@@ -262,6 +262,14 @@ class Store:
             "SELECT count(*) FROM items WHERE source = ? AND seen_at >= ?", (source, _iso(since))
         ).fetchone()[0]
 
+    def first_seen_times(self, source):
+        """When this source first saw each posting it has emitted, oldest first. Seed
+        and closed-signal items are left out: neither says when a posting appeared."""
+        rows = self.conn.execute(
+            "SELECT seen_at FROM items WHERE source = ? AND coalesce(json_extract(raw, '$.seed'), 0) = 0 "
+            "AND coalesce(json_extract(raw, '$.closed'), 0) = 0 ORDER BY seen_at", (source,)).fetchall()
+        return [datetime.fromisoformat(row[0]) for row in rows]
+
     # ---- alerts, actions, enrichment -------------------------------------
 
     def record_alert(self, opportunity_id, channel, sent_at=None):
@@ -336,6 +344,18 @@ class Store:
                 "INSERT INTO enrichment (key, json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET json = excluded.json",
                 (key, json.dumps(value, ensure_ascii=False, sort_keys=True)),
             )
+
+    def enrichment_with_prefix(self, prefix):
+        """[(key, value)] for every enrichment key starting with `prefix`."""
+        rows = self.conn.execute("SELECT key, json FROM enrichment WHERE substr(key, 1, ?) = ?",
+                                 (len(prefix), prefix)).fetchall()
+        return [(row[0], json.loads(row[1])) for row in rows]
+
+    def actioned_companies(self, user_id):
+        """Company names of the opportunities this user has given a status."""
+        return [row[0] for row in self.conn.execute(
+            "SELECT DISTINCT o.company FROM actions a JOIN opportunities o ON o.id = a.opportunity_id "
+            "WHERE a.user_id = ? AND a.status != '' AND o.company != ''", (user_id,))]
 
     # ---- accounts, credentials, sessions ------------------------------------
 

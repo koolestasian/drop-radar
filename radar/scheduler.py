@@ -239,11 +239,16 @@ class Scheduler:
         else:
             self.store.save_source_state(
                 name, last_ok=self.clock.now(), fail_count=0, last_error=None,
-                next_run=self._schedule(name, source.interval_s), **ctx.pending,
+                next_run=self._schedule(name, self._interval(source)), **ctx.pending,
             )
             log.info("source %s: %d item(s)", name, len(items))
         finally:
             self.running.pop(name, None)
+
+    def _interval(self, source):
+        """The base delay now: a source may vary it by time of day (adaptive polling)."""
+        at = getattr(source, "interval_at", None)
+        return at(self.clock.now()) if at else source.interval_s
 
     def _failed(self, source, exc):
         name = source.name
@@ -257,7 +262,8 @@ class Scheduler:
         elif kind == "blocked":
             delay = BLOCKED_COOLDOWN_S
         else:
-            delay = max(source.interval_s, min(source.interval_s * 2 ** fails, BACKOFF_CAP_S))
+            base = self._interval(source)
+            delay = max(base, min(base * 2 ** fails, BACKOFF_CAP_S))
         self.store.save_source_state(name, fail_count=fails, last_error=error[:500],
                                      next_run=self._schedule(name, delay))
         log.warning("source %s failed (%d in a row): %s", name, fails, error)

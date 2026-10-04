@@ -40,6 +40,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
 from radar.pipeline import roles
 from radar.pipeline.pay_estimate import estimate_pay
+from radar.pipeline.priority import learned_ranks
 from radar.api import auth, events
 from radar.api.bitindex import BitIndex, pill_counts
 from radar.api.models import (Action, ActionPatch, AuthResult, BoardDiscovery, CareersURL, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
@@ -91,12 +92,13 @@ def _has_terms(text, terms):
     return all(re.search(rf"(?<![a-z0-9]){re.escape(t)}", text, re.I) for t in terms)
 
 
-def _ranks(user):
+def _ranks(user, learned=None):
     """Prestige per company for this user: watchlist tiers, overridden by profile.company_tiers.
-    B (the default rank) is left out unless an override says so."""
+    B (the default rank) is left out unless an override says so. `learned` (T16.5: the user's
+    actions and cached Jev guesses) fills in only companies with no owner tier."""
     tiers = {canonical_company(c.name).lower(): c.tier for c in user.watchlist.companies if c.tier != "B"}
     tiers.update({canonical_company(n).lower(): t for n, t in user.profile.company_tiers.items()})
-    return {name: TIER_RANK[t] for name, t in tiers.items()}
+    return {**(learned or {}), **{name: TIER_RANK[t] for name, t in tiers.items()}}
 
 
 def _atomic_write(path, text):
@@ -198,12 +200,13 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         return user
 
     guest = User(id=GUEST_ID, watchlist=Watchlist(), profile=load_guest_profile())
-    rank_cache = {}  # user id -> (the User it was computed for, ranks): 800 company names are canonicalised per call
+    rank_cache = {}  # user id -> (the User it was computed for, when, ranks): 800 company names are canonicalised per call
 
     def ranks_of(user):
-        if (hit := rank_cache.get(user.id)) is None or hit[0] is not user:
-            hit = rank_cache[user.id] = (user, _ranks(user))
-        return hit[1]
+        now = time.monotonic()
+        if (hit := rank_cache.get(user.id)) is None or hit[0] is not user or now - hit[1] > 300:  # actions change learned ranks
+            hit = rank_cache[user.id] = (user, now, _ranks(user, learned_ranks(store, user.id)))
+        return hit[2]
 
     summaries, counting = {}, {}  # user id -> (time, Summary); user id -> its recount in progress
     hits, cached = {}, {}  # guest rate limit (ip -> request times) and 60s response cache (query -> (time, page))

@@ -16,6 +16,7 @@ from radar.errors import ConfigError
 from radar.pipeline import Pipeline
 from radar.pipeline.normalize import canonical_url
 from radar.scheduler import Scheduler
+from radar.sources.cadence import active_hours
 from radar.sources.registry import build_sources_for_users
 
 OWNER_KEY = "meta:owner"  # kept in the enrichment table, the store's generic key -> json
@@ -90,6 +91,9 @@ class Runtime:
         else:
             self.scheduler.reload(sources)
             self.pipeline.alerter = alerter
+        for source in self.scheduler.sources.values():  # adaptive polling: learn each ATS board's posting hours
+            if hasattr(source, "active_hours"):
+                source.active_hours = active_hours(self.store.first_seen_times(source.name))
         for user_id, profile in profiles.items():
             dispatchers[user_id].profile = profile
         self.users = {u.id: u for u in users}
