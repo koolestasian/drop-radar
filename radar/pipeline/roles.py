@@ -22,7 +22,6 @@ TRACKS = [
 ]
 _TRACKS = [(name, re.compile(rx, re.I)) for name, rx in TRACKS]
 TRACK_NAMES = [name for name, _ in TRACKS] + ["Other"]
-LEVELS = ("intern", "new_grad")
 
 
 def level(title, category=""):

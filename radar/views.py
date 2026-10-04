@@ -1,8 +1,7 @@
-"""Generated views of the store: the tracker workbook and LATEST.md, via the legacy writers."""
+"""The store as legacy tracker rows (what migrate_legacy imports and the tests round-trip)."""
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from radar.legacy import opportunity_monitor as legacy
 
@@ -50,13 +49,3 @@ def legacy_records(store, user_id):
         records.append({header: record[header] for header in legacy.HEADERS})
     return records
 
-
-def write_views(store, user_id, tracker=None, latest=None, now=None):
-    """Regenerate the workbook and LATEST.md from the store, for one user (it's one spreadsheet)."""
-    tracker = Path(tracker or legacy.TRACKER_PATH)
-    records = legacy_records(store, user_id)
-    if not tracker.exists():
-        legacy.create_workbook(tracker)
-    legacy.save_records(records, tracker)
-    legacy.write_live_view(records, now, Path(latest or legacy.LIVE_VIEW_PATH))
-    return len(records)

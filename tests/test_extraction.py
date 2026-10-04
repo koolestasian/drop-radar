@@ -1,6 +1,6 @@
 import tempfile
 import unittest
-from datetime import date, datetime, timezone
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -147,7 +147,6 @@ class WorkbookTests(unittest.TestCase):
         root = Path(self.temp.name)
         for name, value in (
             ("TRACKER_PATH", root / "tracker.xlsx"),
-            ("LIVE_VIEW_PATH", root / "LATEST.md"),
         ):
             patcher = patch.object(monitor, name, value)
             patcher.start()
@@ -167,34 +166,6 @@ class WorkbookTests(unittest.TestCase):
         self.assertEqual(values["Actioned"], 1)
         self.assertEqual(values["High priority"], 1)
         self.assertEqual(values["Expired / closed"], 1)
-
-    def test_live_view_groups_rows(self):
-        now = datetime(2026, 9, 30, 12, tzinfo=timezone.utc)
-        monitor.write_live_view([
-            record(ID="new", Opportunity="Fresh | Role", Priority="High", Status="Open",
-                   **{"First Seen": "2026-09-29T10:00:00+00:00",
-                      "Application / Registration Link": "https://example.com/jobs/1"}),
-            record(ID="soon", Opportunity="Closing Role", Deadline="2026-10-03", Status="New",
-                   **{"First Seen": "2026-09-01T10:00:00+00:00"}),
-            record(ID="old", Opportunity="Old Role", Status="New",
-                   **{"First Seen": "2026-08-01T10:00:00+00:00",
-                      "Instagram Source": "https://www.instagram.com/stories/zero2sudo/"}),
-            record(ID="done", Opportunity="Done Role", **{"Actioned?": "Yes",
-                                                          "First Seen": "2026-09-29T10:00:00+00:00"}),
-            record(ID="gone", Opportunity="Gone Role", Status="Expired",
-                   **{"First Seen": "2026-09-01T10:00:00+00:00"}),
-        ], now=now)
-        text = monitor.LIVE_VIEW_PATH.read_text()
-        sections = text.split("## ")
-        self.assertIn("Closing Role", next(s for s in sections if s.startswith("⏰")))
-        self.assertIn("Oct 3 (3d)", text)
-        self.assertIn("Fresh \\| Role", next(s for s in sections if s.startswith("🆕")))
-        self.assertIn("🔥", text)
-        self.assertIn("Old Role", next(s for s in sections if s.startswith("📋")))
-        self.assertIn("(expired)", text)
-        self.assertIn("<summary><b>✅ Actioned (1)</b></summary>", text)
-        self.assertIn("<summary><b>⌛ Past deadline or posting closed (1)</b></summary>", text)
-        self.assertIn("[Apply ↗](<https://example.com/jobs/1>)", text)
 
 
 if __name__ == "__main__":
