@@ -115,7 +115,7 @@ export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus?: (s
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">Added without a profile match (for example, from All jobs).</p>
+          <p className="text-sm text-muted-foreground">Added without a profile match (for example, from Everything).</p>
         )}
       </section>
 
@@ -145,7 +145,7 @@ export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus?: (s
         {onStatus && (
           <Button variant="outline" onClick={() => onStatus(status === "ignored" ? "new" : "ignored")}>
             {status === "ignored" ? <Eye data-icon="inline-start" /> : <EyeOff data-icon="inline-start" />}
-            {status === "ignored" ? "Unignore" : "Ignore"}
+            {status === "ignored" ? "Unhide" : "Hide"}
           </Button>
         )}
         {shareStatus && (

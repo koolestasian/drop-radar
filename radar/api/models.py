@@ -49,6 +49,17 @@ class Page(BaseModel):
     next_cursor: str | None
 
 
+class Counts(BaseModel):
+    total: int
+    level: dict[str, int] = Field(description="intern / new_grad -> how many")
+    track: dict[str, int] = Field(description="track name -> how many")
+
+
+class Summary(BaseModel):
+    you: Counts = Field(description="what matches your profile (the For you scope)")
+    everything: Counts = Field(description="everything your sources found (the Everything scope)")
+
+
 class ActionPatch(BaseModel):
     status: ActionStatus | None = None
     notes: str | None = Field(default=None, max_length=10_000)

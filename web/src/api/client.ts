@@ -4,6 +4,7 @@ type S = components["schemas"];
 export type Opportunity = S["Opportunity"];
 export type Page = S["Page"];
 export type Me = S["Me"];
+export type Summary = S["Summary"];
 export type Metrics = S["Metrics"];
 export type SourceHealth = S["SourceHealth"];
 export type ProfileConfig = S["ProfileConfig"];

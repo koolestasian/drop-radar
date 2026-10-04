@@ -136,7 +136,9 @@ function oppRaw(id: string, company: string, title: string, extra: Partial<Opp> 
     status: "New", first_seen: new Date(Date.now() - 3_600_000).toISOString(),
     published_at: new Date(Date.now() - 3_900_000).toISOString(), category: "Internship", role_track: "", season: "Summer 2027",
     sources: ["ats.greenhouse.stripe"], match: { ok: true, reasons: ["role: 'software engineer'", "level: 'intern'"] },
-    action: null, backfill: false, ...extra,
+    action: null, backfill: false,
+    level: /intern|co-op/i.test(title) ? "intern" : /grad/i.test(title) ? "new_grad" : "",
+    track: /quant/i.test(title) ? "Quant" : /hardware/i.test(title) ? "Hardware" : /design/i.test(title) ? "Design" : "Software", ...extra,
   };
 }
 
@@ -195,6 +197,13 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
         contentType: "text/event-stream",
         body: `retry: 5000\n\nevent: opportunity\ndata: ${JSON.stringify(fresh)}\n\n`,
       });
+    if (path === "/api/opportunities/summary") {
+      const counts = (rows: Opp[]) => ({ total: rows.length,
+        level: { intern: rows.filter((o) => o.level === "intern").length, new_grad: rows.filter((o) => o.level === "new_grad").length },
+        track: Object.fromEntries([...new Set(rows.map((o) => String(o.track)))].map((t) => [t, rows.filter((o) => o.track === t).length])) });
+      const rows = state.filter((o) => o.action?.status !== "ignored");
+      return json(route, { you: counts(rows), everything: counts(rows) });
+    }
     if (path === "/api/opportunities") {
       const action = url.searchParams.get("action");
       const all = published && !state.includes(fresh) ? [fresh, ...state] : state;
@@ -202,7 +211,9 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
         ? all.filter((o) => (o.action?.status ?? "new") === action)
         : all.filter((o) => o.action?.status !== "ignored");
       const backfill = url.searchParams.get("backfill");
-      return json(route, { items: backfill ? items.filter((o) => String(o.backfill) === backfill) : items, next_cursor: null });
+      const [level, track] = [url.searchParams.get("level"), url.searchParams.get("track")];
+      const shown = items.filter((o) => (!backfill || String(o.backfill) === backfill) && (!level || o.level === level) && (!track || o.track === track));
+      return json(route, { items: shown, next_cursor: null });
     }
     const m = path.match(/^\/api\/opportunities\/(.+)$/);
     if (m && req.method() === "PATCH") {
@@ -245,15 +256,17 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   await page.getByLabel("Your access token").fill(TOKEN);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
+  // a busy day lands on the drops: the New pill is on, and the header says how many since the last visit
+  await expect(page.getByRole("button", { name: "New 2" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("article")).toHaveCount(2);
-  await expect(page.getByRole("heading", { name: "2 new roles" })).toBeVisible();
+  await expect(page.getByText(/2 new since/)).toBeVisible();
   await expect(page.getByRole("article", { name: /^Stripe/ }).getByText("due in 2d")).toBeVisible();
-  // posted (by the employer) and found (by us) are two different clocks
+  // one date per card: when the employer posted it
   await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("San Francisco, CA · posted 1h ago");
-  await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("found 1h ago");
+  await expect(page.getByRole("article", { name: /^Stripe/ })).not.toContainText("found");
   await expect(page.getByRole("article", { name: /^NVIDIA/ })).toContainText("posted <1d ago"); // date only: whole days
-  await expect(page.getByRole("region", { name: "Internships" }).getByRole("article")).toContainText("Stripe");
-  await expect(page.getByRole("region", { name: "New grad" }).getByRole("article")).toContainText("NVIDIA");
+  await expect(page.getByRole("article", { name: /^Stripe/ })).toContainText("Intern"); // the level is a badge, not a section
+  await expect(page.getByRole("article", { name: /^NVIDIA/ })).toContainText("New grad");
   await page.screenshot({ path: `test-results/feed-${info.project.name}.png`, fullPage: true });
 
   mock.publish();
@@ -261,10 +274,11 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   await expect(page.getByRole("article").first()).toContainText("Ramp");
   await expect(page.getByRole("button", { name: /new drop/ })).toHaveCount(0);
 
-  await page.getByRole("radio", { name: "All matches" }).click(); // new and already-open alike
+  await page.getByRole("button", { name: /^New \d/ }).click(); // off: new and already-open alike
   await expect(page.getByRole("article")).toHaveCount(4);
   await expect(page.getByRole("article", { name: /^Airbnb/ })).toBeVisible();
-  await page.getByRole("radio", { name: "New", exact: true }).click();
+  expect(page.url()).toContain("new=0");
+  await page.getByRole("button", { name: /^New \d/ }).click();
 
   await page.getByRole("article").first().getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("article").first().getByRole("button", { name: "Saved" })).toBeVisible();
@@ -274,15 +288,15 @@ test("sign in, catch a live drop, save it, move it along the board", async ({ pa
   await expect(page.getByText("role: 'software engineer'")).toBeVisible();
   await page.keyboard.press("Escape"); // closes the phone sheet; harmless beside the desktop pane
 
-  await page.getByRole("link", { name: /Board/ }).last().click();
+  await page.getByRole("link", { name: /Tracker/ }).last().click();
   const saved = page.getByLabel("Saved column");
   await expect(saved.getByRole("article")).toContainText("Ramp");
   await saved.getByLabel(/Status for/).selectOption("applied");
   await expect(page.getByLabel("Applied column").getByRole("article")).toContainText("Ramp");
   await page.screenshot({ path: `test-results/board-${info.project.name}.png`, fullPage: true });
 
-  for (const screen of ["feed", "jobs", "board", "sources", "settings"]) {
-    await page.goto(`/#/${screen}`);
+  for (const screen of ["jobs", "tracker", "sources", "settings"]) {
+    await page.goto(screen === "jobs" ? "/#/jobs?scope=you" : `/#/${screen}`);
     await page.reload();
     await expect(page.locator("main").first()).toBeVisible();
     await page.waitForLoadState("networkidle");
@@ -307,7 +321,7 @@ test("dark mode renders", async ({ page }, info) => {
   await page.screenshot({ path: `test-results/feed-dark-${info.project.name}.png`, fullPage: true });
 });
 
-test("an empty New feed points at all matches, without a live-drop button", async ({ page }) => {
+test("a quiet day greys out New and shows the normal list, without a live-drop button", async ({ page }) => {
   await mockApi(page);
   await page.route("**/api/opportunities?*", (route) => route.fulfill({
     contentType: "application/json",
@@ -317,12 +331,28 @@ test("an empty New feed points at all matches, without a live-drop button", asyn
   await page.route("**/api/stream", (route) => route.fulfill({ contentType: "text/event-stream", body: "retry: 5000\n\n" }));
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
   await page.goto("/");
-  await expect(page.getByText("No new roles yet")).toBeVisible();
-  await page.getByRole("button", { name: "See all matches" }).click();
+  await expect(page.getByRole("button", { name: "New 0" })).toBeDisabled(); // no empty New screen to land on
   await expect(page.getByRole("article")).toHaveCount(1);
   await expect(page.getByRole("article")).toContainText("Stripe");
+  await expect(page.getByRole("article")).not.toHaveClass(/bg-stock-fresh/); // a backfilled role is never yellow
   await expect(page.getByRole("button", { name: /new drop/ })).toHaveCount(0);
 });
+
+// Stripe and NVIDIA were found an hour ago, Airbnb two hours ago.
+for (const [visit, newOnes] of [[30, []], [90, ["Stripe", "NVIDIA"]], [150, ["Stripe", "NVIDIA", "Airbnb: Software Engineer Intern"]]] as const) {
+  test(`a role found after the last visit (${visit} minutes ago) is New; one found before it is not`, async ({ page }) => {
+    await page.addInitScript((m) => localStorage.setItem("radar.lastVisit", new Date(Date.now() - m * 60_000).toISOString()), visit);
+    await mockApi(page, [opp("before", "Airbnb", "Software Engineer Intern", { first_seen: new Date(Date.now() - 2 * 3600_000).toISOString() })]);
+    await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+    await page.goto("/#/jobs?scope=you&new=0");
+    await expect(page.getByRole("article")).toHaveCount(4);
+    for (const name of ["Stripe", "NVIDIA", "Airbnb: Software Engineer Intern"]) {
+      const card = page.getByRole("article", { name: new RegExp(`^${name}`) });
+      if ((newOnes as readonly string[]).includes(name)) await expect(card).toHaveClass(/bg-stock-fresh/);
+      else await expect(card).not.toHaveClass(/bg-stock-fresh/);
+    }
+  });
+}
 
 test("a populated feed reconciles missed drops and shows disabled phone alerts", async ({ page }) => {
   await mockApi(page);
@@ -383,7 +413,7 @@ test("a #token= link signs the device in and leaves the address bar", async ({ p
   expect(await page.evaluate(() => localStorage.getItem("radar.token"))).toBe(TOKEN);
 });
 
-test("a logo that fails to load becomes a letter; filters and sort reach the server; All jobs has everything", async ({ page }) => {
+test("a logo that fails to load becomes a letter; filters and sort reach the server; Everything has everything", async ({ page }) => {
   await mockApi(page);
   // Google's "no icon": a 16px globe with status 404, which the browser still draws
   await page.route("**/s2/favicons**", (route) => route.fulfill({ status: 404, contentType: "image/png", body: GLOBE })); // registered last, wins
@@ -396,7 +426,7 @@ test("a logo that fails to load becomes a letter; filters and sort reach the ser
   await expect(stripe.getByText("S", { exact: true })).toBeVisible();
 
   await page.getByLabel("Search role or company").fill("intern");
-  await page.getByRole("button", { name: /^Filters/ }).click(); // location, sort and the switches live in one sheet
+  await page.getByRole("button", { name: /^(More|Filters)/ }).click(); // location, sort and the switches live in one sheet
   await page.getByRole("switch", { name: /US only/ }).click();
   await expect.poll(() => asked.some((u) => u.searchParams.get("us_only") === "true")).toBe(true);
   await page.getByLabel("Location").fill("san francisco");
@@ -405,13 +435,14 @@ test("a logo that fails to load becomes a letter; filters and sort reach the ser
   await expect.poll(() => asked.some((u) => u.searchParams.get("sort") === "prestige")).toBe(true);
   await page.getByRole("button", { name: "Show results" }).click();
 
-  await page.getByRole("link", { name: /All jobs/ }).last().click();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("jobs");
-  await expect(page.getByRole("radio", { name: "All matches" })).toHaveCount(0); // no profile tabs here
+  await page.getByRole("button", { name: /^New \d/ }).click(); // off, so the scope switch is the only difference
+  await page.getByRole("radio", { name: "Everything" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Jobs");
   await expect.poll(() => asked.some((u) => u.searchParams.get("include") === "all" && !u.searchParams.has("backfill"))).toBe(true);
+  expect(page.url()).toContain("scope=all");
 });
 
-test("the same role posted in several places is one row; track chips narrow the feed", async ({ page }, info) => {
+test("the same role posted in several places is one row; the pills narrow the list and survive a reload", async ({ page }, info) => {
   await mockApi(page, [
     opp("n1", "Nokia", "AI R&D Engineer Co-op", { location: "Murray Hill, NJ" }),
     opp("n2", "Nokia", "AI R&D Engineer Co-op", { location: "Dallas, TX" }),
@@ -424,16 +455,65 @@ test("the same role posted in several places is one row; track chips narrow the 
   await page.goto("/");
   await page.screenshot({ path: `test-results/grouped-${info.project.name}.png`, fullPage: true });
   await expect(page.getByRole("article")).toHaveCount(6); // Stripe, NVIDIA, Nokia once, Jane Street, Apple, Figma
-  // a long row of track chips scrolls inside itself; it must not widen the page
   const width = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
   expect(width[0], "feed scrolls sideways").toBeLessThanOrEqual(width[1]);
   await page.getByRole("button", { name: "+2 more postings of this role" }).click();
   await expect(page.getByRole("article")).toHaveCount(8);
   await expect(page.getByRole("article", { name: /^Nokia/ }).nth(2)).toContainText("Sunnyvale, CA");
 
-  await page.getByRole("radiogroup", { name: "Track" }).getByRole("radio", { name: /^Quant/ }).click();
+  // on a phone the pills live in the Filters drawer
+  const phone = info.project.name === "phone";
+  const asked: URL[] = [];
+  page.on("request", (r) => { if (r.url().includes("/api/opportunities?")) asked.push(new URL(r.url())); });
+  if (phone) await page.getByRole("button", { name: /^Filters/ }).click();
+  await page.getByLabel("Track", { exact: true }).selectOption("Quant");
+  await expect.poll(() => asked.some((u) => u.searchParams.get("track") === "Quant")).toBe(true);
+  expect(page.url()).toContain("track=Quant");
+  if (phone) await page.getByRole("button", { name: "Show results" }).click();
   await expect(page.getByRole("article")).toHaveCount(1);
   await expect(page.getByRole("article")).toContainText("Jane Street");
+
+  await page.reload(); // the filter is in the address
+  await expect(page.getByRole("article")).toHaveCount(1);
+  await expect(page.getByRole("article")).toContainText("Jane Street");
+  if (phone) await page.getByRole("button", { name: /^Filters/ }).click();
+  await page.getByLabel("Level", { exact: true }).selectOption("new_grad");
+  await expect.poll(() => asked.some((u) => u.searchParams.get("level") === "new_grad" && u.searchParams.get("track") === "Quant")).toBe(true);
+  await page.getByLabel("Posted", { exact: true }).selectOption("7");
+  await expect.poll(() => asked.some((u) => u.searchParams.get("posted_within") === "7")).toBe(true);
+  if (phone) await page.getByRole("button", { name: "Show results" }).click();
+  await page.goBack(); // back undoes the last choice
+  await expect.poll(() => page.url()).not.toContain("posted=7");
+});
+
+test("old links land in the right place: #/feed is For you, a bare #/jobs is Everything, #/board is the Tracker", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  const asked: URL[] = [];
+  page.on("request", (r) => { if (r.url().includes("/api/opportunities?")) asked.push(new URL(r.url())); });
+  await page.goto("/#/feed");
+  await expect.poll(() => page.url()).toContain("#/jobs?scope=you");
+  await expect(page.getByRole("radio", { name: "For you" })).toBeChecked();
+  await page.goto("/#/jobs");
+  await page.reload();
+  await expect(page.getByRole("radio", { name: "Everything" })).toBeChecked();
+  await expect.poll(() => asked.some((u) => u.searchParams.get("include") === "all")).toBe(true);
+  await page.goto("/#/board");
+  await expect(page.getByText("Your board is empty")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Tracker/ }).first()).toHaveAttribute("aria-current", "page");
+});
+
+test("hiding a role sends it to Tracker > Hidden, where it can be unhidden", async ({ page }) => {
+  await mockApi(page);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  await page.getByRole("article", { name: /^NVIDIA/ }).getByRole("button", { name: "Hide" }).click();
+  await expect(page.getByRole("article", { name: /^NVIDIA/ })).toHaveCount(0);
+  await page.getByRole("link", { name: /Tracker/ }).last().click();
+  await page.getByText(/^Hidden \(1\)/).click();
+  await expect(page.getByText("NVIDIA", { exact: false }).first()).toBeVisible();
+  await page.getByRole("button", { name: /^Unhide/ }).click();
+  await expect(page.getByText("Your board is empty")).toBeVisible(); // nothing saved, nothing hidden
 });
 
 test("a new user gets the welcome explainer once; the work model shows only when the posting says it", async ({ page }) => {
@@ -524,12 +604,12 @@ test("a visitor without a token browses read-only and is sent to sign in for the
   await expect(page.getByRole("article", { name: /^Stripe/ })).toBeVisible();
   await expect(page.getByText("You are browsing as a guest")).toBeVisible();
   await expect(page.getByRole("button", { name: "Save" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Ignore" })).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "Main" }).filter({ visible: true }).getByRole("link", { name: /Board|Sources|Settings/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Hide" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Main" }).filter({ visible: true }).getByRole("link", { name: /Tracker|Sources|Settings/ })).toHaveCount(0);
   await page.getByRole("article", { name: /^Stripe/ }).getByRole("button", { name: /Software Engineer/ }).click();
   await expect(page.getByText("to save this role, keep notes and get alerts").first()).toBeVisible();
   await page.keyboard.press("s"); // the save shortcut does nothing for a guest
-  await page.goto("/#/board");
+  await page.goto("/#/tracker");
   await expect(page.getByText("That part of Drop Radar is for signed-in users")).toBeVisible();
   await page.getByRole("button", { name: "Keep browsing as a guest" }).click();
   await expect(page.getByRole("article", { name: /^Stripe/ })).toBeVisible();

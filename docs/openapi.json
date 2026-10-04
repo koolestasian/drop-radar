@@ -107,6 +107,37 @@
         "title": "CompanyConfig",
         "type": "object"
       },
+      "Counts": {
+        "properties": {
+          "level": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "intern / new_grad -> how many",
+            "title": "Level",
+            "type": "object"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "track": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "track name -> how many",
+            "title": "Track",
+            "type": "object"
+          }
+        },
+        "required": [
+          "total",
+          "level",
+          "track"
+        ],
+        "title": "Counts",
+        "type": "object"
+      },
       "Credentials": {
         "properties": {
           "password": {
@@ -709,6 +740,24 @@
           "p95"
         ],
         "title": "SourceLatency",
+        "type": "object"
+      },
+      "Summary": {
+        "properties": {
+          "everything": {
+            "$ref": "#/components/schemas/Counts",
+            "description": "everything your sources found (the Everything scope)"
+          },
+          "you": {
+            "$ref": "#/components/schemas/Counts",
+            "description": "what matches your profile (the For you scope)"
+          }
+        },
+        "required": [
+          "you",
+          "everything"
+        ],
+        "title": "Summary",
         "type": "object"
       },
       "ValidationError": {
@@ -1696,6 +1745,47 @@
           }
         },
         "summary": "List Opportunities"
+      }
+    },
+    "/api/opportunities/summary": {
+      "get": {
+        "description": "The numbers behind the Jobs header and filter pills, over everything the list would show.",
+        "operationId": "summary_api_opportunities_summary_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Summary"
       }
     },
     "/api/opportunities/{opp_id}": {

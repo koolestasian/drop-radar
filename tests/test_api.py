@@ -240,6 +240,21 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         self.store.save_opportunity(self.ids["swe"], first_seen=T0, published_at=datetime(2026, 9, 30, tzinfo=timezone.utc))
         self.assertEqual(await self.ids_of(KEVIN, include="all", posted_within=1), self.names("swe"))  # date-only: Sep 30 is 1 day back
 
+    async def test_the_summary_counts_exactly_what_the_list_shows(self):
+        for token, who in ((KEVIN, "kevin"), (FRIEND, "friend")):
+            body = (await self.get("/api/opportunities/summary", token)).json()
+            for scope, include in (("you", "matches"), ("everything", "all")):
+                with self.subTest(who=who, scope=scope):
+                    shown = (await self.get("/api/opportunities", token, include=include)).json()["items"]
+                    counts = body[scope]
+                    self.assertEqual(counts["total"], len(shown))
+                    for lvl in ("intern", "new_grad"):
+                        self.assertEqual(counts["level"].get(lvl, 0), sum(o["level"] == lvl for o in shown))
+                    for name in {o["track"] for o in shown}:
+                        self.assertEqual(counts["track"][name], sum(o["track"] == name for o in shown))
+        guest = (await self.guest_get("/api/opportunities/summary")).json()
+        self.assertEqual(guest["everything"]["total"], 4)
+
     async def test_phone_configuration_exposes_only_this_users_subscription(self):
         runtime = directory()
         runtime.pipeline = SimpleNamespace(alerter=MultiUserAlertDispatcher({

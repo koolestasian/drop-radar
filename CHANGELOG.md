@@ -2,11 +2,17 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
-## 0.14.0 (in progress)
+## 0.14.0 (2026-10-04)
 
-One Jobs screen instead of Feed / New / All matches / All jobs (T17, `docs/specs/T17-feed-redesign.md`). Built in slices; this entry grows with each.
+**One Jobs screen** replaces Feed, New, All matches and All jobs (T17, `docs/specs/T17-feed-redesign.md`). The nav is Jobs, Tracker, Sources, Settings; a guest sees only Jobs.
 
-- **17.1 server-side level and track.** `/api/opportunities` takes `level=intern|new_grad`, `track=<name>` and `posted_within=<days>`, and every item carries `level` and `track`, so the web no longer classifies the 30 rows it happens to have loaded. The rules live in `radar/pipeline/roles.py`. Two misses are fixed: "2027 Grads" and "Early Careers" titles now count as new grad (13 of the owner's 1,558 matches, 77 of all 11,396 jobs); no track changed.
+- **Scope and filters.** A For you / Everything switch, a search box, and pills for New, Level, Track and Posted; Location, US only, Closing soon, Drops only and Sort sit under More (Filters on a phone, where every pill moves into that drawer). The list is flat, newest posted first; level is a badge on the card, not a section. Filters live in the address (`#/jobs?scope=all&level=intern&track=Software`), so reloads, the back button and shared links keep them. `#/feed` opens For you, a bare `#/jobs` (the old All jobs) opens Everything, `#/board` opens the Tracker.
+- **One meaning of "new".** New is a drop (found after its source was already watched) that arrived after your last visit on this device. The yellow card, the New pill and the "N new since Fri 9:46 PM" header line all mean that; it replaces the old 3-hour rule. On a busy day Jobs opens with New selected; on a quiet day the New pill is greyed out and the normal list shows. The "N new drops" pill moved to the Jobs nav item.
+- **One date per card:** when the employer posted it, or "found" when the posting gives none. Found and the lag stay in the detail pane. "Newest found" is gone from Sort (the API keeps `sort=found`).
+- **Tracker** (the old Board) has a collapsed Hidden list; "Ignored" is now "Hidden" everywhere, and the Ignored switch left Filters.
+- **Server-side level, track, posted_within.** `/api/opportunities` takes `level=intern|new_grad`, `track=<name>` and `posted_within=<days>`, and every item carries `level` and `track`; the web no longer classifies the 30 rows it has loaded. Rules live in `radar/pipeline/roles.py`. Fixed two misses: "2027 Grads" and "Early Careers" now count as new grad (13 of the owner's 1,558 matches, 77 of 11,396 jobs); no track changed.
+- **`GET /api/opportunities/summary`** returns counts for For you and Everything, per level and per track (cached 60 s per user). It feeds the header line and the pill counts, which are exact because they are not computed over a page.
+- 435 backend tests, 58 e2e tests (29 checks on desktop and phone).
 
 ## 0.13.1 (2026-10-04)
 

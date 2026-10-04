@@ -15,9 +15,11 @@ export const STATUS_LABEL: Record<string, string> = {
   interview: "Interview",
   offer: "Offer",
   rejected: "Rejected",
-  ignored: "Ignored",
+  ignored: "Hidden",
   actioned: "Actioned",
 };
+
+export const LEVEL_LABEL: Record<string, string> = { intern: "Intern", new_grad: "New grad" };
 
 /** "ats.greenhouse.stripe" -> "Greenhouse"; "instagram.zero2sudo" -> "@zero2sudo". */
 export function sourceLabel(source: string): string {

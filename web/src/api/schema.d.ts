@@ -236,6 +236,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/opportunities/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summary
+         * @description The numbers behind the Jobs header and filter pills, over everything the list would show.
+         */
+        get: operations["summary_api_opportunities_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/opportunities/{opp_id}": {
         parameters: {
             query?: never;
@@ -358,6 +378,25 @@ export interface components {
              * @default B
              */
             tier: string;
+        };
+        /** Counts */
+        Counts: {
+            /**
+             * Level
+             * @description intern / new_grad -> how many
+             */
+            level: {
+                [key: string]: number;
+            };
+            /** Total */
+            total: number;
+            /**
+             * Track
+             * @description track name -> how many
+             */
+            track: {
+                [key: string]: number;
+            };
         };
         /** Credentials */
         Credentials: {
@@ -663,6 +702,13 @@ export interface components {
             p95: number;
             /** Source */
             source: string;
+        };
+        /** Summary */
+        Summary: {
+            /** @description everything your sources found (the Everything scope) */
+            everything: components["schemas"]["Counts"];
+            /** @description what matches your profile (the For you scope) */
+            you: components["schemas"]["Counts"];
         };
         /** ValidationError */
         ValidationError: {
@@ -1208,6 +1254,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summary_api_opportunities_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Summary"];
                 };
             };
             /** @description Validation Error */

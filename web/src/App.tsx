@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { Activity, BellOff, CircleUser, Inbox, KanbanSquare, List, LogOut, Moon, Sun, Settings as SettingsIcon, type LucideIcon } from "lucide-react";
+import { Activity, BellOff, CircleUser, KanbanSquare, List, LogOut, Moon, Sun, Settings as SettingsIcon, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import { api, authHeaders, setUnauthorizedHandler, token, type Me, type Opportunity } from "./api/client";
 import { openStream, type StreamStatus } from "./api/stream";
@@ -18,21 +18,26 @@ const Settings = lazy(() => import("./screens/Settings").then((m) => ({ default:
 const Sources = lazy(() => import("./screens/Sources").then((m) => ({ default: m.Sources })));
 
 const ROUTES: { id: string; label: string; icon: LucideIcon }[] = [
-  { id: "feed", label: "Feed", icon: Inbox },
-  { id: "jobs", label: "All jobs", icon: List },
-  { id: "board", label: "Board", icon: KanbanSquare },
+  { id: "jobs", label: "Jobs", icon: List },
+  { id: "tracker", label: "Tracker", icon: KanbanSquare },
   { id: "sources", label: "Sources", icon: Activity },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
-type Route = "feed" | "jobs" | "board" | "sources" | "settings" | "login";
-const GUEST_ROUTES: Route[] = ["feed", "jobs"]; // what a visitor who is not signed in can open
+type Route = "jobs" | "tracker" | "sources" | "settings" | "login";
+const GUEST_ROUTES: Route[] = ["jobs"]; // what a visitor who is not signed in can open
+const JOBS = "#/jobs?scope=you";
+const hrefOf = (id: string) => (id === "jobs" ? JOBS : `#/${id}`);
 
 // "/settings" typed or bookmarked: the app routes on the hash, so move the path there
 if (window.location.pathname !== "/" && !window.location.hash) window.history.replaceState(null, "", `/#${window.location.pathname}`);
 
+// Old links: "#/feed" and an empty address are the For you list; "#/board" is the Tracker. A bare "#/jobs" stays as it is (it was All jobs).
 function currentRoute(): Route {
-  const id = window.location.hash.replace(/^#\/?/, "");
-  return (id === "login" ? "login" : ROUTES.find((r) => r.id === id)?.id ?? "feed") as Route;
+  const id = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+  const known = id === "board" ? "tracker" : id;
+  const route = (known === "login" ? "login" : ROUTES.find((r) => r.id === known)?.id ?? "jobs") as Route;
+  if (route === "jobs" && id !== "jobs") window.history.replaceState(null, "", JOBS);
+  return route;
 }
 
 const STATUS_DOT: Record<StreamStatus, { color: string; label: string }> = {
@@ -79,7 +84,7 @@ export function App() {
   }, [signedIn, qc]);
 
   useEffect(() => {
-    if (signedIn && route === "login") window.location.hash = "#/feed";
+    if (signedIn && route === "login") window.location.hash = JOBS;
   }, [signedIn, route]);
 
   const me = useQuery({ queryKey: ["me"], queryFn: () => api<Me>("/api/me"), refetchInterval: 60_000 });
@@ -90,13 +95,13 @@ export function App() {
       <Login
         gated={route !== "login"}
         onGuest={() => {
-          window.location.hash = "#/feed";
+          window.location.hash = JOBS;
         }}
         onSignedIn={(m) => {
           qc.clear();
           qc.setQueryData(["me"], m);
           setSignedIn(true);
-          window.location.hash = "#/feed";
+          window.location.hash = JOBS;
         }}
       />
     );
@@ -104,7 +109,7 @@ export function App() {
 
   const dot = guest ? { color: "bg-muted-foreground", label: "Guest view" } : STATUS_DOT[stream];
   const badge = (r: { id: string }) =>
-    r.id === "feed" && incoming.length > 0 && route !== "feed" ? (
+    r.id === "jobs" && incoming.length > 0 && route !== "jobs" ? (
       <span className="stamp rounded-full bg-primary px-1.5 text-primary-foreground">{incoming.length}</span>
     ) : null;
   const link = "relative flex items-center rounded-full font-medium whitespace-nowrap";
@@ -113,7 +118,7 @@ export function App() {
     <div className="min-h-dvh pb-24 sm:pb-8">
       <header className="sticky top-0 z-20 border-b border-border bg-background">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-4">
-          <a href="#/feed" className="flex items-center gap-2 text-lg font-bold tracking-tight">
+          <a href={JOBS} className="flex items-center gap-2 text-lg font-bold tracking-tight">
             <img src="/icon.svg" alt="" className="size-7" />
             Drop Radar
           </a>
@@ -125,7 +130,7 @@ export function App() {
             {routes.map((r) => (
               <a
                 key={r.id}
-                href={`#/${r.id}`}
+                href={hrefOf(r.id)}
                 aria-label={r.label}
                 title={r.label}
                 aria-current={route === r.id ? "page" : undefined}
@@ -202,10 +207,9 @@ export function App() {
           </p>
         )}
         {me.data && <Welcome key={me.data.user} user={me.data.user} sources={me.data.sources} guest={guest} />}
-        {route === "feed" && <Feed guest={guest} incoming={incoming} clearIncoming={() => setIncoming([])} />}
-        {route === "jobs" && <Feed key="jobs" guest={guest} screen="jobs" />}
+        {route === "jobs" && <Feed guest={guest} incoming={incoming} clearIncoming={() => setIncoming([])} />}
         <Suspense fallback={<ListSkeleton rows={3} />}>
-          {route === "board" && <Board />}
+          {route === "tracker" && <Board />}
           {route === "sources" && <Sources />}
           {route === "settings" && <Settings />}
         </Suspense>
@@ -217,7 +221,7 @@ export function App() {
         {routes.map((r) => (
           <a
             key={r.id}
-            href={`#/${r.id}`}
+            href={hrefOf(r.id)}
             aria-current={route === r.id ? "page" : undefined}
             className={cn(link, "min-h-14 flex-1 flex-col justify-center gap-0.5 text-[11px]", route === r.id ? "text-foreground" : "text-muted-foreground")}
           >

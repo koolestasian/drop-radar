@@ -26,6 +26,7 @@ import signal
 import sqlite3
 import tempfile
 import time
+from collections import Counter
 from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
@@ -39,8 +40,8 @@ from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
 from radar.pipeline import roles
 from radar.pipeline.pay_estimate import estimate_pay
 from radar.api import auth, events
-from radar.api.models import (Action, ActionPatch, AuthResult, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
-                              SourceHealth, SourceLatency, WatchlistConfig)
+from radar.api.models import (Action, ActionPatch, AuthResult, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
+                              SourceHealth, SourceLatency, Summary, WatchlistConfig)
 from radar.config import GUEST_ID, User, Watchlist, load_guest_profile, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
 from radar.sources.registry import build_sources
@@ -185,6 +186,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         return user
 
     guest = User(id=GUEST_ID, watchlist=Watchlist(), profile=load_guest_profile())
+    summaries = {}  # user id -> (time, Summary), 60s
     hits, cached = {}, {}  # guest rate limit (ip -> request times) and 60s response cache (query -> (time, page))
 
     def _client_ip(request):
@@ -493,6 +495,36 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                 cached.clear()
             cached[request.url.query] = (time.monotonic(), page)
         return page
+
+    @app.get("/api/opportunities/summary", response_model=Summary)
+    async def summary(user: User = Depends(viewer)):
+        """The numbers behind the Jobs header and filter pills, over everything the list would show."""
+        hit = summaries.get(user.id)
+        if hit and time.monotonic() - hit[0] < 60:
+            return hit[1]
+        you, everything, seen = Counter(), Counter(), set()
+        for row in store.list_opportunities(source_names=owned(user)):
+            twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
+            if twin in seen:
+                continue
+            seen.add(twin)
+            opp = store.get_opportunity(row["id"], user_id=user.id)
+            if (opp.get("action") or {}).get("status") == HIDDEN_BY_DEFAULT or opp["status"] in DEAD_STATUSES:
+                continue
+            out = serialize(opp, user)
+            if not out.sources:
+                continue
+            for scope in (everything, you) if out.match.ok else (everything,):
+                scope["total"] += 1
+                if out.level:
+                    scope["level:" + out.level] += 1
+                scope["track:" + out.track] += 1
+        def counts(c):
+            return Counts(total=c["total"], level={k[6:]: n for k, n in c.items() if k.startswith("level:")},
+                          track={k[6:]: n for k, n in c.items() if k.startswith("track:")})
+        out = Summary(you=counts(you), everything=counts(everything))
+        summaries[user.id] = (time.monotonic(), out)
+        return out
 
     @app.get("/api/opportunities/{opp_id}", response_model=Opportunity)
     async def get_opportunity(opp_id: str, user: User = Depends(viewer)):
