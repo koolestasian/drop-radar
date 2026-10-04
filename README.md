@@ -40,6 +40,10 @@ before anyone reposts them.
   through [ntfy](https://ntfy.sh).
 - **A tracker.** Save a posting, move it through applied, interview, offer or rejected, keep notes, hide what
   you do not want.
+- **A private Career library (v0.20.0).** Save career facts and reusable answers as draft, approved or
+  retired. Approval records a source or confirmation note; answers also state where they apply and can cite
+  exact fact revisions. Edits preserve history, and changed or retired supporting facts flag answers for review.
+  Records stay private to each account. Approval records your review; it does not authorize external actions.
 - **Several users, one box.** Each person has their own watchlist, profile, statuses and push topic; a source
   both watch is polled once.
 
@@ -68,8 +72,8 @@ flowchart LR
    places into one opportunity, extracts season, track and location from the title (an LLM is optional and
    budgeted), and decides who it matches.
 4. **Store** (`radar/store/`) is one SQLite file: opportunities, per-source sightings, source health, sent
-   alerts, and each user's status and notes.
-5. **API and web** (`radar/api/`, `web/`) serve the Jobs list, tracker, settings and live stream to a React PWA.
+   alerts, each user's status and notes, and immutable private career-record revisions.
+5. **API and web** (`radar/api/`, `web/`) serve Jobs, Tracker, Career, Sources, Settings and the live stream to a React PWA.
    Lists and counts come from an in-memory index (below), not from SQL.
 
 ## Design decisions worth a look
@@ -140,9 +144,9 @@ alone: `cd web && npm run dev`.
 ## Tests
 
 ```bash
-python -m unittest discover -s tests       # ~440 offline tests, no network
+python -m unittest discover -s tests       # 516 offline tests, no network
 python -m pyflakes radar tests
-(cd web && npm run e2e)                    # Playwright against the built app, desktop and phone
+(cd web && npm run e2e)                    # 74 Playwright checks against the built app, desktop and phone
 ```
 
 GitHub Actions runs the Python suite and lint on 3.12 and 3.14 for every push. Live probes are marked and skipped
@@ -186,7 +190,10 @@ guide, is tagged `legacy-hourly-monitor`.
 - **Instagram is a terms-of-service risk.** Automated access is against Instagram's terms, so use a secondary
   account, keep it to a handful of accounts (the config enforces a cap of 5) or remove the `instagram:`
   entry; everything else works without it.
-- **It finds postings; it does not apply for you.** Eligibility and applications stay with a human.
+- **Application automation is still planned.** The shipped app finds postings, tracks progress and stores
+  reviewed career evidence. Application packets, resume generation and external execution remain unfinished.
+  The [adopted product goal](docs/specs/GOAL.md) and [T20 plan](docs/specs/T20-opportunity-action-engine.md)
+  describe the broader personal opportunity engine; they do not activate accounts, spending or sends.
 
 ## Project history
 

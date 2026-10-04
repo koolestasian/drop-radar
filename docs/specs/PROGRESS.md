@@ -33,6 +33,13 @@ Status: `todo` | `doing` | `done` (with commit hash and date) | `deferred` (not 
 | T20 personal opportunity action engine | doing | `T20-opportunity-action-engine.md`. Personal autonomous workflow: rank jobs/people/routes/actions; reuse private facts/answers; execute permitted outreach, reply handling, agreed scheduling, event/introduction follow-through and supported applications after account/policy activation. Review mode remains optional. Competitor report plus `reports/Drop Radar autonomous networking.md`; T20.1–20.8 phased plan. First prototype: verified contact → policy checks → real reply → agreed calendar meeting → brief. Personal internship workflow; optional private friend access is secondary. Public launch/commercialization/growth are outside the roadmap. Delivery slices remain candidates, with no new deadline or commitment to every feature. Career-library foundation live (5ed96c9, v0.20.0; 516 backend, 74 e2e). Approved schema 5→6 and backup, all existing rows preserved; remaining T20 work pending. |
 
 ## Latest handoff
+README refreshed for live v0.20.0 (2026-10-04): private Career library, evidence
+revision/review behavior, current validation counts and shipped-versus-planned scope.
+Docs only; checked diff and synced README to the box without a restart or database
+writes. Branch `claude/trim-drop-radar-plan`; unrelated pending edits preserved.
+The broader goal stays paused at the owner's request. Next after resume: application
+packets and durable action records; no packet implementation started.
+
 T20 career-library foundation live (2026-10-04, code 5ed96c9), branch
 `claude/trim-drop-radar-plan`, v0.20.0: private versioned facts/answers, authenticated
 API/OpenAPI/types, Career screen/navigation, evidence invalidation and history.
