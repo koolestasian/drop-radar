@@ -13,6 +13,7 @@ import httpx
 
 from radar.api.app import create_app
 from radar.api import bitindex
+from radar.api.events import EventBus
 from radar.api.bitindex import BitIndex
 from radar.config import Profile, User, Watchlist
 from radar.models import Item
@@ -188,6 +189,43 @@ class BitIndexTests(unittest.IsolatedAsyncioTestCase):
                 break
             await asyncio.sleep(0.05)
         self.assertIn(new_id, index.snap.pos)
+
+    async def test_a_drop_is_in_a_list_opened_right_after_its_push_when_run_like_production(self):
+        """Production has a scheduler, so the index builds and refreshes in worker threads; a nudge must make
+        lists read SQL until the index has caught up, never serve the snapshot from before the drop."""
+        bus = EventBus()
+        runtime = SimpleNamespace(users={u: User(id=u, watchlist=Watchlist(), profile=p) for u, p in PROFILES.items()},
+                                  owned=OWNED, scheduler=object(), events=bus)
+        client = httpx.AsyncClient(transport=httpx.ASGITransport(app=create_app(self.store, runtime, tokens=TOKENS,
+                                                                                now=lambda: NOW)), base_url="http://t")
+        self.addCleanup(client.aclose)
+        self.addCleanup(setattr, bitindex, "MIN_GAP", bitindex.MIN_GAP)
+        bitindex.MIN_GAP = 0
+        head = {"Authorization": f"Bearer {KEVIN}"}
+
+        async def ids():
+            r = await client.get("/api/opportunities", headers=head, params={"include": "all", "limit": 200})
+            return {o["id"] for o in r.json()["items"]}
+
+        for _ in range(200):  # warm: the first requests read SQL while a worker builds the view
+            await ids()
+            have = client._transport.app.state.index.views.get("kevin")
+            if have and have[0].gen >= client._transport.app.state.index.wanted:
+                break
+            await asyncio.sleep(0.05)
+        index = client._transport.app.state.index
+        self.assertIn("kevin", index.views, "the index never came up")
+        new_id, _ = self.store.upsert_item(Item(source=SOURCES[0], external_id="drop", url="https://x.example/drop",
+                                                title="Software Engineer Intern", company="Stripe", seen_at=NOW))
+        bus.publish("opportunity", new_id)
+        self.assertIn(new_id, await ids(), "a list opened right after the push must show the drop")
+        for _ in range(200):  # and once the index has caught up it serves the drop itself
+            await ids()
+            if index.views["kevin"][0].gen >= index.wanted and new_id in index.snap.pos:
+                break
+            await asyncio.sleep(0.05)
+        self.assertIn(new_id, index.snap.pos)
+        self.assertIn(new_id, await ids())
 
 
 if __name__ == "__main__":

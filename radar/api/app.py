@@ -162,7 +162,9 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             task = asyncio.create_task(runtime.scheduler.run(stop))
             task.add_done_callback(_log_crash)
             logo_task = asyncio.create_task(logos.run(stop))  # production only: tests stay offline
-            threading.Thread(target=lambda: [index.safely(u, owned(u), refresh=False) for u in (*getattr(runtime, "users", {}).values(), guest)],
+            # ponytail: accounts build their view on their first request, not here: each is 15-30 s of CPU on the box
+            warm = [u for u in getattr(runtime, "users", {}).values() if not store.is_account(u.id)] + [guest]
+            threading.Thread(target=lambda: [index.safely(u, owned(u), refresh=False) for u in warm],
                              daemon=True).start()  # until it is built, lists read SQL
         try:
             yield

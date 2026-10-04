@@ -8,8 +8,10 @@ Freshness: a read-only connection polls PRAGMA data_version (it moves when any o
 one never writes). The poller commits all day (items.last_seen_at), so data_version is always moving and a refresh,
 which diffs a per-row signature and recomputes only the rows that changed, costs about 0.6 s on the box. So it runs
 rarely: when a new posting is stored (`nudge`, at most every MIN_GAP seconds) and every `every` seconds as the safety
-net for writes made by other processes (fix-pages and the like). A user's hidden postings are read per request (see
-`hidden`), so a hide shows at once.
+net for writes made by other processes (fix-pages and the like). A nudge is a promise: until a refresh that started
+after it has finished and the user's view has caught up (`wanted` and `gen`), lists read SQL, so a drop is never
+missing from a list opened right after its push. A user's hidden postings are read per request (see `hidden`), so a
+hide shows at once.
 """
 from __future__ import annotations
 
@@ -146,17 +148,18 @@ class UserView:
 class BitIndex:
     def __init__(self, store, every=60.0):
         # the connection opens on first use; the path is read here, on the thread that owns the store's connection
-        self.every, self.conn, self.dirty = every, None, False
+        self.every, self.conn = every, None
+        self.wanted = self.snap_gen = 0  # nudges so far; the nudges the snapshot is known to include
         self.path = store.conn.execute("PRAGMA database_list").fetchone()["file"] if store is not None else None
         self.lock = threading.Lock()  # one refresh or view build at a time; requests meanwhile use what is there
         self.recs, self.snap, self.version, self.at = {}, None, None, 0.0
-        self.views = {}  # user id -> (UserView, profile, {id: (signature, matches)})
+        self.views = {}  # user id -> (UserView, profile, {id: (signature, matches)}, user, mine)
 
     # ---- keeping the snapshot current ------------------------------------
 
     def nudge(self):
         """A posting was just stored: look again soon (called on the pipeline's thread, so it only starts a worker)."""
-        self.dirty = True
+        self.wanted += 1
         if self.snap is not None and time.monotonic() - self.at >= MIN_GAP and not self.lock.locked():
             threading.Thread(target=self.safely, args=(None, None), daemon=True).start()
 
@@ -165,13 +168,13 @@ class BitIndex:
         with self.lock:
             if self.snap is not None and time.monotonic() - self.at < min_gap:
                 return
-            self.dirty, started = False, time.monotonic()
+            gen, started = self.wanted, time.monotonic()  # read before scanning: a commit before a nudge is in the scan
             if self.conn is None:
                 self.conn = sqlite3.connect(self.path, check_same_thread=False)
                 self.conn.row_factory = sqlite3.Row
             version = self.conn.execute("PRAGMA data_version").fetchone()[0]
             if self.snap is not None and version == self.version and not force:
-                self.at = time.monotonic()
+                self.at, self.snap_gen = time.monotonic(), gen
                 return
             items, n = {}, 0
             for oid, source, seed in self.conn.execute(
@@ -197,10 +200,10 @@ class BitIndex:
                     recs[row["id"]] = self._record(row, sig, key, items.get(row["id"], []))
             if changed or len(recs) != len(self.recs) or self.snap is None:
                 self.snap = Snapshot(list(recs.values()))
-                log.info("bit index: %d postings, %d changed, refreshed in %.0f ms", len(recs), len(changed),
-                         (time.monotonic() - started) * 1000)
-            self.recs, self.version = recs, version
+            self.recs, self.version, self.snap_gen = recs, version, gen
             self.at = time.monotonic()
+            log.info("bit index: scanned %d postings, %d changed, in %.0f ms", len(recs), len(changed),
+                     (time.monotonic() - started) * 1000)
 
     @staticmethod
     def _record(row, sig, key, items):
@@ -227,18 +230,23 @@ class BitIndex:
             self.refresh()
             self.update(user, mine)
             return self.views[user.id][0]
-        due = self.snap is None or time.monotonic() - self.at >= (MIN_GAP if self.dirty else self.every)
-        if (due or not usable or have[0].snap is not self.snap) and not self.lock.locked():
-            threading.Thread(target=self.safely, args=(user, mine, due), daemon=True).start()
-        return have[0] if usable else None
+        current = usable and have[0].gen >= self.wanted  # a stale view is fine for the 60 s net, not after a nudge
+        pending = self.wanted > self.snap_gen
+        due = self.snap is None or time.monotonic() - self.at >= (MIN_GAP if pending else self.every)
+        if (due or not current or have[0].snap is not self.snap) and not self.lock.locked():
+            threading.Thread(target=self.safely, args=(user, mine, due or (usable and not current)), daemon=True).start()
+        return have[0] if current else None
 
     def safely(self, user, mine, refresh=True):
-        """A worker thread's entry: refresh (when asked), then bring this user's view up to date (when given)."""
+        """A worker thread's entry: refresh (when asked), then bring this user's view up to date, or every existing
+        view when no user is given (a nudge: the views that exist are the people who may open Jobs next)."""
         try:
             if refresh:
                 self.refresh(min_gap=MIN_GAP)
-            if user is not None:
-                self.update(user, mine)
+            # ponytail: every view that exists is rebuilt per nudge burst (about 0.3 s of CPU each); at hundreds of
+            # active accounts, rebuild only the ones that ask
+            for who, owns in [(user, mine)] if user is not None else [(v[3], v[4]) for v in list(self.views.values())]:
+                self.update(who, owns)
         except Exception:
             log.exception("bit index update failed")
 
@@ -252,6 +260,7 @@ class BitIndex:
             cache = have[2] if same_basis else {}
             todo = [r for r in snap.recs if cache.get(r["id"], (None,))[0] is not r["sig"]]
             if same_basis and not todo and have[0].snap is snap:
+                have[0].gen = self.snap_gen
                 return
             if todo:
                 with Store(self.path) as db:  # visible_to wants the whole opportunity, as the list does
@@ -261,7 +270,9 @@ class BitIndex:
                         cache[r["id"]] = (r["sig"], visible_to(db.get_opportunity(r["id"], user_id=user.id),
                                                                user.profile, mine)[1])
             ok, started = {r["id"]: cache[r["id"]][1] for r in snap.recs}, time.monotonic()
-            self.views[user.id] = (UserView(snap, mine, ok), user.profile, {i: cache[i] for i in ok})
+            view = UserView(snap, mine, ok)
+            view.gen = self.snap_gen
+            self.views[user.id] = (view, user.profile, {i: cache[i] for i in ok}, user, mine)
             log.info("bit index: %s's view built (%d matches recomputed, view %.0f ms)", user.id, len(todo),
                      (time.monotonic() - started) * 1000)
 
