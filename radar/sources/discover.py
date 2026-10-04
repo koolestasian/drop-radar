@@ -4,6 +4,8 @@
   user's watchlist (config/users.yaml), prints whether it returned a parseable
   200 and how many postings. A 200 with zero postings is flagged: SmartRecruiters
   answers 200 + an empty list for a slug that doesn't exist.
+- `python -m radar find-boards`: ATS boards the stored apply links point at that nobody watches
+  yet, probed, written to a review file (T16 16.4). Nothing is added to a watchlist from here.
 - `mine_tracker_slugs()`: (ats, slug) pairs recovered from the existing
   tracker's application links. Imports the workbook reader lazily so this
   module stays side-effect-free when the registry auto-imports it.
@@ -70,6 +72,45 @@ def mine_tracker_slugs(records=None):
         if pair:
             found.add(pair)
     return sorted(found)
+
+
+def unwatched_boards(rows, watched):
+    """`rows`: (company, url) pairs. Returns {(ats, slug): (most common company, postings)} for
+    recognized boards missing from `watched` ((ats, slug) pairs, compared case-insensitively)."""
+    import collections
+
+    names, spelled = collections.defaultdict(collections.Counter), {}
+    for company, url in rows:
+        pair = _slug_from_url(url or "")
+        if pair and (pair[0], pair[1].lower()) not in watched:
+            key = (pair[0], pair[1].lower())
+            spelled.setdefault(key, pair)  # first spelling seen: some ATSes (SmartRecruiters) are case-sensitive
+            names[key][company or ""] += 1
+    return {spelled[k]: (c.most_common(1)[0][0], sum(c.values())) for k, c in names.items()}
+
+
+async def find_boards(store, watched, limit=None, concurrency=4):
+    """Probe each unwatched board once. Returns [(ats, slug, company, postings_seen, status)], boards
+    that answer with open postings first, then by how many stored postings point at them."""
+    import asyncio
+
+    import httpx
+
+    from radar.config import Company
+    from radar.scheduler import USER_AGENT
+
+    rows = store.conn.execute("SELECT company, url FROM opportunities WHERE url != ''").fetchall()
+    boards = sorted(unwatched_boards(((r[0], r[1]) for r in rows), watched).items(), key=lambda kv: -kv[1][1])[:limit]
+    gate = asyncio.Semaphore(concurrency)
+
+    async def one(client, key, name, seen):
+        async with gate:
+            ats, slug, status = await _check_one(client, Company(name or key[1], key[0], key[1]))
+        return key[0], key[1], name, seen, status
+
+    async with httpx.AsyncClient(timeout=15, follow_redirects=True, headers={"User-Agent": USER_AGENT}) as client:
+        done = await asyncio.gather(*(one(client, k, n, c) for k, (n, c) in boards))
+    return sorted(done, key=lambda r: (not r[4].startswith("200 OK"), -r[3]))
 
 
 async def _check_one(client, company):

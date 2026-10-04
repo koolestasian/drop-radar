@@ -534,3 +534,15 @@ class SchedulerIntegrationTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UnwatchedBoardsTests(unittest.TestCase):
+    def test_skips_watched_and_non_boards_and_names_by_majority(self):
+        from radar.sources.discover import unwatched_boards
+        rows = [
+            ("Harvey", "https://jobs.ashbyhq.com/harvey/abc"), ("Harvey", "https://jobs.ashbyhq.com/Harvey/def"),
+            ("Harvey AI", "https://jobs.ashbyhq.com/harvey/ghi"),
+            ("Stripe", "https://boards.greenhouse.io/stripe/jobs/1"),  # watched (case-insensitive)
+            ("Blog", "https://example.com/careers/1"), ("Nobody", ""), ("Nobody", None),
+        ]
+        self.assertEqual(unwatched_boards(rows, {("greenhouse", "stripe")}), {("ashby", "harvey"): ("Harvey", 3)})

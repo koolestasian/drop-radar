@@ -21,6 +21,9 @@
   fix-stories [--dry-run]
           ask Claude for the real title of Instagram Story rows whose title is composed or OCR junk
           ("Other Opportunity · 2026"); also fills their blank company/location/deadline
+  find-boards [--limit N] [--out FILE]
+          ATS boards the stored apply links point at that no watchlist has, probed once each and written to a
+          review file (T16 16.4); read-only: nothing is added to a watchlist or the db
   openapi print the API schema; docs/openapi.json is this output (the web
           app's types are generated from it)
 """
@@ -60,6 +63,9 @@ def main(argv=None):
     pay.add_argument("--limit", type=int, default=None, help="only look at this many postings")
     stories = sub.add_parser("fix-stories", parents=[db], help="give Story rows with junk titles their real title")
     stories.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
+    boards = sub.add_parser("find-boards", parents=[db], help="probe boards the stored links point at that nobody watches")
+    boards.add_argument("--limit", type=int, default=None, help="only probe this many boards (most-linked first)")
+    boards.add_argument("--out", default="data/t16/16.4-board-queue.tsv", help="review file to write")
     sub.add_parser("openapi", help="print the API's OpenAPI schema as JSON")
     args = parser.parse_args(argv)
 
@@ -168,6 +174,23 @@ def main(argv=None):
                             print(f"  {opp['company'] or '?':24.24} {opp['title'][:48]!r:52} {changes['pay']}")
                 print(f"{'would fill' if args.dry_run else 'filled'} pay on {found} of {looked} matching postings looked at")
         asyncio.run(run())
+    elif args.command == "find-boards":
+        import asyncio
+        from pathlib import Path
+
+        from radar.config import account_user, load_users
+        from radar.sources.discover import find_boards
+
+        with Store(db_path) as store:
+            users = (*load_users(None), *(account_user(r) for r in store.list_accounts()))
+            watched = {(c.ats, c.slug.lower()) for u in users for c in u.watchlist.companies}
+            found = asyncio.run(find_boards(store, watched, limit=args.limit))
+        ok = [r for r in found if r[4].startswith("200 OK")]
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text("ats\tslug\tcompany\tstored_postings\tstatus\n" + "".join("\t".join(map(str, r)) + "\n" for r in ok))
+        print(f"probed {len(found)} unwatched boards: {len(ok)} answer with open postings -> {out}; "
+              f"{len(found) - len(ok)} did not (empty, unreadable or no source for that ATS)")
     elif args.command == "fix-stories":
         import asyncio
         import json
