@@ -459,6 +459,14 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                 continue
             if us_only and is_us_location(row["location"]) is not True:
                 continue
+            if level or track:  # the title decides these; the row's own fields break a tie, no fetch needed
+                fields = json.loads(row["fields"] or "{}")
+                if (level and roles.level(row["title"], fields.get("Category", "")) != level) or (
+                        track and roles.track(row["title"], fields.get("Role / Track", "")) != track):
+                    continue
+            if posted_within is not None and row["published_at"] and (
+                    datetime.fromisoformat(row["published_at"]).date() < today - timedelta(days=posted_within)):
+                continue
             opp = store.get_opportunity(row["id"], user_id=user.id)
             mine = opp.get("action") or {}
             if action is not None and mine.get("status") != action:

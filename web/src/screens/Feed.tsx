@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, ChevronDown, Rows2, Rows4, Search, SlidersHorizontal } from "lucide-react";
 import { api, query, type Me, type Opportunity, type Page, type Summary } from "../api/client";
@@ -99,6 +99,7 @@ export function Feed({ incoming = [], clearIncoming = () => {}, guest = false }:
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) => api<Page>(`/api/opportunities${query({ ...apiParams(active), cursor: pageParam, limit: 30 })}`),
     getNextPageParam: (last) => last.next_cursor,
+    placeholderData: keepPreviousData, // the old list stays up (dimmed) while a new filter loads
     // Live drops arrive over SSE; this only reconciles missed frames and first-poll backfill.
     refetchInterval: 30_000,
   });
@@ -390,7 +391,7 @@ export function Feed({ incoming = [], clearIncoming = () => {}, guest = false }:
             </EmptyHeader>
           </Empty>
         ) : (
-          <ol className="flex flex-col gap-2.5">
+          <ol aria-busy={feed.isPlaceholderData} className={`flex flex-col gap-2.5 transition-opacity ${feed.isPlaceholderData ? "opacity-50" : ""}`}>
             {items.map((o) => {
               const more = (twins.get(twinKey(o)) ?? []).slice(1);
               const card = (r: Opportunity) => (
