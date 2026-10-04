@@ -502,13 +502,14 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         """The numbers behind the Jobs header and filter pills, over everything the list would show."""
         hit = summaries.get(user.id)
         if hit and time.monotonic() - hit[0] < 300:
-            return hit[1]
+            return await asyncio.shield(hit[1])  # one scan at a time per user; a burst of visitors shares it
         mine, path = owned(user), store.conn.execute("PRAGMA database_list").fetchone()["file"]
 
         def scan():  # its own connection on a worker thread: ~6 s of reading must not stall live updates
             you, everything, seen = Counter(), Counter(), set()
             with Store(path) as db:
-                for row in db.list_opportunities(source_names=mine):
+                # the list's order, so the same copy of a twin is the one counted
+                for row in db.list_opportunities(source_names=mine, sort="posted"):
                     twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
                     if twin in seen:
                         continue
@@ -527,13 +528,21 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                         scope["track:" + trk] += 1
             return you, everything
 
-        you, everything = await asyncio.to_thread(scan)
         def counts(c):
             return Counts(total=c["total"], level={k[6:]: n for k, n in c.items() if k.startswith("level:")},
                           track={k[6:]: n for k, n in c.items() if k.startswith("track:")})
-        out = Summary(you=counts(you), everything=counts(everything))
-        summaries[user.id] = (time.monotonic(), out)
-        return out
+
+        async def build():
+            you, everything = await asyncio.to_thread(scan)
+            return Summary(you=counts(you), everything=counts(everything))
+
+        task = asyncio.ensure_future(build())
+        summaries[user.id] = (time.monotonic(), task)
+        try:
+            return await asyncio.shield(task)
+        except Exception:
+            summaries.pop(user.id, None)  # a failed scan is not cached
+            raise
 
     @app.get("/api/opportunities/{opp_id}", response_model=Opportunity)
     async def get_opportunity(opp_id: str, user: User = Depends(viewer)):
