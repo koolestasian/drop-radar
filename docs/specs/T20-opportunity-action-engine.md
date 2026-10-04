@@ -3,6 +3,9 @@
 Status: todo; owner-requested plan saved 2026-10-04. Not implemented or deployed.
 Branch: claude/trim-drop-radar-plan. Foundation audit: T19-trusted-discovery.md.
 The owner asked for a useful first version next week, plus longer-term brainstorming.
+Competitor research and automation priorities were added 2026-10-04. Read the
+[app-focused research report](../../reports/Drop%20Radar%20competitor%20automation%20review.md)
+and the addendum below before implementing; its priorities refine the original day plan.
 
 ## Product outcome
 
@@ -45,6 +48,9 @@ work separately scheduled.
 - Establish user-reviewed career facts and goals from resume text: roles, dates, skills,
   achievements, projects, links and real metrics. Master text/structured facts for week
   one; polished document-template import follows if needed.
+- Add a versioned approved-answer library for recurring application questions. Reuse
+  factual answers only when meaning/context agree; company-specific responses reference
+  career facts. Missing/conflicting answers require review, never a fabricated default.
 - New description snapshots are fetched through guarded readers; never run against
   every historical job merely because the feature was enabled.
 
@@ -112,6 +118,8 @@ work separately scheduled.
 - Produce readable single-column PDF from a controlled HTML template, with a reusable
   base variant per role family and job-specific changes. Use trusted local rendering;
   external URLs cannot become renderer network requests or file-system paths.
+- Prefer a suitable approved base without rewriting when it already presents the right
+  evidence. Generate selective changes when evidence emphasis actually differs.
 - Show before/after changes and claim provenance. Verify extracted PDF text, contact
   details, links, page count/overflow and reading order. No promise of an ATS score.
 - Keep original resume immutable and version artifacts by job/facts/generation versions.
@@ -262,6 +270,91 @@ Highest early return: ranking + network import + referral kit + truthful tailore
 resume + approved recruiter draft. Broad autonomous web/inbox/application agents
 come after this loop produces useful owner outcomes.
 
+## App-focused research addendum (2026-10-04)
+
+This is the same T20 task, not a separate personal-advice task. The owner explicitly
+asked to study ApplyIQ, AIApply, Sonara and especially JobCopilot and push the app's
+automation further. The report linked above records public official-site crawls,
+support documentation, research limits and source-checked implementation feasibility.
+
+JobCopilot already documents learned answers, approval, tailored resumes, a tracker,
+hiring-manager contact lookup and mock interviews. AIApply additionally documents
+an application inbox with confirmation, incomplete-application, assessment and
+interview labels. ApplyIQ has free Basic and paid Pro with approval/targeting controls.
+Sonara documents continuous matching/applying; its accessible setup details were
+inconclusive. None of these public pages establishes comparative successful-submission
+rates or causal hiring uplift. Do not describe copied category features as inventions.
+
+### Priority order for small automated features
+
+1. Approved facts and reusable answers reduce repeated application work and anchor
+   truthful resume/outreach proposals. Preserve context and version changes.
+2. Resume selection, selective evidence changes and export/attachment checks run for
+   every packet. Rewriting every resume is not a requirement.
+3. Submission evidence and incomplete-application notices create specific recovery
+   actions. A clicked Apply link is not submission; no receipt is not proof of failure.
+4. Recruiting-message action/deadline extraction creates private reminders and unresolved
+   next actions. Explicit deadlines retain their timezone/source; ambiguous ones need
+   review. Automatic assessments stay distinct from human interviews.
+5. Private connection/recruiter matching prepares a forwardable packet and concise
+   outreach draft. Company relevance, email deliverability and requisition ownership
+   are separate evidence claims.
+6. Selected old-job availability and duplicate preflight prevent wasted preparation
+   and repeated contact, with explicit reopened-role/uncertain-identity handling.
+7. An interview invitation assembles employer instructions, actual submitted artifacts,
+   real career examples and targeted independent practice without repeated setup.
+8. User-selected project/repository evidence can supply reusable proof and interview
+   stories, after ownership/claims are reviewed.
+
+These are expected-return judgments, not measured rankings. Track the owner's actual
+time bottleneck; move constrained form automation earlier if filling forms dominates.
+No application volume, keyword percentage or opaque fit score proves interview ROI.
+
+### Delivery slices within T20
+
+- **T20.1:** private fact/answer revisions, packet artifacts and durable action/approval
+  records. Keep existing user actions/notes and permanent shared job IDs intact.
+- **T20.2:** cached For you ranking, explainable fit/unknowns and automatic preparation
+  for a bounded shortlist. Original weights are a baseline to compare with simpler
+  ordering, not calibrated interview probabilities.
+- **T20.3:** imported-network/recruiter matching, approved resume selection/QA and exact
+  per-send approval. One missing contact does not block other packet components/jobs.
+- **T20.4:** supplied recruiting-message receipt/deadline pilot, then opt-in inbox
+  integration. No mailbox access was authorized or connected in this research pass.
+- **T20.5:** one hosted-form portal pilot with approved answers, exact attachment and
+  confirmation evidence. Unknown fields/account verification yield a clear handoff;
+  ambiguous submission outcomes reconcile before retry. Browser work stays off the
+  small production box. Universal ATS support is outside the first-week commitment.
+- **T20.6:** invitation-triggered preparation, delayed independent practice and
+  transparent funnel/outcome reporting once recruiting-event handling is dependable.
+
+The first-week commitment remains the owner-only packet/ranking/contact/approval loop.
+Include T20.4's supplied-message pilot only if the core passes release checks in time.
+Deeper people crawling and browser submission move to subsequent slices rather than
+making the week-one scope unbounded. These slice labels organize T20; no implementation
+or individual completion status is implied.
+
+Public Greenhouse and Lever listing APIs do not grant candidate-side submission access:
+their application POST endpoints require employer keys. Plan a supported browser/form
+integration instead of assuming those endpoints are publicly writable. Simplify's free
+autofill/tracking and answer reuse provide a useful benchmark or temporary handoff.
+See the linked report for official documentation and limits.
+
+### Further experiments and measurement
+
+Test choosing a supported application/referral/recruiter/reply route per job; preparing
+company packets before real openings; reusing existing proof artifacts; automatically
+assembling preparation from actual invitations; and detecting the owner's current funnel
+bottleneck. These combinations are hypotheses, not claimed novel inventions or verified
+competitor omissions. Hiring signals need an actual opening before recommending an
+application, and sparse/delayed outcomes do not justify a trained probability model.
+
+For two weeks measure owner review time, packet acceptance, factual corrections,
+confirmed submissions, unresolved attempts, recoveries, actionable replies, assessment
+completion, human interviews and actual preparation costs. Retain cohort age/pending
+outcomes and distinguish automated invitations. Compare against the current workflow
+and simpler ranking. Approval of each external send remains the chosen default.
+
 ## Research checked 2026-10-04
 
 - LinkedIn connections export, email limitations, first-degree scope:
@@ -287,7 +380,9 @@ API access, accurate recruiter assignment or next-week authorization is assumed.
 
 ## Handoff
 
-Docs-only planning save; no app implementation, live schema/config write, outreach,
-deployment, PR or tag. Next: answer planning questions, provide inputs through the
-normal secure flow, choose the first-week slice in a fresh implementation thread.
+Docs-only planning/research save on claude/trim-drop-radar-plan; competitor report,
+this spec and PROGRESS.md updated. Public source/targeted code checks only; no app
+implementation, live schema/config write, account connection, outreach, deployment,
+PR or tag. Sender/resume/contact inputs remain implementation prerequisites through
+the normal secure flow. Next implementation slice: T20.1, then T20.2 and T20.3.
 Existing T16.7 task status is unchanged until the owner explicitly chooses a new task.
