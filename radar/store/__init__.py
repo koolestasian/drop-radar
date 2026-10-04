@@ -197,7 +197,10 @@ class Store:
             opp["action"] = dict(action) if action else None
         return opp
 
-    def list_opportunities(self, status=None, company=None, since=None, limit=None, source_names=None,
+    def list_opportunities(self, *args, **kwargs):
+        return list(self.iter_opportunities(*args, **kwargs))
+
+    def iter_opportunities(self, status=None, company=None, since=None, limit=None, source_names=None,
                            backfill=None, sort="found", ranks=None):
         """Newest first by `sort_key` (ties by id, so a cursor can page through): when we first
         saw it ("found") or when it was posted ("posted", see SORT_KEYS). `since` filters on
@@ -232,7 +235,8 @@ class Store:
         if limit is not None:
             sql += " LIMIT ?"
             params.append(int(limit))
-        return [dict(r) for r in self.conn.execute(sql, params)]
+        # rows are read as the caller asks for them: a page of 30 never pays for 12,000
+        return (dict(r) for r in self.conn.execute(sql, params))
 
     # ---- source state (scheduler) ------------------------------------------
 

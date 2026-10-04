@@ -440,7 +440,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         today = now().date()
         items, keys, more, seen = [], [], None, set()
         terms, places = (q or "").split(), (location or "").split()
-        for row in store.list_opportunities(status=status, since=since, source_names=owned(user),
+        for row in store.iter_opportunities(status=status, since=since, source_names=owned(user),
                                               backfill=backfill, sort=sort, ranks=_ranks(user)):
             # one card per job: Invesco posts the same "Business Trainee, Hyderabad" as five requisitions.
             # Checked before the cursor so every page agrees on which copy is the one shown.
@@ -525,7 +525,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             you, everything, seen = Counter(), Counter(), set()
             with Store(path) as db:
                 # the list's order, so the same copy of a twin is the one counted
-                for n, row in enumerate(db.list_opportunities(source_names=mine, sort="posted")):
+                for n, row in enumerate(db.iter_opportunities(source_names=mine, sort="posted")):
                     if n % 200 == 0:
                         time.sleep(0.02)
                     twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
