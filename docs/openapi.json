@@ -416,6 +416,24 @@
           "match": {
             "$ref": "#/components/schemas/Match"
           },
+          "pay": {
+            "default": "",
+            "description": "the pay range the posting states, e.g. \"$62\u2013$72/hr\" or \"$120,000\u2013$165,000/yr\"; empty when it states none",
+            "title": "Pay",
+            "type": "string"
+          },
+          "pay_estimate": {
+            "default": "",
+            "description": "US-wide occupation wage benchmark, only when employer pay is blank",
+            "title": "Pay Estimate",
+            "type": "string"
+          },
+          "pay_estimate_basis": {
+            "default": "",
+            "description": "occupation, source, vintage and percentiles behind the benchmark",
+            "title": "Pay Estimate Basis",
+            "type": "string"
+          },
           "published_at": {
             "anyOf": [
               {

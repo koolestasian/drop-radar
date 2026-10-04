@@ -17,6 +17,7 @@ Add when an opportunity needs a live page check, e.g. before T7 alerts on it.
 from __future__ import annotations
 
 import asyncio
+import re
 from dataclasses import replace
 from datetime import datetime, timezone
 
@@ -47,8 +48,38 @@ def _regex_facts(item):
     }
 
 
+# A Story title the legacy rules composed or cut from OCR, not one the post states:
+# "Other Opportunity · 2026", "= 3 hackathon teams", "Categories: Summer Internship Program".
+_GENERIC_TITLE = re.compile(r"·\s*\d{4}$|^[^A-Za-z0-9]|^\w+:\s", re.I)
+
+
+def generic_title(title, category=""):
+    title = (title or "").strip()
+    return not title or bool(_GENERIC_TITLE.search(title)) or title == category or title == "Other Opportunity"
+
+
 def _ambiguous(facts):
     return not facts.get("organization") or not facts.get("deadline")
+
+
+_IMAGE_TYPES = ("image/jpeg", "image/png", "image/webp", "image/gif")
+
+
+def _story_image(item):
+    """The Story picture as (media_type, bytes) for Haiku to read, or None (expired CDN link, not an image)."""
+    import requests
+
+    url = legacy.image_url(item.raw or {})
+    if not url.startswith("https://"):
+        return None
+    try:
+        r = requests.get(url, timeout=20)
+        media_type = r.headers.get("content-type", "").split(";")[0].strip().lower()
+        if r.ok and media_type in _IMAGE_TYPES and len(r.content) < 5_000_000:
+            return media_type, r.content
+    except requests.RequestException:
+        pass
+    return None
 
 
 class Enricher:
@@ -76,7 +107,10 @@ class Enricher:
         # extractor; an injected one (tests, or a future non-Anthropic client) runs regardless.
         if not (item.text or "").strip() or (self._extractor is None and not legacy.LLM_ENABLED):
             return None
-        key = f"llm:{legacy.text_key(item.text)}"
+        story = item.source.startswith("instagram.")
+        # Story alt text repeats ("Photo by ... May be an image"): the picture is part of what was read
+        picture = legacy.image_url(item.raw or {}).split("?")[0] if story else ""
+        key = f"llm:{legacy.text_key(item.text + picture)}"
         cached = self.store.get_enrichment(key)
         if cached is not None:
             return cached
@@ -84,8 +118,10 @@ class Enricher:
             return None  # budget exhausted this UTC day (kill switch): degrade to regex, retry tomorrow
         extractor = self.extractor()
         before = extractor.usage["input_tokens"] + extractor.usage["output_tokens"]
+        image = await asyncio.to_thread(_story_image, item) if picture else None
+        extra = {"image": image} if image else {}
         # extract() never raises (radar/legacy/llm_extraction.py); blocking network call, so off the loop.
-        facts = await asyncio.to_thread(extractor.extract, item.text, item.url, "")
+        facts = await asyncio.to_thread(extractor.extract, item.text, item.url, "", **extra)
         self._spend(extractor.usage["input_tokens"] + extractor.usage["output_tokens"] - before)
         if facts:  # only cache a real result; a failed/refused call should retry next sighting
             self.store.set_enrichment(key, facts)
@@ -111,6 +147,12 @@ class Enricher:
                 }
                 if llm.get("roles"):
                     facts[ROLE_TRACK] = ", ".join(llm["roles"])
+                if llm.get("title"):
+                    facts["title"] = llm["title"]
+                # a meme or a tweet screenshot, not something to apply to: out of the feed, never pushed.
+                # Only when the Story carries no application link; a link is always worth showing.
+                facts["not_opportunity"] = (llm.get("is_opportunity") is False and (llm.get("confidence") or 0) >= 0.8
+                                            and "instagram.com/" in (item.url or "instagram.com/"))
         self._apply(opportunity_id, facts)
 
     def _apply(self, opportunity_id, facts):
@@ -118,6 +160,10 @@ class Enricher:
         if opp is None:
             return
         updates = {}
+        if facts.get("title") and generic_title(opp.get("title"), (opp.get("fields") or {}).get(CATEGORY, "")):
+            updates["title"] = facts["title"]  # only replaces a composed/OCR-junk title, never a stated one
+        if facts.get("not_opportunity") and opp.get("status") in ("", "New", None):
+            updates["status"] = "Not actionable"  # the legacy verdict: DEAD_STATUSES hides it and never alerts
         for column, value in (("company", facts.get("organization")), ("location", facts.get("location")),
                                ("deadline", facts.get("deadline"))):
             if value and not opp.get(column):

@@ -207,6 +207,16 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.ids_of(KEVIN), self.names("swe", "ng"))
         self.assertEqual(await self.ids_of(FRIEND), self.names("ib"))
 
+    async def test_market_estimate_only_appears_when_employer_pay_is_blank(self):
+        first = (await self.get(f"/api/opportunities/{self.ids['swe']}")).json()
+        self.assertEqual(first["pay"], "")
+        self.assertTrue(first["pay_estimate"])
+        self.assertIn("BLS", first["pay_estimate_basis"])
+        self.store.save_opportunity(self.ids["swe"], first_seen=T0, fields={"Pay": "$30–$40/hr"})
+        second = (await self.get(f"/api/opportunities/{self.ids['swe']}")).json()
+        self.assertEqual(second["pay"], "$30–$40/hr")
+        self.assertEqual(second["pay_estimate"], "")
+
     async def test_include_all_widens_to_everything_their_sources_found_never_the_other_users(self):
         self.assertEqual(await self.ids_of(KEVIN, include="all"), self.names("swe", "ng", "tax"))
         self.assertEqual(await self.ids_of(FRIEND, include="all"), self.names("swe", "ib", "tax"))
@@ -333,6 +343,13 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
                 break
         self.assertEqual(seen, [self.ids[e] for e in ("tax", "ng", "swe")])
 
+    async def test_the_same_job_posted_as_several_requisitions_is_one_card(self):
+        for n in range(3):  # Invesco: five "Business Trainee, Hyderabad" requisitions, one job
+            self.store.upsert_item(Item(source="ats.greenhouse.airbnb", external_id=f"twin{n}", company="Invesco",
+                                        url=f"https://x.example/twin{n}", title="Business Trainee",
+                                        location="Hyderabad, Telangana", seen_at=T0))
+        page = (await self.get("/api/opportunities", KEVIN, include="all")).json()
+        self.assertEqual(sum(o["title"] == "Business Trainee" for o in page["items"]), 1)
 
     async def test_sort_by_posted_or_found_pages_in_utc_order(self):
         ny = timezone(timedelta(hours=-4))
@@ -643,6 +660,10 @@ class OpenApiAndWebTests(unittest.IsolatedAsyncioTestCase):
             self.assertNotIn("nope", (await client.get("/..%2Fsecret.txt")).text)
             self.assertEqual((await client.get("/api/nope")).status_code, 404)
             self.assertEqual((await client.get("/healthz")).json(), {"ok": True})
+            # a release must reach browsers at once: the entry page always revalidates, hashed assets may be cached
+            self.assertEqual((await client.get("/")).headers["cache-control"], "no-cache")
+            self.assertEqual((await client.get("/pipeline")).headers["cache-control"], "no-cache")
+            self.assertNotIn("cache-control", (await client.get("/assets/app.js")).headers)
 
 
 if __name__ == "__main__":

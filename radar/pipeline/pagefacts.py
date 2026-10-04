@@ -25,6 +25,7 @@ from urllib.parse import parse_qsl, urljoin, urlparse
 
 import requests
 
+from radar.pipeline.pay import make_pay, pay_from_json_ld, pay_from_text, period_of, show
 from radar.scheduler import USER_AGENT
 
 log = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ log = logging.getLogger(__name__)
 TIMEOUT = 12
 MAX_BYTES = 2_000_000
 RETRY_AFTER = timedelta(days=7)  # a page that gave nothing is not asked again for a week
+PAY_VERSION = 1  # bump when the pay readers change: older cached pages are read again for pay
 VAGUE_LOCATION = re.compile(r"^\s*\d+\s+locations?\s*$", re.I)  # "4 Locations": a count, not a place
 _robots: dict[str, tuple[float, urllib.robotparser.RobotFileParser | None]] = {}
 _last_hit: dict[str, float] = {}
@@ -40,6 +42,12 @@ _last_hit: dict[str, float] = {}
 def needs_facts(opp) -> bool:
     return (not (opp.get("location") or "").strip() or bool(VAGUE_LOCATION.match(opp.get("location") or ""))
             or not (opp.get("company") or "").strip() or not opp.get("published_at"))
+
+
+def needs_pay(opp) -> bool:
+    """An open posting with a link and no pay stored yet. Pay is only shown where the posting states it."""
+    return bool((opp.get("url") or "").strip()) and not (opp.get("fields") or {}).get("Pay") \
+        and opp.get("status") not in ("Closed", "Expired", "Not actionable")
 
 
 # ---- safe fetching -------------------------------------------------------------------------------------------
@@ -126,7 +134,7 @@ def _workday(parts, url):
         return None
     info = (r.json() or {}).get("jobPostingInfo") or {}
     return {"location": _join([info.get("location"), *(info.get("additionalLocations") or [])]),
-            "posted": _date(info.get("startDate")), "deadline": ""}
+            "posted": _date(info.get("startDate")), "deadline": "", "pay": pay_from_text(info.get("jobDescription"))}
 
 
 def _greenhouse(parts, url):
@@ -138,12 +146,17 @@ def _greenhouse(parts, url):
         board, job = query["for"], query["token"]
     else:
         return None
-    r = _get(f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs/{job}")
+    r = _get(f"https://boards-api.greenhouse.io/v1/boards/{board}/jobs/{job}?pay_transparency=true")
     if r is None or r.status_code != 200:
         return None
     d = r.json()
+    ranges = [make_pay(x.get("min_cents", 0) / 100, x.get("max_cents", 0) / 100, x.get("currency_type"))
+              for x in d.get("pay_input_ranges") or [] if isinstance(x, dict)]
+    ranges = [x for x in ranges if x]
+    structured = {**ranges[0], "min": min(x["min"] for x in ranges), "max": max(x["max"] for x in ranges)} if ranges else None
     return {"location": (d.get("location") or {}).get("name") or "", "company": d.get("company_name") or "",
-            "posted": _date(d.get("first_published") or d.get("updated_at")), "deadline": ""}
+            "posted": _date(d.get("first_published") or d.get("updated_at")), "deadline": "",
+            "pay": structured or pay_from_text(d.get("content"))}
 
 
 def _lever(parts, url):
@@ -154,8 +167,13 @@ def _lever(parts, url):
     if r is None or r.status_code != 200:
         return None
     d = r.json()
+    salary = d.get("salaryRange") or {}
+    text = " ".join(str(x or "") for x in (d.get("salaryDescriptionPlain"), d.get("descriptionPlain"),
+                                          *(l.get("content") for l in d.get("lists") or [] if isinstance(l, dict))))
     return {"location": (d.get("categories") or {}).get("location") or "", "posted": _date(d.get("createdAt")),
-            "company": "", "deadline": ""}
+            "company": "", "deadline": "",
+            "pay": make_pay(salary.get("min"), salary.get("max"), salary.get("currency"), period_of(salary.get("interval")))
+            or pay_from_text(text)}
 
 
 def _smartrecruiters(parts, url):
@@ -170,11 +188,16 @@ def _smartrecruiters(parts, url):
     place = ", ".join(x for x in (loc.get("city"), (loc.get("region") or "").upper()) if x)
     if loc.get("remote"):
         place = f"{place} (Remote)" if place else "Remote"
+    comp = d.get("compensation") or {}
+    sections = ((d.get("jobAd") or {}).get("sections") or {}).values()
     return {"location": place, "company": (d.get("company") or {}).get("name") or "",
-            "posted": _date(d.get("releasedDate")), "deadline": ""}
+            "posted": _date(d.get("releasedDate")), "deadline": "",
+            "pay": make_pay(comp.get("min"), comp.get("max"), comp.get("currency"), period_of(comp.get("period")))
+            or pay_from_text(" ".join(str(s.get("text") or "") for s in sections if isinstance(s, dict)))}
 
 
-def _json_ld(parts, url):
+def _job_posting(url):
+    """The page's schema.org JobPosting dict, or None."""
     if not _robots_allows(url):
         return None
     r = _get(url, accept="text/html,application/xhtml+xml")
@@ -194,8 +217,27 @@ def _json_ld(parts, url):
             elif isinstance(item, dict):
                 kind = item.get("@type")
                 if kind == "JobPosting" or (isinstance(kind, list) and "JobPosting" in kind):
-                    return _from_posting(item)
+                    return item
                 stack.extend(v for k, v in item.items() if k == "@graph")
+    return None
+
+
+def _json_ld(parts, url):
+    posting = _job_posting(url)
+    return _from_posting(posting) if posting else None
+
+
+def org_site(url):
+    """The employer's own website as the posting states it (hiringOrganization.sameAs or .url), or None."""
+    posting = _job_posting(url)
+    org = posting.get("hiringOrganization") if posting else None
+    if not isinstance(org, dict):
+        return None
+    for key in ("sameAs", "url"):
+        value = org.get(key)
+        value = value[0] if isinstance(value, list) and value else value
+        if isinstance(value, str) and value.startswith("http"):
+            return value
     return None
 
 
@@ -211,7 +253,8 @@ def _from_posting(posting) -> dict:
     org = posting.get("hiringOrganization")
     org = org.get("name") if isinstance(org, dict) else org
     return {"location": _join(places), "company": html.unescape(org).strip() if isinstance(org, str) else "",
-            "posted": _date(posting.get("datePosted")), "deadline": _date(posting.get("validThrough"))}
+            "posted": _date(posting.get("datePosted")), "deadline": _date(posting.get("validThrough")),
+            "pay": pay_from_json_ld(posting) or pay_from_text(posting.get("description"))}
 
 
 def fetch_facts(url: str):
@@ -248,6 +291,8 @@ def changes_for(opp, facts) -> dict:
         out["published_at"] = f"{facts['posted']}T00:00:00+00:00"  # date-only, stored the way sources store them
     if facts.get("deadline") and not (opp.get("deadline") or "").strip():
         out["deadline"] = facts["deadline"]
+    if facts.get("pay") and needs_pay(opp):
+        out["pay"] = show(facts["pay"])  # stored in fields["Pay"], see PageFacts.fill
     return out
 
 
@@ -264,20 +309,29 @@ class PageFacts:
             return None  # a miss is retried after a week
         return hit
 
-    async def fill(self, opportunity_id, dry_run=False):
-        """Read the link if the stored posting is missing something. Returns the columns it set (or would set)."""
+    async def fill(self, opportunity_id, dry_run=False, pay=False):
+        """Read the link if the stored posting is missing something. Returns what it set (or would set); `pay`
+        also looks for a stated pay range, which costs a request even for a posting with nothing else missing."""
         opp = self.store.get_opportunity(opportunity_id)
-        if opp is None or not opp.get("url") or not needs_facts(opp):
+        wants_pay = pay and opp is not None and needs_pay(opp)
+        if opp is None or not opp.get("url") or not (needs_facts(opp) or wants_pay):
             return {}
         url = opp["url"]
         hit = self._cached(url)
+        if hit is not None and wants_pay and hit.get("pv") != PAY_VERSION:
+            hit = None  # read before pay was looked for
         if hit is None:
             async with self._slots:
                 facts = await asyncio.to_thread(self.fetch, url)
-            hit = {"t": datetime.now(timezone.utc).isoformat(), "facts": facts or None}
+            hit = {"t": datetime.now(timezone.utc).isoformat(), "facts": facts or None, "pv": PAY_VERSION}
             if not dry_run:
                 self.store.set_enrichment(f"page:{url}", hit)
         changes = changes_for(opp, hit["facts"]) if hit["facts"] else {}
+        if not wants_pay:
+            changes.pop("pay", None)
         if changes and not dry_run:
-            self.store.save_opportunity(opportunity_id, first_seen=opp["first_seen"], **changes)
+            columns = {k: v for k, v in changes.items() if k != "pay"}
+            if "pay" in changes:
+                columns["fields"] = {**(opp.get("fields") or {}), "Pay": changes["pay"]}
+            self.store.save_opportunity(opportunity_id, first_seen=opp["first_seen"], **columns)
         return changes

@@ -127,6 +127,10 @@ export function Detail({ o, onStatus, onNotes }: { o: Opportunity; onStatus?: (s
           {after && <span className="text-muted-foreground"> ({after})</span>}
         </Fact>
         {due && <Fact label="Deadline">{due.label}</Fact>}
+        {o.pay && <Fact label="Pay">{o.pay}</Fact>}
+        {!o.pay && o.pay_estimate && <Fact label="Market estimate">
+          {o.pay_estimate}<span className="block text-xs text-muted-foreground">{o.pay_estimate_basis}. Occupational wages, not this job's offer. <a className="underline" href="https://wagedex.com/data" target="_blank" rel="noopener noreferrer">WageDex / BLS data</a></span>
+        </Fact>}
         {o.season && <Fact label="Season">{o.season}</Fact>}
         <Fact label="Seen on">{o.sources.map(sourceLabel).join(", ")}</Fact>
       </dl>

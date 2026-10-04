@@ -13,6 +13,17 @@
   fix-pages [--dry-run] [--limit N]
           read the links of postings with a blank or "N locations" place, no company or no posted date,
           and fill what the page says (never changes a value a source stated clearly)
+  fix-logos [--dry-run] [--limit N]
+          check every company's logo domain: replace ones whose homepage names someone else, look up misses
+  fix-pay [--dry-run] [--limit N]
+          read the link of every open posting that matches someone's profile and fill the pay range it states
+          (one request a second per site; a posting that states none is left without pay)
+  fix-stories [--dry-run]
+          ask Claude for the real title of Instagram Story rows whose title is composed or OCR junk
+          ("Other Opportunity · 2026"); also fills their blank company/location/deadline
+  find-boards [--limit N] [--out FILE]
+          ATS boards the stored apply links point at that no watchlist has, probed once each and written to a
+          review file (T16 16.4); read-only: nothing is added to a watchlist or the db
   openapi print the API schema; docs/openapi.json is this output (the web
           app's types are generated from it)
 """
@@ -44,6 +55,17 @@ def main(argv=None):
     fix = sub.add_parser("fix-pages", parents=[db], help="fill blank locations, companies and dates from the posting links")
     fix.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
     fix.add_argument("--limit", type=int, default=None, help="only look at this many postings")
+    logos = sub.add_parser("fix-logos", parents=[db], help="check every company's logo domain; fill misses")
+    logos.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
+    logos.add_argument("--limit", type=int, default=None, help="only look at this many companies")
+    pay = sub.add_parser("fix-pay", parents=[db], help="fill stated pay ranges from the posting links")
+    pay.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
+    pay.add_argument("--limit", type=int, default=None, help="only look at this many postings")
+    stories = sub.add_parser("fix-stories", parents=[db], help="give Story rows with junk titles their real title")
+    stories.add_argument("--dry-run", action="store_true", help="show what would change; write nothing")
+    boards = sub.add_parser("find-boards", parents=[db], help="probe boards the stored links point at that nobody watches")
+    boards.add_argument("--limit", type=int, default=None, help="only probe this many boards (most-linked first)")
+    boards.add_argument("--out", default="data/t16/16.4-board-queue.tsv", help="review file to write")
     sub.add_parser("openapi", help="print the API's OpenAPI schema as JSON")
     args = parser.parse_args(argv)
 
@@ -107,6 +129,106 @@ def main(argv=None):
                             print(f"  {opp['company'] or '?'}: {opp['title'][:50]!r}: " +
                                   "; ".join(f"{k} {str(opp.get(k) or '(blank)')[:30]!r} -> {str(v)[:60]!r}" for k, v in changes.items()))
                 print(f"{'would fix' if args.dry_run else 'fixed'} {fixed} of {looked} postings looked at; fields: {done}")
+        asyncio.run(run())
+    elif args.command == "fix-logos":
+        import asyncio
+
+        from radar.logos import LogoResolver, fix_all
+
+        with Store(db_path) as store:
+            changes = asyncio.run(fix_all(store, LogoResolver(store), dry_run=args.dry_run, limit=args.limit))
+        for c in sorted(changes, key=lambda c: (c["old"] is None, c["name"])):
+            print(f"  {c['name'][:40]:40} {c['old'] or '(none)':30} -> {c['new'] or '(monogram)':30} {c['source'] or ''}")
+        replaced = sum(1 for c in changes if c["old"])
+        print(f"{'would change' if args.dry_run else 'changed'} {len(changes)}: {replaced} replaced or dropped, "
+              f"{len(changes) - replaced} newly found")
+    elif args.command == "fix-pay":
+        import asyncio
+
+        from radar.config import account_user, load_users
+        from radar.pipeline.filter import matches_profile
+        from radar.pipeline.pagefacts import PageFacts, needs_pay
+
+        async def run():
+            with Store(db_path) as store:
+                profiles = [u.profile for u in (*load_users(None), *(account_user(r) for r in store.list_accounts()))]
+                todo = []
+                for (opp_id,) in store.conn.execute("SELECT id FROM opportunities WHERE url != '' ORDER BY first_seen DESC").fetchall():
+                    opp = store.get_opportunity(opp_id)
+                    if needs_pay(opp) and any(matches_profile(opp, p)[0] for p in profiles):
+                        todo.append(opp)
+                    if args.limit is not None and len(todo) >= args.limit:
+                        break
+                pages, looked, found, examples = PageFacts(store), 0, 0, 0
+
+                async def one(opp):
+                    return opp, await pages.fill(opp["id"], dry_run=args.dry_run, pay=True)
+
+                for finished in asyncio.as_completed([one(o) for o in todo]):
+                    opp, changes = await finished
+                    looked += 1
+                    if changes.get("pay"):
+                        found += 1
+                        if examples < 15:
+                            examples += 1
+                            print(f"  {opp['company'] or '?':24.24} {opp['title'][:48]!r:52} {changes['pay']}")
+                print(f"{'would fill' if args.dry_run else 'filled'} pay on {found} of {looked} matching postings looked at")
+        asyncio.run(run())
+    elif args.command == "find-boards":
+        import asyncio
+        from pathlib import Path
+
+        from radar.config import account_user, load_users
+        from radar.sources.discover import find_boards
+
+        with Store(db_path) as store:
+            users = (*load_users(None), *(account_user(r) for r in store.list_accounts()))
+            watched = {(c.ats, c.slug.lower()) for u in users for c in u.watchlist.companies}
+            found = asyncio.run(find_boards(store, watched, limit=args.limit))
+        ok = [r for r in found if r[4].startswith("200 OK")]
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text("ats\tslug\tcompany\tstored_postings\tstatus\n" + "".join("\t".join(map(str, r)) + "\n" for r in ok))
+        print(f"probed {len(found)} unwatched boards: {len(ok)} answer with open postings -> {out}; "
+              f"{len(found) - len(ok)} did not (empty, unreadable or no source for that ATS)")
+    elif args.command == "fix-stories":
+        import asyncio
+        import json
+
+        from radar.models import Item
+        from radar.pipeline.enrich import CATEGORY, Enricher, generic_title
+
+        async def run():
+            with Store(db_path) as store:
+                enricher, fixed = Enricher(store), 0
+                rows = store.conn.execute("SELECT opportunity_id, source, external_id, url, title, raw FROM items "
+                                          "WHERE source LIKE 'instagram.%'").fetchall()
+                for opp_id, source, external_id, url, title, raw in rows:
+                    opp = store.get_opportunity(opp_id)
+                    text = (json.loads(raw or "{}") or {}).get("text") or ""
+                    if not opp or not text or not generic_title(opp["title"], (opp.get("fields") or {}).get(CATEGORY, "")):
+                        continue
+                    item = Item(source=source, external_id=external_id, url=url, title=title, text=text,
+                                raw=json.loads(raw or "{}") or {})
+                    if args.dry_run:  # straight to the model: no cache write either
+                        from radar.pipeline.enrich import _story_image
+
+                        image = await asyncio.to_thread(_story_image, item)
+                        facts = await asyncio.to_thread(enricher.extractor().extract, text, url, "",
+                                                        **({"image": image} if image else {}))
+                        facts = facts or {}
+                        new = facts.get("title") or ""
+                        hide = (facts.get("is_opportunity") is False and (facts.get("confidence") or 0) >= 0.8
+                                and "instagram.com/" in (url or "instagram.com/"))
+                    else:
+                        await enricher.enrich(opp_id, item)
+                        after = store.get_opportunity(opp_id)
+                        new, hide = after["title"], after["status"] == "Not actionable" != opp["status"]
+                    if hide or (new and new != opp["title"]):
+                        fixed += 1
+                        print(f"  {opp['company'] or '?':22.22} {opp['title'][:45]!r:48} -> "
+                              f"{'hidden: not an opportunity' if hide else repr(new[:60])}")
+                print(f"{'would fix' if args.dry_run else 'fixed'} {fixed} Story titles")
         asyncio.run(run())
     elif args.command == "openapi":
         import json

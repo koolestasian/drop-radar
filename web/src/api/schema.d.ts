@@ -520,6 +520,24 @@ export interface components {
              */
             location_raw: string;
             match: components["schemas"]["Match"];
+            /**
+             * Pay
+             * @description the pay range the posting states, e.g. "$62–$72/hr" or "$120,000–$165,000/yr"; empty when it states none
+             * @default
+             */
+            pay: string;
+            /**
+             * Pay Estimate
+             * @description US-wide occupation wage benchmark, only when employer pay is blank
+             * @default
+             */
+            pay_estimate: string;
+            /**
+             * Pay Estimate Basis
+             * @description occupation, source, vintage and percentiles behind the benchmark
+             * @default
+             */
+            pay_estimate_basis: string;
             /** Published At */
             published_at: string | null;
             /** Role Track */

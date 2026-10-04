@@ -2,6 +2,40 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.13.1 (2026-10-04)
+
+The top bar has an appearance menu with Light, Dark, and System options. System follows the device; an explicit choice is remembered in this browser and shared across tabs. The selected theme applies before the first paint and sets the browser chrome and native controls to match.
+
+`python -m radar find-boards [--limit N] [--out FILE]` lists career boards the stored apply links point at that no watchlist has, probes each once, and writes the ones with open postings to a review file. It is read-only: nothing is added to a watchlist or the database until the owner picks boards from the file. The owner picked all of them: 213 boards (Workday 98, Greenhouse 43, Ashby 43, SmartRecruiters 11, Lever 9, Oracle 8, Eightfold 1) joined the watchlist at tier C (polled every 15 minutes), taking it from 602 to 815 companies. Each new board is seeded silently on its first poll, so nothing alerts for postings that were already open.
+
+## 0.13.0 (2026-10-04)
+
+When a posting gives no pay, US roles with a recognizable occupation now show a clearly labeled national wage benchmark. The detail pane names the occupation, 2025 BLS OEWS source, 10th–25th percentiles, and links to WageDex's CC BY 4.0 compilation. Employer-stated pay always takes priority. The benchmark covers all workers in an occupation, so it is not a company offer or an internship-specific wage. On the owner's live feed it would cover 851 of 1,209 blank-pay cards; 358 remain blank for uncertain roles or locations outside the US.
+
+Store-level postings no longer enter the feed: the shared ATS title gate rejects titles with a store number, a street address, or franchise job names (Domino's "Customer Service Rep(05261) - 107 E University Ave", "Entry Level Manager (05443)"). Checked over 12,546 live titles: it rejects exactly the 199 Domino's store rows and nothing else.
+
+## 0.12.0 (2026-10-04)
+
+**A pay column.** Where a posting states its pay, the card shows it ("$62-$72/hr", "$120,000-$165,000/yr"), the compact row has it as a column, and the detail pane lists it. Nothing is shown when the posting states none.
+
+- **Where pay comes from:** the posting's own page, never a guess. Structured data first (Lever's salary range, SmartRecruiters' compensation, Greenhouse pay ranges, schema.org `baseSalary` on Ashby and company pages), then a conservative read of the description text for a range with a currency mark and a stated or obvious period. Bonuses, stipends, relocation money, company funding and benefit amounts are never read as pay; a posting listing several regional ranges shows the widest.
+- **New drops** get their pay in the background, so a push never waits for it. `python -m radar fix-pay [--dry-run]` fills it for stored postings that match someone's profile. On 80 live postings 19 (24%) state a range.
+- API: `pay` on every opportunity. 425 backend tests, 38 e2e tests.
+- The account button's accessible name is the username (as the visible label already was).
+
+Released together with 0.11.0 below, which was deployed on 2026-10-04 before the merge.
+
+## 0.11.0 (2026-10-04)
+
+Fixes from the owner's full audit of the live app.
+
+- **A city in your profile now takes in its metro area.** "Seattle" matches Redmond, Bellevue, Kirkland; "New York" matches NYC, Jersey City, Brooklyn (within 50 km, GeoNames coordinates). Microsoft's Redmond new-grad role had been dropped by a Seattle/New York profile; over the stored postings, 410 more now match.
+- **The US check reads GeoNames instead of hand-typed city lists** (T16.2): "Atlanta, Georgia" is the state, "New Brunswick, NJ" is New Jersey, "SGP - Woodlands" is Singapore.
+- **Instagram Stories are read by Claude Haiku 4.5**, picture included (T16.3). A junk title ("Other Opportunity · 2026", "= 3 hackathon teams") is replaced by the real one; a Story with no application link that Claude is sure is a meme or a tweet screenshot becomes "Not actionable" (out of the feed, never pushed). `python -m radar fix-stories [--dry-run]` repairs stored rows.
+- The same job posted as several requisitions shows as one card.
+- The top bar shows your username, not the internal id; the feed says "nothing new for 23h" instead of "30+ new roles" when quiet; opening `/settings` directly works.
+- `radar/data/` (places.json, build_places.py) is now tracked; `.gitignore`'s `data/` rule had hidden it.
+
 ## 0.10.1 (2026-10-03)
 
 Location format changed from "City - Country" to what the owner asked for: **US places as "City, ST"** ("Seattle, WA"), **everywhere else as "City, Country"** ("Barcelona, Spain").

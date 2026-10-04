@@ -15,7 +15,7 @@ from __future__ import annotations
 import re
 from functools import lru_cache
 
-from radar.legacy import opportunity_monitor as legacy
+from radar.pipeline import places
 
 _SUFFIX = r"(?:s|es|ing|ship|ships|ed)?"
 # Fields enrichment fills from the title/caption; a post's title alone can be
@@ -23,93 +23,38 @@ _SUFFIX = r"(?:s|es|ing|ship|ships|ed)?"
 _MATCH_FIELDS = ("Role / Track", "Category")
 
 _US_COUNTRY = r"united states|u\.s\.a?\.?|usa|us"
-_US_STATE_NAMES = (
-    "alabama|alaska|arizona|arkansas|california|colorado|connecticut|delaware|florida|georgia|hawaii|"
-    "idaho|illinois|indiana|iowa|kansas|kentucky|louisiana|maine|maryland|massachusetts|michigan|"
-    "minnesota|mississippi|missouri|montana|nebraska|nevada|new hampshire|new jersey|new mexico|"
-    "new york|north carolina|north dakota|ohio|oklahoma|oregon|pennsylvania|rhode island|"
-    "south carolina|south dakota|tennessee|texas|utah|vermont|virginia|washington|west virginia|"
-    "wisconsin|wyoming|district of columbia|d\\.c\\.|dc"
-)
-# ponytail: hubs that show up on real boards, not a gazetteer; an unlisted US city
-# with no state ("Clifton Park") is "unknown", which is accepted, not rejected.
-_US_CITIES = (
-    "san francisco|south san francisco|sf|bay area|silicon valley|new york city|nyc|manhattan|brooklyn|"
-    "seattle|bellevue|redmond|kirkland|chicago|chi|boston|cambridge, ma|austin|dallas|houston|denver|boulder|"
-    "los angeles|santa monica|el segundo|long beach|irvine|san diego|san jose|palo alto|mountain view|"
-    "menlo park|sunnyvale|cupertino|santa clara|redwood city|san mateo|foster city|oakland|berkeley|"
-    "emeryville|arlington|mclean|reston|philadelphia|pittsburgh|atlanta|miami|raleigh|durham|charlotte|"
-    "nashville|salt lake city|lehi|phoenix|scottsdale|tempe|portland|minneapolis|detroit|ann arbor|"
-    "columbus|st\\. louis|kansas city|jersey city|hoboken|stamford|greenwich|princeton|baltimore|tampa|"
-    "orlando|las vegas|sacramento|cleveland|cincinnati|indianapolis|new haven|plano|irving|fort worth|"
-    "san antonio|omaha|boise|honolulu|cedar rapids|sea"
-)
-# US towns named like a foreign city in _NON_US ("Vienna, VA" is not Vienna, Austria).
-_US_NAMESAKES = (
-    "vienna, va|melbourne, fl|new london, ct|london, ky|london, oh|paris, tx|paris, ky|paris, tn|"
-    "athens, ga|athens, oh|athens, al|athens, tn|athens, tx|dublin, oh|dublin, ca|dublin, va|dublin, ga|"
-    "berlin, ct|berlin, nh|berlin, md|berlin, nj|berlin, wi|berlin, pa|warsaw, in|milan, tn|milan, mi|"
-    "amsterdam, ny|geneva, il|geneva, ny|geneva, oh|hamburg, ny|hamburg, pa|cairo, il|cairo, ga|lisbon, me|"
-    "ottawa, il|ottawa, ks|waterloo, ia|waterloo, ny|vancouver, wa|delhi, ny|toronto, oh"
-)
-_NON_US = (
-    "canada|toronto|vancouver|montreal|ottawa|calgary|waterloo|kitchener|ontario|quebec|alberta|"
-    "british columbia|united kingdom|uk|england|scotland|london|edinburgh|ireland|dublin|india|bengaluru|"
-    "bangalore|hyderabad|pune|chennai|mumbai|delhi|gurgaon|gurugram|noida|singapore|mexico|cdmx|brazil|"
-    "sao paulo|são paulo|argentina|buenos aires|colombia|bogota|romania|bucharest|spain|barcelona|madrid|"
-    "germany|berlin|munich|frankfurt|hamburg|france|paris|netherlands|amsterdam|belgium|brussels|"
-    "switzerland|zurich|geneva|italy|milan|poland|warsaw|krakow|czech|prague|portugal|lisbon|sweden|"
-    "stockholm|denmark|copenhagen|norway|oslo|finland|helsinki|austria|vienna|serbia|belgrade|greece|"
-    "athens|turkey|istanbul|israel|tel aviv|uae|dubai|abu dhabi|qatar|doha|saudi|riyadh|japan|tokyo|"
-    "korea|seoul|china|beijing|shanghai|shenzhen|hong kong|taiwan|taipei|australia|sydney|melbourne|"
-    "new zealand|auckland|philippines|manila|vietnam|indonesia|jakarta|malaysia|kuala lumpur|thailand|"
-    "bangkok|south africa|cape town|nigeria|lagos|kenya|nairobi|egypt|cairo|emea|apac|latam|europe|ch|can|"
-    "costa rica|liechtenstein"
-)
-
-
-def _words(alternation):
-    return re.compile(rf"(?<![a-z0-9])(?:{alternation})(?![a-z0-9])", re.I)
-
-
-_US_STRONG = _words(f"{_US_COUNTRY}|{_US_STATE_NAMES}|{_US_CITIES}|{_US_NAMESAKES}")
-_NON_US_RE = _words(_NON_US)
-_NEW_MEXICO = re.compile(r"new mexico", re.I)  # a US state whose name contains a country
-_COUNTRY_RE = re.compile(
-    r"canada|united kingdom|uk|england|scotland|ireland|india|singapore|mexico|brazil|argentina|colombia|"
-    r"romania|spain|germany|france|netherlands|belgium|switzerland|italy|poland|czech republic|czechia|"
-    r"portugal|sweden|denmark|norway|finland|austria|serbia|greece|turkey|t[uü]rkiye|israel|uae|"
-    r"united arab emirates|qatar|saudi arabia|japan|south korea|korea|china|hong kong|taiwan|australia|"
-    r"new zealand|philippines|vietnam|viet nam|indonesia|malaysia|thailand|south africa|nigeria|kenya|egypt|"
-    r"costa rica|liechtenstein|hungary|ukraine|lithuania|latvia|estonia|bulgaria|croatia|slovakia|slovenia|"
-    r"luxembourg|chile|peru|uruguay|ecuador|guatemala|panama|dominican republic|pakistan|bangladesh|sri lanka|morocco|"
-    # ISO alpha-3 codes some boards end with ("Zaragoza, Aragon, ESP"); only read after the last comma
-    r"esp|deu|fra|gbr|ind|sgp|mex|bra|jpn|chn|kor|aus|irl|nld|ita|che|pol|swe|dnk|nor|fin|aut|bel|prt|isr|are|"
-    r"twn|hkg|arg|col|chl|per|rou|cze|hun|ukr|tur|zaf|egy|phl|vnm|idn|mys|tha|nzl",
-    re.I)
-_MULTI = re.compile(r"[;|/\n]| or | and |\d+ locations", re.I)
+_US = {"US", "PR"}  # Puerto Rico hires like the rest of the US
+_WORLD_REGION = re.compile(r"\b(emea|apac|latam|europe|asia)\b", re.I)
 
 
 def is_us_location(location: str) -> bool | None:
     """True if the location names somewhere in the US (any of several), False if
-    it only names somewhere else, None if it says neither ("In-Office", "N/A")."""
+    it only names somewhere else, None if it says neither ("In-Office", "N/A").
+
+    Places come from places.py (GeoNames). A bare city whose biggest namesake is abroad
+    but which is also a US city ("Cambridge", "Dublin") is unknown, not foreign; so is a
+    list where one place can't be placed and the others are only guessed from a city
+    name ("Poughkeepsie; Kingston": Kingston, NY is too small for the data)."""
     loc = location or ""
-    # A trailing country name decides first: "Ho Chi Minh, , Vietnam" names no US place,
-    # but "chi" (Chicago's abbreviation) would otherwise read as one.
-    # Only for one place: "New York, NY; London, UK" is still a US job.
-    last = "" if _MULTI.search(loc) or "," not in loc else _NEW_MEXICO.sub("", loc.rsplit(",", 1)[-1]).strip()
-    if last and re.fullmatch(_US_COUNTRY, last, re.I):
+    placed, stated, unplaced = set(), False, False
+    for city, iso, explicit, _ in places.parse_places(loc):
+        if iso and not explicit and iso not in _US and places.has_us_namesake(city):
+            iso = ""
+        if iso:
+            placed.add(iso)
+            stated |= explicit
+        else:
+            unplaced = True
+    if unplaced or not placed:  # free text the parser can't structure: look for any place name in it
+        if places.scan_countries(loc) & _US:
+            return True
+        if not placed:  # but only a country or state name rules it out ("George Bush Airport" is in Houston)
+            placed = places.scan_countries(loc, cities=False)
+            unplaced = not placed
+    if placed & _US:
         return True
-    if last and _COUNTRY_RE.fullmatch(last):
+    if placed and (stated or not unplaced) or _WORLD_REGION.search(loc):
         return False
-    if _US_STRONG.search(loc):
-        return True
-    if _NON_US_RE.search(_NEW_MEXICO.sub("", loc)):
-        return False
-    # "City, ST" is weaker evidence than a name ("Toronto, ON, CA" ends in CA),
-    # so it only counts once nothing non-US has shown up.
-    if legacy.CITY_STATE_RE.search(loc):
-        return True
     return None
 
 
@@ -133,7 +78,7 @@ def _location_matches(location: str, wanted: str) -> bool:
         return us is not False  # unknown is accepted: missing a real drop is worse than one extra
     if w == "remote":
         return "remote" in location.lower() and us is not False
-    return w in location.lower()
+    return w in location.lower() or places.near(location, wanted)  # "Seattle" takes in Redmond
 
 
 def matches_profile(opp: dict, profile, level_implied: bool = False) -> tuple[bool, list[str]]:

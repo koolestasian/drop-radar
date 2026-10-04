@@ -4,8 +4,8 @@
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 
-/* Dark follows the device (prefers-color-scheme); there is no manual toggle, so no .dark class. */
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* The resolved appearance is applied before first paint and kept in sync with the device. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Index-card board: the shell is a warm corkboard neutral and every card's stock colour is its state.
    Stocks always sit under ink-coloured text (>= 7:1) and every stock also has a text label. */
@@ -40,8 +40,7 @@
   --live: oklch(0.55 0.15 150);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+.dark {
     --background: oklch(0.19 0.01 60);
     --foreground: oklch(0.95 0.008 85);
     --card: oklch(0.235 0.012 60);
@@ -69,7 +68,6 @@
     --stock-quiet: oklch(0.25 0.01 60);
     --stock-line: oklch(1 0 0 / 14%);
     --live: oklch(0.75 0.15 150);
-  }
 }
 
 @theme inline {
@@ -113,7 +111,7 @@
 
 @layer base {
   html {
-    color-scheme: light dark;
+    color-scheme: light;
     -webkit-tap-highlight-color: transparent;
     /* the phone tab bar is fixed to the bottom: scrolled-to things must land above it */
     scroll-padding-block: 4.5rem 5.5rem;

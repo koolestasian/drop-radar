@@ -30,6 +30,10 @@ class Opportunity(BaseModel):
     category: str
     role_track: str
     season: str
+    pay: str = Field("", description='the pay range the posting states, e.g. "$62–$72/hr" or "$120,000–$165,000/yr"; '
+                                      'empty when it states none')
+    pay_estimate: str = Field("", description="US-wide occupation wage benchmark, only when employer pay is blank")
+    pay_estimate_basis: str = Field("", description="occupation, source, vintage and percentiles behind the benchmark")
     sources: list[str] = Field(description="this user's sources that saw it")
     backfill: bool = Field(description="already open when your sources first looked (never alerted), not a live drop")
     match: Match

@@ -1,5 +1,111 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+async function mockThemeApi(page: Page) {
+  await mockApi(page);
+  await page.addInitScript(() => localStorage.setItem("radar.welcomed.guest", "1"));
+}
+
+async function chooseTheme(page: Page, choice: "Light" | "Dark" | "System") {
+  await page.getByRole("button", { name: /^Appearance:/ }).click();
+  await page.getByRole("menuitemradio", { name: choice, exact: true }).click();
+}
+
+test("theme override persists and supports keyboard selection", async ({ page }) => {
+  await mockThemeApi(page);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/");
+  const control = page.getByRole("button", { name: "Appearance: System" });
+  await expect(control).toBeVisible();
+  const box = await control.boundingBox();
+  expect(box!.width).toBeGreaterThanOrEqual(44);
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  await control.focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+  await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#f7f8fa");
+  await expect(page.getByRole("button", { name: "Appearance: Light" })).toBeFocused();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Appearance: Light" })).toBeVisible();
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+  await chooseTheme(page, "Dark");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", "#0b0f14");
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Appearance: Dark" })).toBeVisible();
+  await page.getByRole("button", { name: "Appearance: Dark" }).click();
+  await expect(page.getByRole("menuitemradio", { name: "Dark", exact: true })).toHaveAttribute("aria-checked", "true");
+  await page.keyboard.press("Escape");
+  await page.evaluate((token) => localStorage.setItem("radar.token", token), TOKEN);
+  await page.reload();
+  await page.getByRole("button", { name: /^Account/ }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
+  await expect(page.getByRole("button", { name: "Appearance: Dark" })).toBeVisible();
+  for (const width of [320, 768]) {
+    await page.setViewportSize({ width, height: 800 });
+    expect(await page.locator("html").evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await expect(page.getByRole("button", { name: "Appearance: Dark" })).toBeInViewport();
+  }
+});
+
+test("system theme follows device changes", async ({ page }) => {
+  await mockThemeApi(page);
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Appearance: System" })).toBeVisible();
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await chooseTheme(page, "Light");
+  await chooseTheme(page, "System");
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+});
+
+for (const storage of ["invalid", "blocked"] as const) {
+  test(`theme handles ${storage} storage`, async ({ page }) => {
+    await mockThemeApi(page);
+    await page.addInitScript((mode) => {
+      if (mode === "invalid") localStorage.setItem("radar.theme", "invalid");
+      else {
+        const get = Storage.prototype.getItem;
+        const set = Storage.prototype.setItem;
+        Storage.prototype.getItem = function (key) {
+          if (key === "radar.theme") throw new DOMException("blocked", "SecurityError");
+          return get.call(this, key);
+        };
+        Storage.prototype.setItem = function (key, value) {
+          if (key === "radar.theme") throw new DOMException("blocked", "SecurityError");
+          set.call(this, key, value);
+        };
+      }
+    }, storage);
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: "Appearance: System" })).toBeVisible();
+    await expect(page.locator("html")).toHaveClass(/dark/);
+    await chooseTheme(page, "Light");
+    await expect(page.locator("html")).not.toHaveClass(/dark/);
+  });
+}
+
+test("theme synchronizes across browser tabs", async ({ page, context }) => {
+  await mockThemeApi(page);
+  await page.goto("/");
+  const other = await context.newPage();
+  await mockThemeApi(other);
+  await other.goto("/");
+  await expect(other.getByRole("button", { name: "Appearance: System" })).toBeVisible();
+  await chooseTheme(page, "Dark");
+  await expect(other.getByRole("button", { name: "Appearance: Dark" })).toBeVisible();
+  await expect(other.locator("html")).toHaveClass(/dark/);
+  await other.close();
+});
+
 const TOKEN = "test-token-kevin-0123456789";
 const GLOBE = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGUlEQVR4nGNoaGj4TwlmGDVg1IBRA4aLAQCJj38fETZOLAAAAABJRU5ErkJggg==", "base64");
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAK0lEQVR4nO3OIQEAAAwEoetfeovxBoGn6sYEBAQEBAQEBAQEBAQEBAS2gQe3tfwuZanJ7gAAAABJRU5ErkJggg==", "base64"); // 32px: real icons are bigger than Google's 16px "no icon" globe
@@ -350,6 +456,27 @@ test("a new user gets the welcome explainer once; the work model shows only when
   await expect(page.getByRole("dialog", { name: "Welcome to Drop Radar" })).toBeHidden();
 });
 
+test("stated pay and clearly labeled market estimates stay separate", async ({ page }) => {
+  await mockApi(page, [
+    opp("p1", "Harvey", "Software Engineering Intern", { pay: "$62–$72/hr" }),
+    opp("p2", "Brex", "Backend Engineer New Grad"),
+    opp("p3", "Figma", "Software Engineer Intern", { pay_estimate: "$35–$45/hr", pay_estimate_basis: "US-wide Software Developers; BLS OEWS 2025 10th–25th percentiles (WageDex)" }),
+  ]);
+  await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
+  await page.goto("/");
+  await expect(page.getByRole("article", { name: /^Harvey/ })).toContainText("$62–$72/hr");
+  await expect(page.getByRole("article", { name: /^Brex/ })).not.toContainText("$");
+  await expect(page.getByRole("article", { name: /^Figma/ })).toContainText("Est. $35–$45/hr");
+  await page.getByRole("article", { name: /^Harvey/ }).click();
+  await expect(page.getByText("Pay", { exact: true })).toBeVisible();
+  await expect(page.getByText("$62–$72/hr").first()).toBeVisible();
+  if (await page.getByRole("button", { name: "Close" }).isVisible())
+    await page.getByRole("button", { name: "Close" }).click();
+  await page.getByRole("article", { name: /^Figma/ }).click();
+  await expect(page.getByText("Market estimate", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "WageDex / BLS data" })).toBeVisible();
+});
+
 test("Sources shows the radar's own numbers in plain words", async ({ page }) => {
   await mockApi(page);
   await page.addInitScript((t) => localStorage.setItem("radar.token", t), TOKEN);
@@ -425,7 +552,7 @@ test("create an account, sign out, sign back in with the password; wrong passwor
   await expect(page.getByRole("alert")).toContainText("at least 10 characters");
   await page.getByLabel("Password").fill("correct horse battery");
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page.getByRole("button", { name: /^Account: u_ab12cd34ef/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Account: sam_smith/ })).toBeVisible();
   await page.getByRole("button", { name: /^Account/ }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await page.goto("/#/login");

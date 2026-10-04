@@ -205,6 +205,33 @@ class LlmBudgetTests(unittest.IsolatedAsyncioTestCase):
         await p(None, [item("instagram.zero2sudo", "media:2", url="https://x.example/other", text=text)])
         self.assertEqual(extractor.calls, 1, "same text -> cached, not re-billed")
 
+    async def test_the_llm_title_replaces_only_a_composed_or_ocr_junk_story_title(self):
+        extractor = FakeExtractor({"organization": "Stripe", "title": "Software Engineer Intern, Summer 2027"})
+        p = pipeline(self.store, extractor)
+        for n, title in enumerate(["Other Opportunity · 2026", "= 3 hackathon teams",
+                                   "Categories: Summer Internship Program", "Backend Engineer Intern"]):
+            await p(None, [item("instagram.zero2sudo", f"media:{n}", url=f"https://x.example/{n}",
+                                text=f"post {n}", title=title)])
+        titles = sorted(o["title"] for o in self.store.list_opportunities())
+        self.assertEqual(titles, ["Backend Engineer Intern"] + ["Software Engineer Intern, Summer 2027"] * 3)
+
+    async def test_a_story_the_llm_is_sure_is_not_an_opportunity_is_marked_not_actionable(self):
+        for n, (verdict, confidence, status) in enumerate([(False, 0.95, "Not actionable"), (False, 0.5, "New"),
+                                                           (True, 0.95, "New")]):
+            extractor = FakeExtractor({"is_opportunity": verdict, "confidence": confidence, "title": ""})
+            await pipeline(self.store, extractor)(None, [item(
+                "instagram.zero2sudo", f"m{n}", url=f"https://www.instagram.com/stories/zero2sudo/m{n}",  # a Story with no apply link
+                text=f"meme {n}", title="= 3 hackathon teams")])
+            [opp] = [o for o in self.store.list_opportunities() if o["url"].endswith(f"/m{n}")]
+            self.assertEqual(self.store.get_opportunity(opp["id"])["status"], status)
+
+    async def test_a_story_with_an_application_link_is_never_hidden_as_not_an_opportunity(self):
+        extractor = FakeExtractor({"is_opportunity": False, "confidence": 0.99, "title": ""})
+        await pipeline(self.store, extractor)(None, [item("instagram.zero2sudo", "lk", url="https://jobs.example/apply/1",
+                                                          text="Visit Link", title="Intern")])
+        [opp] = self.store.list_opportunities()
+        self.assertEqual(self.store.get_opportunity(opp["id"])["status"], "New")
+
     async def test_failed_llm_call_is_not_cached_and_retries_next_sighting(self):
         extractor = FakeExtractor(results=[None, {"organization": "Stripe", "deadline": "2026-12-01"}])
         p = pipeline(self.store, extractor)

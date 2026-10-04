@@ -412,7 +412,9 @@ class TitleFilterTests(unittest.TestCase):
             "Analyst Program - Global Markets", "Associate Consultant", "Off-Cycle Analyst, Equity Research",
             "Software Engineer (University Grad)", "Student Researcher", "Campus Hire - Sales & Trading",
             "Rotational Program Associate", "Leadership Development Program", "Entry Level Financial Analyst",
-            "Early Talent - Wealth Management", "Spring Insight Week", "Undergraduate Business Analyst",
+            "Early Talent - Wealth Management", "Software Engineer, New Grad (2027)", "Operations Management Trainee",
+            "Software Engineer Intern (2027) - Austin, TX", "Junior Engineer ( 2027 Graduates, Shenzhen)",
+            "Process Engineer (Jul 2026 Recruitment Drive) Graduate", "Spring Insight Week", "Undergraduate Business Analyst",
         ):
             self.assertTrue(matches_title(title), title)
 
@@ -420,6 +422,11 @@ class TitleFilterTests(unittest.TestCase):
         for title in (
             "Senior Staff Engineer", "Internal Tools Engineer", "International Sales Director",
             "VP of Engineering", "Principal Scientist",
+            # Domino's store postings (live 2026-10-03): matched on a street name or "Entry Level"
+            "Customer Service Rep(05261) - 107 E University Ave", "Entry Level Manager (05443)",
+            "Delivery Expert(05873) - 4506 University Drive", "Customer Service Rep(5453) - 4235 Summer Ave",
+            "Assistant Manager(05508) - 3205 UNIVERSITY DR", "Entry Level Managment ", "Assistant Manager Trainee (7188-Shadle Park)", "Entry Level Manager",
+            "Bike Delivery Expert(06630) - 409 A University Dr.",
         ):
             self.assertFalse(matches_title(title), title)
 
@@ -527,3 +534,15 @@ class SchedulerIntegrationTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UnwatchedBoardsTests(unittest.TestCase):
+    def test_skips_watched_and_non_boards_and_names_by_majority(self):
+        from radar.sources.discover import unwatched_boards
+        rows = [
+            ("Harvey", "https://jobs.ashbyhq.com/harvey/abc"), ("Harvey", "https://jobs.ashbyhq.com/Harvey/def"),
+            ("Harvey AI", "https://jobs.ashbyhq.com/harvey/ghi"),
+            ("Stripe", "https://boards.greenhouse.io/stripe/jobs/1"),  # watched (case-insensitive)
+            ("Blog", "https://example.com/careers/1"), ("Nobody", ""), ("Nobody", None),
+        ]
+        self.assertEqual(unwatched_boards(rows, {("greenhouse", "stripe")}), {("ashby", "harvey"): ("Harvey", 3)})

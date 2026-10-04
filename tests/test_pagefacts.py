@@ -36,7 +36,7 @@ class ReaderTests(unittest.TestCase):
              mock.patch.object(pf, "_get", return_value=response(body=ASHBY_HTML.encode())):
             facts = pf.fetch_facts("https://jobs.ashbyhq.com/bedrock-robotics/96a6423e")
         self.assertEqual(facts, {"location": "San Francisco, California", "company": "Bedrock Robotics Inc",
-                                 "posted": "2026-10-02", "deadline": ""})
+                                 "posted": "2026-10-02", "deadline": "", "pay": None})
 
     def test_workday_detail_turns_a_count_into_the_real_places(self):
         detail = {"jobPostingInfo": {"location": "Dallas, Texas", "additionalLocations": ["Austin, Texas", "Remote"],
@@ -62,6 +62,34 @@ class ReaderTests(unittest.TestCase):
         for url, body, place in cases:
             with self.subTest(url=url), mock.patch.object(pf, "_get", return_value=response(json_body=body)):
                 self.assertEqual(pf.fetch_facts(url)["location"], place)
+
+    def test_each_source_hands_over_the_pay_its_posting_states(self):
+        text = "The base salary range for this role is $120,000 - $165,000 per year."
+        cases = [
+            ("https://boards.greenhouse.io/figureai/jobs/4718858006",  # structured ranges come in cents
+             {"pay_input_ranges": [{"min_cents": 12000000, "max_cents": 16500000, "currency_type": "USD"}]}, "$120,000–$165,000/yr"),
+            ("https://boards.greenhouse.io/figureai/jobs/4718858006", {"content": "&lt;p&gt;" + text + "&lt;/p&gt;"}, "$120,000–$165,000/yr"),
+            ("https://jobs.lever.co/weride/abc",
+             {"salaryRange": {"interval": "per-year-salary", "min": 120000, "max": 165000, "currency": "USD"}}, "$120,000–$165,000/yr"),
+            ("https://jobs.lever.co/acme/abc", {"descriptionPlain": "Pay: $38 - $44 per hour"}, "$38–$44/hr"),
+            ("https://jobs.smartrecruiters.com/AECOM2/744000153243027-intern",
+             {"compensation": {"min": 20, "max": 24, "currency": "USD", "period": "HOURLY"}}, "$20–$24/hr"),
+            ("https://jobs.smartrecruiters.com/ServiceNow/74400015324302-x",
+             {"jobAd": {"sections": {"jobDescription": {"text": text}}}}, "$120,000–$165,000/yr"),
+            ("https://rb.wd5.myworkdayjobs.com/en-US/FRS/job/Dallas-TX/Intern_R-0000033575",
+             {"jobPostingInfo": {"location": "Dallas, Texas", "jobDescription": "<p>" + text + "</p>"}}, "$120,000–$165,000/yr"),
+        ]
+        for url, body, expected in cases:
+            with self.subTest(url=url, body=body), mock.patch.object(pf, "_get", return_value=response(json_body=body)):
+                self.assertEqual(pf.show(pf.fetch_facts(url)["pay"]), expected)
+
+    def test_ashby_pages_state_pay_in_their_schema_org_data(self):
+        page = ASHBY_HTML.replace('"validThrough": null', '"validThrough": null, "baseSalary": {"@type": "MonetaryAmount", '
+                                  '"currency": "USD", "value": {"@type": "QuantitativeValue", "minValue": 62, "maxValue": 72, '
+                                  '"unitText": "HOUR"}}')
+        with mock.patch.object(pf, "_robots_allows", return_value=True), \
+             mock.patch.object(pf, "_get", return_value=response(body=page.encode())):
+            self.assertEqual(pf.show(pf.fetch_facts("https://jobs.ashbyhq.com/vey/3a34578d")["pay"]), "$62–$72/hr")
 
     def test_nothing_is_fetched_from_private_or_internal_addresses(self):
         for url in ("http://169.254.169.254/latest/meta-data", "http://127.0.0.1:8000/api/me", "http://10.0.0.5/x",
@@ -151,6 +179,47 @@ class PageFactsTests(unittest.IsolatedAsyncioTestCase):
         self.store.set_enrichment("page:https://jobs.ashbyhq.com/b/1", {"t": "2000-01-01T00:00:00+00:00", "facts": None})
         await pages.fill(opp)
         self.assertEqual(fetch.call_count, 2)
+
+    async def test_pay_is_filled_only_when_asked_and_never_over_a_stored_one(self):
+        opp = self.add(location="San Francisco, CA")  # nothing else missing
+        pay = {"min": 62, "max": 72, "currency": "USD", "period": "hr"}
+        fetch = mock.Mock(return_value={"location": "Elsewhere", "pay": pay})
+        pages = pf.PageFacts(self.store, fetch=fetch)
+        self.assertEqual(await pages.fill(opp), {})        # not asked for pay: no fetch at all
+        fetch.assert_not_called()
+        self.assertEqual(await pages.fill(opp, pay=True), {"pay": "$62–$72/hr"})
+        stored = self.store.get_opportunity(opp)
+        self.assertEqual((stored["fields"]["Pay"], stored["location"]), ("$62–$72/hr", "San Francisco, CA"))
+        self.assertEqual(await pages.fill(opp, pay=True), {})  # has pay now: left alone
+        self.assertEqual(fetch.call_count, 1)
+
+    async def test_a_page_read_before_pay_existed_is_read_again_once(self):
+        opp = self.add(location="San Francisco, CA")
+        url = "https://jobs.ashbyhq.com/b/1"
+        self.store.set_enrichment(f"page:{url}", {"t": datetime.now(timezone.utc).isoformat(), "facts": {"location": "x"}})
+        fetch = mock.Mock(return_value={"pay": {"min": 20, "max": 24, "currency": "USD", "period": "hr"}})
+        pages = pf.PageFacts(self.store, fetch=fetch)
+        self.assertEqual(await pages.fill(opp, pay=True), {"pay": "$20–$24/hr"})
+        self.assertEqual(self.store.get_enrichment(f"page:{url}")["pv"], pf.PAY_VERSION)
+
+    async def test_a_new_drop_waits_for_no_page_just_for_its_pay(self):
+        sent = []
+        class Alerter:
+            async def dispatch(self, item, opp_id):
+                sent.append(self.store.get_opportunity(opp_id)["fields"].get("Pay"))
+            async def retry_pending(self):
+                pass
+        alerter = Alerter()
+        alerter.store = self.store
+        pages = pf.PageFacts(self.store, fetch=lambda url: {"pay": {"min": 20, "max": 24, "currency": "USD", "period": "hr"}})
+        pipe = Pipeline(self.store, alerter=alerter, pagefacts=pages, enricher=SimpleNamespace(enrich=mock.AsyncMock()))
+        drop = Item(source="ats.ashby.b", external_id="d1", url="https://jobs.ashbyhq.com/b/d1", title="Intern", company="Bedrock",
+                    location="Austin, TX", seen_at=self.when, published_at=self.when)
+        await pipe(SimpleNamespace(name="ats.ashby.b"), [drop])
+        self.assertEqual(sent, [None])                        # the push did not wait for the page
+        await asyncio.gather(*list(pipe._background))
+        stored = self.store.get_opportunity(self.store.item_opportunity_id("ats.ashby.b", "d1"))
+        self.assertEqual(stored["fields"]["Pay"], "$20–$24/hr")
 
     async def test_a_fine_posting_is_never_fetched(self):
         opp = self.add(location="San Francisco, CA")

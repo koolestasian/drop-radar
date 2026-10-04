@@ -279,7 +279,7 @@ export function Feed({ screen = "feed", incoming = [], clearIncoming = () => {},
           </h1>
           <p className="text-sm text-muted-foreground">{blurb}</p>
           <p className="stamp text-muted-foreground">
-            {[me.data && `${me.data.sources} sources watched`, newest && `newest found ${ago(newest)}`].filter(Boolean).join(" · ") || "Watching your sources"}
+            {[me.data && `${me.data.sources} sources watched`, newest && (Date.now() - Date.parse(newest) > 6 * 3600e3 ? `nothing new for ${ago(newest).replace(/ ago$/, "")}` : `newest found ${ago(newest)}`)].filter(Boolean).join(" · ") || "Watching your sources"}
           </p>
         </header>
 

@@ -83,4 +83,5 @@ status, notes, updated_at)`, `enrichment(key, json)`.
 ## Task graph
 T0 -> T1, T2 -> (T3, T4, T5 in parallel) -> T6 -> T7 -> T8a multi-user -> T8b API -> T9 web -> T10 deploy
 T10 -> T12 first to act -> T13 audit -> T14 email digest + priority push -> T15 UI (user-led)
+T16 automation (independent; 16.5 feeds T14's priority list)
 Deferred: T11 hardening (see PROGRESS.md for when to add it).
