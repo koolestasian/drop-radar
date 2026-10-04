@@ -1,13 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { Activity, BellOff, CircleUser, Inbox, KanbanSquare, List, LogOut, Settings as SettingsIcon, type LucideIcon } from "lucide-react";
+import { Activity, BellOff, CircleUser, Inbox, KanbanSquare, List, LogOut, Moon, Sun, Settings as SettingsIcon, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import { api, authHeaders, setUnauthorizedHandler, token, type Me, type Opportunity } from "./api/client";
 import { openStream, type StreamStatus } from "./api/stream";
-import { patchCachedOpportunity } from "./hooks";
+import { patchCachedOpportunity, useTheme, type Theme } from "./hooks";
 import { Feed } from "./screens/Feed";
 import { Login } from "./screens/Login";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Welcome } from "./components/Welcome";
 import { ListSkeleton } from "./components/common";
@@ -43,6 +43,7 @@ const STATUS_DOT: Record<StreamStatus, { color: string; label: string }> = {
 
 export function App() {
   const qc = useQueryClient();
+  const [theme, setTheme, dark] = useTheme();
   const [signedIn, setSignedIn] = useState(() => Boolean(token.get()));
   const [route, setRoute] = useState<Route>(currentRoute);
   const [stream, setStream] = useState<StreamStatus>("connecting");
@@ -111,37 +112,55 @@ export function App() {
   return (
     <div className="min-h-dvh pb-24 sm:pb-8">
       <header className="sticky top-0 z-20 border-b border-border bg-background">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
+        <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:gap-4">
           <a href="#/feed" className="flex items-center gap-2 text-lg font-bold tracking-tight">
             <img src="/icon.svg" alt="" className="size-7" />
             Drop Radar
           </a>
-          <span className="stamp flex items-center gap-1.5 text-muted-foreground" role="status" title="Live updates">
+          <span className="stamp flex items-center gap-1.5 text-muted-foreground" role="status" aria-label={dot.label} title="Live updates">
             <span className={cn("size-2 rounded-full", dot.color, stream === "live" && "animate-pulse")} aria-hidden />
-            {dot.label}
+            <span className="hidden sm:inline">{dot.label}</span>
           </span>
           <nav aria-label="Main" className="ml-auto hidden gap-1 sm:flex">
             {routes.map((r) => (
               <a
                 key={r.id}
                 href={`#/${r.id}`}
+                aria-label={r.label}
+                title={r.label}
                 aria-current={route === r.id ? "page" : undefined}
                 className={cn(link, "h-10 gap-1.5 px-3.5 text-sm", route === r.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}
               >
                 <r.icon aria-hidden className="size-4" />
-                {r.label}
+                <span className="hidden lg:inline">{r.label}</span>
                 {badge(r)}
               </a>
             ))}
           </nav>
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:ml-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-lg" aria-label={`Appearance: ${theme[0].toUpperCase()}${theme.slice(1)}`} title="Change appearance">
+                  {dark ? <Moon aria-hidden /> : <Sun aria-hidden />}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Appearance</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+                  <DropdownMenuRadioItem value="light" className="min-h-11">Light</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="dark" className="min-h-11">Dark</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="system" className="min-h-11">System</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           {guest ? (
-            <Button asChild className="h-10 px-4 max-sm:ml-auto pointer-coarse:h-11">
+            <Button asChild className="h-10 px-4 pointer-coarse:h-11">
               <a href="#/login">Sign in</a>
             </Button>
           ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-10 gap-1.5 px-2.5 max-sm:ml-auto pointer-coarse:h-11" aria-label={`Account${me.data ? `: ${me.data.username ?? me.data.user}` : ""}`}>
+              <Button variant="ghost" className="h-10 gap-1.5 px-2.5 pointer-coarse:h-11" aria-label={`Account${me.data ? `: ${me.data.username ?? me.data.user}` : ""}`}>
                 <CircleUser aria-hidden className="size-5" />
                 <span className="hidden text-sm lg:inline">{me.data?.username ?? me.data?.user}</span>
               </Button>
@@ -165,6 +184,7 @@ export function App() {
             </DropdownMenuContent>
           </DropdownMenu>
           )}
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">

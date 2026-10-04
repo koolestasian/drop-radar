@@ -2,6 +2,10 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.13.1 (unreleased)
+
+The top bar has an appearance menu with Light, Dark, and System options. System follows the device; an explicit choice is remembered in this browser and shared across tabs. The selected theme applies before the first paint and sets the browser chrome and native controls to match.
+
 ## 0.13.0 (unreleased)
 
 When a posting gives no pay, US roles with a recognizable occupation now show a clearly labeled national wage benchmark. The detail pane names the occupation, 2025 BLS OEWS source, 10th–25th percentiles, and links to WageDex's CC BY 4.0 compilation. Employer-stated pay always takes priority. The benchmark covers all workers in an occupation, so it is not a company offer or an internship-specific wage. On the owner's live feed it would cover 851 of 1,209 blank-pay cards; 358 remain blank for uncertain roles or locations outside the US.

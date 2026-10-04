@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useMutation, useQueryClient, type InfiniteData, type QueryClient } from "@tanstack/react-query";
 import { setStatus, type ActionStatus, type Opportunity, type Page } from "./api/client";
 
@@ -69,4 +69,35 @@ export function useDensity(): [Density, (d: Density) => void] {
     }
   };
   return [density, set];
+}
+
+export type Theme = "light" | "dark" | "system";
+const THEME_KEY = "radar.theme";
+const themeValue = (value: string | null): Theme => value === "light" || value === "dark" ? value : "system";
+
+export function useTheme(): [Theme, (theme: Theme) => void, boolean] {
+  const [theme, setTheme] = useState<Theme>(() => {
+    try { return themeValue(localStorage.getItem(THEME_KEY)); }
+    catch { return "system"; }
+  });
+  const deviceDark = useMediaQuery("(prefers-color-scheme: dark)");
+  const dark = theme === "dark" || (theme === "system" && deviceDark);
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    document.documentElement.style.colorScheme = dark ? "dark" : "light";
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')!.content = dark ? "#0b0f14" : "#f7f8fa";
+  }, [dark]);
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === THEME_KEY || event.key === null) setTheme(themeValue(event.newValue));
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+  const set = (value: Theme) => {
+    setTheme(value);
+    try { localStorage.setItem(THEME_KEY, value); }
+    catch { /* session-only */ }
+  };
+  return [theme, set, dark];
 }
