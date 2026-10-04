@@ -61,7 +61,7 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 | 16.1 | Logos: verified ladder | **done, live**; `fix-logos` ran for real 2026-10-03 21:35 UTC (owner's yes): 110 changed, report `/opt/radar/data/fix-logos-run.txt`, backup `backups/radar-20261003T212612Z-pre-fix-logos.db` |
 | 16.2 | Delete `filter.py`'s location lists | **done, live** (5761717, deployed 2026-10-03 20:43 UTC) |
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from page text via Haiku: not built. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
-| 16.4 | Self-growing watchlist + review queue | doing: `find-boards` built (stored apply links -> unwatched boards -> probe -> `data/t16/16.4-board-queue.tsv` on the box, read-only); owner picks boards from the file; YC directory, aggregator, paste-a-URL and self-repair still todo |
+| 16.4 | Self-growing watchlist + review queue | doing: `find-boards` built (stored apply links -> unwatched boards -> probe -> `data/t16/16.4-board-queue.tsv` on the box, read-only); owner chose all 213 (watchlist 602 -> 815, tier C, 2026-10-04); YC directory, aggregator, paste-a-URL and self-repair still todo |
 | 16.5 | Adaptive polling + learned priority | todo (feeds T14) |
 | 16.6 | Learn from the user | todo |
 | 16.7 | Maintenance by agent | todo |
