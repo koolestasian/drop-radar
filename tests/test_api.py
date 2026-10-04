@@ -240,9 +240,17 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         self.store.save_opportunity(self.ids["swe"], first_seen=T0, published_at=datetime(2026, 9, 30, tzinfo=timezone.utc))
         self.assertEqual(await self.ids_of(KEVIN, include="all", posted_within=1), self.names("swe"))  # date-only: Sep 30 is 1 day back
 
+    async def counted(self, token):
+        for _ in range(100):
+            r = await self.get("/api/opportunities/summary", token)
+            if r.status_code == 200:
+                return r.json()
+            await asyncio.sleep(0.05)
+        self.fail(r.text)
+
     async def test_the_summary_counts_exactly_what_the_list_shows(self):
         for token, who in ((KEVIN, "kevin"), (FRIEND, "friend")):
-            body = (await self.get("/api/opportunities/summary", token)).json()
+            body = await self.counted(token)
             for scope, include in (("you", "matches"), ("everything", "all")):
                 with self.subTest(who=who, scope=scope):
                     shown = (await self.get("/api/opportunities", token, include=include)).json()["items"]
@@ -252,8 +260,13 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(counts["level"].get(lvl, 0), sum(o["level"] == lvl for o in shown))
                     for name in {o["track"] for o in shown}:
                         self.assertEqual(counts["track"][name], sum(o["track"] == name for o in shown))
-        guest = (await self.guest_get("/api/opportunities/summary")).json()
-        self.assertEqual(guest["everything"]["total"], 4)
+        for _ in range(100):  # the first request starts the count and is told to retry
+            r = await self.guest_get("/api/opportunities/summary")
+            if r.status_code == 200:
+                break
+            self.assertEqual((r.status_code, r.headers["retry-after"]), (503, "5"))
+            await asyncio.sleep(0.05)
+        self.assertEqual(r.json()["everything"]["total"], 4)
 
     async def test_phone_configuration_exposes_only_this_users_subscription(self):
         runtime = directory()

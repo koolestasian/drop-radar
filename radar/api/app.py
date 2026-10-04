@@ -187,7 +187,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         return user
 
     guest = User(id=GUEST_ID, watchlist=Watchlist(), profile=load_guest_profile())
-    summaries = {}  # user id -> (time, Summary), 5 min: a scan takes seconds
+    summaries, counting = {}, {}  # user id -> (time, Summary); user id -> its recount in progress
     hits, cached = {}, {}  # guest rate limit (ip -> request times) and 60s response cache (query -> (time, page))
 
     def _client_ip(request):
@@ -499,17 +499,27 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
 
     @app.get("/api/opportunities/summary", response_model=Summary)
     async def summary(user: User = Depends(viewer)):
-        """The numbers behind the Jobs header and filter pills, over everything the list would show."""
+        """The numbers behind the Jobs header and filter pills, over everything the list would show.
+        Counting reads every posting (seconds on the box), so a request never waits for it: it gets the last
+        count at once, and an older-than-5-minutes or missing one starts a recount. The first ever request
+        is a 503 with Retry-After while the recount runs."""
         hit = summaries.get(user.id)
-        if hit and time.monotonic() - hit[0] < 300:
-            return await asyncio.shield(hit[1])  # one scan at a time per user; a burst of visitors shares it
+        if (not hit or time.monotonic() - hit[0] > 300) and user.id not in counting:
+            counting[user.id] = asyncio.ensure_future(recount(user))
+        if hit:
+            return hit[1]
+        raise HTTPException(503, "counting your jobs; try again in a few seconds", headers={"Retry-After": "5"})
+
+    async def recount(user):
         mine, path = owned(user), store.conn.execute("PRAGMA database_list").fetchone()["file"]
 
-        def scan():  # its own connection on a worker thread: ~6 s of reading must not stall live updates
+        def scan():  # its own connection on a worker thread, and it naps now and then so requests stay quick
             you, everything, seen = Counter(), Counter(), set()
             with Store(path) as db:
                 # the list's order, so the same copy of a twin is the one counted
-                for row in db.list_opportunities(source_names=mine, sort="posted"):
+                for n, row in enumerate(db.list_opportunities(source_names=mine, sort="posted")):
+                    if n % 200 == 0:
+                        time.sleep(0.02)
                     twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
                     if twin in seen:
                         continue
@@ -532,17 +542,13 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             return Counts(total=c["total"], level={k[6:]: n for k, n in c.items() if k.startswith("level:")},
                           track={k[6:]: n for k, n in c.items() if k.startswith("track:")})
 
-        async def build():
-            you, everything = await asyncio.to_thread(scan)
-            return Summary(you=counts(you), everything=counts(everything))
-
-        task = asyncio.ensure_future(build())
-        summaries[user.id] = (time.monotonic(), task)
         try:
-            return await asyncio.shield(task)
+            you, everything = await asyncio.to_thread(scan)
+            summaries[user.id] = (time.monotonic(), Summary(you=counts(you), everything=counts(everything)))
         except Exception:
-            summaries.pop(user.id, None)  # a failed scan is not cached
-            raise
+            logging.getLogger(__name__).exception("summary recount failed")
+        finally:
+            counting.pop(user.id, None)
 
     @app.get("/api/opportunities/{opp_id}", response_model=Opportunity)
     async def get_opportunity(opp_id: str, user: User = Depends(viewer)):

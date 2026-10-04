@@ -11,7 +11,7 @@ Versions follow the web app (`web/package.json`). Every merge to `main` adds an 
 - **One date per card:** when the employer posted it, or "found" when the posting gives none. Found and the lag stay in the detail pane. "Newest found" is gone from Sort (the API keeps `sort=found`).
 - **Tracker** (the old Board) has a collapsed Hidden list; "Ignored" is now "Hidden" everywhere, and the Ignored switch left Filters.
 - **Server-side level, track, posted_within.** `/api/opportunities` takes `level=intern|new_grad`, `track=<name>` and `posted_within=<days>`, and every item carries `level` and `track`; the web no longer classifies the 30 rows it has loaded. Rules live in `radar/pipeline/roles.py`. Fixed two misses: "2027 Grads" and "Early Careers" now count as new grad (13 of the owner's 1,558 matches, 77 of 11,396 jobs); no track changed.
-- **`GET /api/opportunities/summary`** returns counts for For you and Everything, per level and per track (cached 5 minutes per user; a scan reads every posting, so it runs on its own thread). It feeds the header line and the pill counts, which are exact because they are not computed over a page.
+- **`GET /api/opportunities/summary`** returns counts for For you and Everything, per level and per track (a count reads every posting and takes 6 to 30 s on the box, so a request gets the last count at once and a recount runs in the background; the very first request is a 503 with Retry-After). It feeds the header line and the pill counts, which are exact because they are not computed over a page.
 - 435 backend tests, 58 e2e tests (29 checks on desktop and phone).
 
 ## 0.13.1 (2026-10-04)
