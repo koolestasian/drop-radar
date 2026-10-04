@@ -27,6 +27,9 @@ const ROUTES: { id: string; label: string; icon: LucideIcon }[] = [
 type Route = "feed" | "jobs" | "board" | "sources" | "settings" | "login";
 const GUEST_ROUTES: Route[] = ["feed", "jobs"]; // what a visitor who is not signed in can open
 
+// "/settings" typed or bookmarked: the app routes on the hash, so move the path there
+if (window.location.pathname !== "/" && !window.location.hash) window.history.replaceState(null, "", `/#${window.location.pathname}`);
+
 function currentRoute(): Route {
   const id = window.location.hash.replace(/^#\/?/, "");
   return (id === "login" ? "login" : ROUTES.find((r) => r.id === id)?.id ?? "feed") as Route;
@@ -138,13 +141,13 @@ export function App() {
           ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-10 gap-1.5 px-2.5 max-sm:ml-auto pointer-coarse:h-11" aria-label={`Account${me.data ? `: ${me.data.user}` : ""}`}>
+              <Button variant="ghost" className="h-10 gap-1.5 px-2.5 max-sm:ml-auto pointer-coarse:h-11" aria-label={`Account${me.data ? `: ${me.data.username ?? me.data.user}` : ""}`}>
                 <CircleUser aria-hidden className="size-5" />
-                <span className="hidden text-sm lg:inline">{me.data?.user}</span>
+                <span className="hidden text-sm lg:inline">{me.data?.username ?? me.data?.user}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-48">
-              {me.data && <DropdownMenuLabel className="font-normal text-muted-foreground">Signed in as {me.data.user}</DropdownMenuLabel>}
+              {me.data && <DropdownMenuLabel className="font-normal text-muted-foreground">Signed in as {me.data.username ?? me.data.user}</DropdownMenuLabel>}
               <DropdownMenuItem asChild>
                 <a href="#/settings"><SettingsIcon aria-hidden /> Settings</a>
               </DropdownMenuItem>

@@ -333,6 +333,13 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
                 break
         self.assertEqual(seen, [self.ids[e] for e in ("tax", "ng", "swe")])
 
+    async def test_the_same_job_posted_as_several_requisitions_is_one_card(self):
+        for n in range(3):  # Invesco: five "Business Trainee, Hyderabad" requisitions, one job
+            self.store.upsert_item(Item(source="ats.greenhouse.airbnb", external_id=f"twin{n}", company="Invesco",
+                                        url=f"https://x.example/twin{n}", title="Business Trainee",
+                                        location="Hyderabad, Telangana", seen_at=T0))
+        page = (await self.get("/api/opportunities", KEVIN, include="all")).json()
+        self.assertEqual(sum(o["title"] == "Business Trainee" for o in page["items"]), 1)
 
     async def test_sort_by_posted_or_found_pages_in_utc_order(self):
         ny = timezone(timedelta(hours=-4))

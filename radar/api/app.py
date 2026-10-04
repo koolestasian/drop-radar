@@ -422,10 +422,16 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
                 return hit[1]
         after = _decode_cursor(cursor) if cursor else None
         today = now().date()
-        items, keys, more = [], [], None
+        items, keys, more, seen = [], [], None, set()
         terms, places = (q or "").split(), (location or "").split()
         for row in store.list_opportunities(status=status, since=since, source_names=owned(user),
                                               backfill=backfill, sort=sort, ranks=_ranks(user)):
+            # one card per job: Invesco posts the same "Business Trainee, Hyderabad" as five requisitions.
+            # Checked before the cursor so every page agrees on which copy is the one shown.
+            twin = (row["company"].lower(), row["title"].lower().strip(), row["location"].lower().strip())
+            if twin in seen:
+                continue
+            seen.add(twin)
             if after and (row["sort_key"], row["id"]) >= after:
                 continue
             # filters the row alone can answer run before the per-row fetch below
