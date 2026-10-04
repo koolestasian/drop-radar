@@ -69,6 +69,7 @@ export function Feed({ incoming = [], clearIncoming = () => {}, guest = false }:
   }, []);
   /** Change filters and the address; typing replaces the history entry, a deliberate choice adds one. */
   function update(patch: Partial<Filters>, replace = false) {
+    if (!window.location.hash.startsWith("#/jobs")) return; // already on another screen: a late landing or debounce must not pull you back
     const next = { ...latest.current, ...patch };
     latest.current = next;
     setFilters(next);
