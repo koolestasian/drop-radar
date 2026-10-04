@@ -6,6 +6,10 @@ The owner asked for a useful first version next week, plus longer-term brainstor
 
 ## Product outcome
 
+Owner clarified the sequence: personal workflow first, invite-only beta for close
+friends once useful, then potential wider scale and monetization. The first release
+is optimized for the owner's actual job search, not a public self-service platform.
+
 Every promising new or existing job can produce an action packet: why it fits,
 what is uncertain, the strongest referral routes, supported recruiter candidates,
 a tailored resume, a short outreach draft and the next action. Optimize useful
@@ -193,6 +197,40 @@ explicit approval and send endpoints; outcome/suppression updates. Poll durable
 task status initially; SSE can notify without becoming the source of truth.
 Regenerate OpenAPI/types. Failure results distinguish no evidence, provider blocked,
 budget exhausted, missing facts, stale packet and send outcome unknown.
+
+## Personal use, friend beta and commercial gates
+
+- **Personal first:** calibrate roles, ranking, career facts, contacts and templates
+  against the owner's real inputs. Flexible imports and manual corrections are fine;
+  generalized onboarding, billing, growth features and a trained universal ranker
+  do not belong in the first-week scope.
+- Measure time to prepare a useful application packet, owner acceptance of top-ten
+  recommendations, unsupported resume claims, contact accuracy and actual conversations.
+  Record weekly outcomes for at least two weeks before broadening the beta. Interviews
+  are an outcome metric, not a fixed short-term promise.
+- **Friend beta:** start with three to five manually invited friends. Each supplies
+  their own goals, career facts, contacts and mail authorization. Close friendship
+  does not imply permission to share resumes, contacts, relationship notes or outcomes.
+  Rank per user; share permitted public job facts, never personal networks by default.
+- User ownership/access checks are required from day one, even while there is one
+  active user. Invite-only enrollment is a planned beta control, not a current app change.
+  No public paid launch or signup expansion until explicitly chosen.
+- Track per-user research/model/render cost, queue delay and limits from the first
+  release. Separate cached public evidence from private artifacts. These simple
+  boundaries enable later scale without requiring new infrastructure now.
+- Beta gate: packet/resume/send isolation tests pass, approvals work, costs are bounded,
+  and each invited user has completed an assisted workflow with feedback. Review after
+  two weeks: regular voluntary use, measured time savings, quality defects and support
+  burden determine whether to expand or fix the experience first.
+- **Commercial experiment:** after repeat usage and demonstrated value, interview
+  beta users about willingness to pay and offer a small explicitly agreed paid pilot.
+  Define the paid unit and price from observed cost/value; do not assume willingness
+  to pay from compliments or registrations. Keep monetization separate from outreach
+  behavior; sending more messages is not the success metric.
+- Before a public paid launch, complete tenant isolation review, portable export/deletion,
+  provider production authorization, backup/restore checks, usage metering, billing,
+  support/retention policies and measured load validation. Sequence these later rather
+  than making them prerequisites for the owner's prototype.
 
 ## Larger high-agency ideas, ranked for later experiments
 

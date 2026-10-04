@@ -6,6 +6,10 @@ task status in PROGRESS.md. Assigned branch: claude/trim-drop-radar-plan.
 
 ## Direction and chosen defaults
 
+Owner clarified the growth sequence after the audit: personal workflow first,
+invite-only close-friend beta after it proves useful, then potential scaling and
+monetization. Public-product work is a later gated stage, not the initial release.
+
 Build the best tracker for the owner and a small group: discover relevant openings
 early, explain eligibility honestly, deliver dependable alerts, and make acting on
 jobs easy. Prioritize missed/noisy jobs; uncertain matches go into a separate review
