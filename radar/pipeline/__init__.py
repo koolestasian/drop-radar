@@ -93,13 +93,17 @@ class Pipeline:
             task.add_done_callback(self._background.discard)
         else:
             try:
-                await asyncio.wait_for(self._safe_fill(opportunity_id, pay=True), 15)
+                await asyncio.wait_for(self._safe_fill(opportunity_id, pay=True, llm=False), 15)
+                if needs_pay(self.store.get_opportunity(opportunity_id)):
+                    task = asyncio.create_task(self._safe_fill(opportunity_id, pay=True))
+                    self._background.add(task)
+                    task.add_done_callback(self._background.discard)
             except asyncio.TimeoutError:
                 log.info("page facts for %s took too long; the drop goes out as it is", opportunity_id)
 
-    async def _safe_fill(self, opportunity_id, pay=False):
+    async def _safe_fill(self, opportunity_id, pay=False, llm=True):
         try:
-            await self.pagefacts.fill(opportunity_id, pay=pay)
+            await self.pagefacts.fill(opportunity_id, pay=pay, llm=llm)
         except asyncio.CancelledError:
             raise
         except Exception:

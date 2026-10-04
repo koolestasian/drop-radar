@@ -2,6 +2,16 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.17.0 (2026-10-04)
+
+T16.3 pay extraction now uses Haiku when the fetched posting has no structured/regex pay.
+Amounts, currency, period and an exact source quote must pass validation before filling a
+blank. Gemini is tried only after Haiku fails, with a ten-minute pause on quota errors.
+Calls share the Story daily token budget; content caching avoids repeat spend. Unknowns
+retry after a week, API failures retry next time, and dry runs use cached model evidence
+only. Model calls run in the background so alerts still go out promptly. Existing pay,
+row IDs and notes are preserved, including changes made while a request is running.
+
 ## 0.16.0 (2026-10-04)
 
 T16.4 is complete: Settings can check a careers URL, detect its supported ATS board and

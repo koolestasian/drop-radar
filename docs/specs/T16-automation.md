@@ -60,7 +60,7 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 |---|---|---|
 | 16.1 | Logos: verified ladder | **done, live**; `fix-logos` ran for real 2026-10-03 21:35 UTC (owner's yes): 110 changed, report `/opt/radar/data/fix-logos-run.txt`, backup `backups/radar-20261003T212612Z-pre-fix-logos.db` |
 | 16.2 | Delete `filter.py`'s location lists | **done, live** (5761717, deployed 2026-10-03 20:43 UTC) |
-| 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from page text via Haiku: not built. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
+| 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from fetched page text via Haiku done (this commit, 2026-10-04, v0.17.0): verified quote/amount/currency/period, shared daily budget, content cache, background calls, Gemini on API failure. Off-box owner sample: 4 model fills + 1 regex fill out of 20 blanks; no live backfill. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
 | 16.4 | Self-growing watchlist + review queue | **done** (2026-10-04, this commit, v0.16.0): stored-link, YC and pinned aggregator queues; Settings careers URL detection; daily off-box repair/archive review queue |
 | 16.5 | Adaptive polling + learned priority | todo (feeds T14) |
 | 16.6 | Learn from the user | todo |
@@ -138,7 +138,17 @@ locations: 161 unknown -> US, 83 unknown -> abroad (the direction that can miss 
 3. **Junk titles** ("Other Opportunity · 2026"): rewrite them only when the title matches a
    generic pattern.
 4. **Pay range and blank facts:** extract them from page text pagefacts already fetched, and only
-   fill blanks.
+   fill blanks. **Pay built:** source/API descriptions retained in the existing page cache;
+   Haiku runs only after structured/regex pay misses. Exact quoted evidence, amounts,
+   explicit currency and period, base-pay context and plausibility are checked. Rejects
+   estimates, bonuses, equity and total compensation. Calls reserve against the existing
+   daily Story token budget before yielding; cache is keyed by text/version with model,
+   evidence and check time. Unknowns retry after seven days, failed calls next time.
+   Gemini runs only on Haiku failure and pauses ten minutes after 429. Alerts never wait
+   for the model. `fix-pay --dry-run` reads cached model evidence only and writes nothing;
+   an uncached model backfill is a real run requiring owner approval and a backup.
+   Live sample: `data/t16/16.3-pay-live-sample.json` (20 owner blanks, 4 Haiku + 1 regex,
+   15 still blank). Live existing-row backfill has not run.
 
 ### 16.4 Self-growing watchlist (everything goes to a review queue, never straight to live)
 **Settings (built):** a signed-in user pastes a public careers/job-board URL and clicks
