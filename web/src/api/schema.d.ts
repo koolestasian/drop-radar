@@ -168,6 +168,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/config/watchlist/discover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Discover Board */
+        post: operations["discover_board_api_config_watchlist_discover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/instagram/relay": {
         parameters: {
             query?: never;
@@ -246,6 +263,9 @@ export interface paths {
         /**
          * Summary
          * @description The numbers behind the Jobs header and filter pills, over everything the list would show.
+         *     Counting reads every posting (seconds on the box), so a request never waits for it: it gets the last
+         *     count at once, and an older-than-5-minutes or missing one starts a recount. The first ever request
+         *     is a 503 with Retry-After while the recount runs.
          */
         get: operations["summary_api_opportunities_summary_get"];
         put?: never;
@@ -357,6 +377,24 @@ export interface components {
              * @description send as 'Authorization: Bearer <token>'; shown once, kept only as a hash
              */
             token: string;
+        };
+        /** BoardDiscovery */
+        BoardDiscovery: {
+            /** Ats */
+            ats: string;
+            /** Name */
+            name: string;
+            /** Postings */
+            postings: number;
+            /** Slug */
+            slug: string;
+            /** Tier */
+            tier: string;
+        };
+        /** CareersURL */
+        CareersURL: {
+            /** Url */
+            url: string;
         };
         /** CompanyConfig */
         CompanyConfig: {
@@ -1095,6 +1133,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WatchlistConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discover_board_api_config_watchlist_discover_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CareersURL"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardDiscovery"];
                 };
             };
             /** @description Validation Error */

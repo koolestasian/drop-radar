@@ -10,6 +10,7 @@ export type SourceHealth = S["SourceHealth"];
 export type ProfileConfig = S["ProfileConfig"];
 export type WatchlistConfig = S["WatchlistConfig"];
 export type CompanyConfig = S["CompanyConfig"];
+export type BoardDiscovery = S["BoardDiscovery"];
 export type ActionStatus = NonNullable<S["ActionPatch"]["status"]>;
 
 const TOKEN_KEY = "radar.token";

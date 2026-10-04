@@ -6,6 +6,18 @@ from pydantic import BaseModel, Field
 ActionStatus = Literal["new", "saved", "applied", "interview", "offer", "rejected", "ignored"]
 
 
+class CareersURL(BaseModel):
+    url: str = Field(min_length=8, max_length=2048)
+
+
+class BoardDiscovery(BaseModel):
+    name: str
+    ats: str
+    slug: str
+    tier: str
+    postings: int
+
+
 class Action(BaseModel):
     status: str = Field(description="this user's status; legacy imports may say 'actioned'")
     notes: str

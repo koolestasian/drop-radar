@@ -42,7 +42,7 @@ from radar.pipeline import roles
 from radar.pipeline.pay_estimate import estimate_pay
 from radar.api import auth, events
 from radar.api.bitindex import BitIndex, pill_counts
-from radar.api.models import (Action, ActionPatch, AuthResult, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
+from radar.api.models import (Action, ActionPatch, AuthResult, BoardDiscovery, CareersURL, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
                               SourceHealth, SourceLatency, Summary, WatchlistConfig)
 from radar.config import GUEST_ID, User, Watchlist, load_guest_profile, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
@@ -645,6 +645,18 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     @app.get("/api/config/watchlist", response_model=WatchlistConfig)
     async def get_watchlist(user: User = Depends(current_user)):
         return watchlist_out(user)
+
+    @app.post("/api/config/watchlist/discover", response_model=BoardDiscovery)
+    async def discover_board(body: CareersURL, user: User = Depends(current_user)):
+        from radar.sources.board_review import discover_url
+
+        throttle(("board-discovery", user.id), 20, 3600, "Too many board checks; try again in a while.")
+        try:
+            return await asyncio.wait_for(asyncio.to_thread(discover_url, body.url.strip()), 40)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
+        except Exception:
+            raise HTTPException(422, "The careers page couldn't be checked right now. Try its direct job-board URL.") from None
 
     async def put_account_watchlist(body, user):
         """An account's extra companies, kept in the database. Companies only, on the allowed boards, capped,

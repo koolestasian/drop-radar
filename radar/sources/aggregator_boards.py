@@ -10,16 +10,17 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
-from radar.config import load_users
+from radar.config import Company, load_users
 from radar.pipeline import pagefacts
 from radar.sources.yc_boards import discover
 
 COMMIT = "4bee912c68ca7549ce202db19c61dacded0baaf6"
 BASE = f"https://raw.githubusercontent.com/Feashliaa/job-board-aggregator/{COMMIT}/data"
 BOARDS = {"greenhouse": "https://boards.greenhouse.io/", "lever": "https://jobs.lever.co/",
-          "ashby": "https://jobs.ashbyhq.com/"}
+          "ashby": "https://jobs.ashbyhq.com/", "workday": ""}
 ATTRIBUTION = "Riley Dorrington / Feashliaa, job-board-aggregator"
 LICENSE = "https://creativecommons.org/licenses/by-nc/4.0/"
 
@@ -28,13 +29,33 @@ def candidates(ats, slugs, watched):
     """Validate untrusted dataset slugs before constructing any fetch URL."""
     seen = set(watched)
     for slug in slugs:
-        if not isinstance(slug, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", slug):
+        if ats == "workday":
+            if not isinstance(slug, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}\|wd\d{1,2}\|[A-Za-z0-9_-]{1,80}", slug):
+                continue
+            tenant, host, site = slug.split("|")
+            slug = f"{tenant}.{host}/{site}"
+            url = f"https://{tenant}.{host}.myworkdayjobs.com/{site}"
+        else:
+            url = BOARDS[ats] + slug if isinstance(slug, str) else ""
+        if ats != "workday" and (not isinstance(slug, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,100}", slug)):
             continue
         key = (ats, slug.lower())
         if key in seen:
             continue
         seen.add(key)
-        yield {"name": "", "website": BOARDS[ats] + slug, "isHiring": True}
+        yield {"name": "", "website": url, "isHiring": True}
+
+
+def workday_boards(batch):
+    from radar.sources.board_review import pair_from_url, probe
+    for candidate in batch:
+        pair = pair_from_url(candidate["website"])
+        if pair:
+            result = probe(Company("", *pair))
+            if result["status"] == "ok":
+                yield {"ats": pair[0], "slug": pair[1], "company": "", "website": candidate["website"],
+                       "board_url": candidate["website"], "postings": result["postings"], "verified": True,
+                       "checked_at": datetime.now(timezone.utc).isoformat(), "version": 1}
 
 
 def main(argv=None):
@@ -71,7 +92,7 @@ def main(argv=None):
     out.parent.mkdir(parents=True, exist_ok=True)
     count = 0
     with out.open("a") as file:
-        for row in discover(batch, watched):
+        for row in (workday_boards(batch) if args.ats == "workday" else discover(batch, watched)):
             row.update(source=source, dataset_commit=COMMIT, attribution=ATTRIBUTION,
                        license=LICENSE, company_verified=False)
             file.write(json.dumps(row, ensure_ascii=False) + "\n")

@@ -60,7 +60,8 @@ def _public(host: str) -> bool:
     return bool(infos) and all(ipaddress.ip_address(i[4][0]).is_global for i in infos)
 
 
-def _get(url: str, accept: str = "application/json", *, max_bytes: int = MAX_BYTES, robots: bool = False):
+def _get(url: str, accept: str = "application/json", *, max_bytes: int = MAX_BYTES, robots: bool = False,
+         method: str = "GET", json_body=None):
     """GET with every hop checked; returns the final response or None. Never raises."""
     for _ in range(4):
         parts = urlparse(url)
@@ -73,11 +74,16 @@ def _get(url: str, accept: str = "application/json", *, max_bytes: int = MAX_BYT
             time.sleep(wait)  # one request a second per host (this runs in a worker thread)
         _last_hit[parts.hostname] = time.monotonic()
         try:
-            r = requests.get(url, headers={"User-Agent": USER_AGENT, "Accept": accept}, timeout=TIMEOUT,
-                             allow_redirects=False, stream=True)
+            send = requests.post if method == "POST" else requests.get
+            extra = {"json": json_body} if method == "POST" else {}
+            r = send(url, headers={"User-Agent": USER_AGENT, "Accept": accept}, timeout=TIMEOUT,
+                     allow_redirects=False, stream=True, **extra)
         except requests.RequestException:
             return None
         if r.is_redirect or r.status_code in (301, 302, 303, 307, 308):
+            if method == "POST":
+                r.close()
+                return None  # never redirect a search body to a different endpoint
             url = urljoin(url, r.headers.get("location", ""))
             r.close()
             continue

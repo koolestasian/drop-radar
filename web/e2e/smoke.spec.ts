@@ -232,6 +232,11 @@ async function mockApi(page: Page, more: Opp[] = [], welcomed = true) {
     if (path === "/api/config/profile")
       return json(route, { roles: ["software engineer"], keywords: ["intern", "new grad"], exclude: ["senior"], grad_year: 2027,
         locations: ["Remote", "United States"], company_tiers: {} });
+    if (path === "/api/config/watchlist/discover") {
+      const body = req.postDataJSON();
+      return body.url.includes("missing") ? json(route, { detail: "No supported board with open postings was found." }, 422)
+        : json(route, { name: "", ats: "ashby", slug: "acme", tier: "C", postings: 7 });
+    }
     if (path === "/api/config/watchlist" && req.method() === "PUT") {
       const body = JSON.parse(req.postData() ?? "{}");
       if (body.companies.some((c: { slug: string }) => c.slug === "nopeco"))
@@ -672,6 +677,38 @@ test("an account turns on phone alerts, sends itself a test, and turns them off"
   await expect(page.getByText("Sent. If nothing arrives")).toBeVisible();
   await page.getByRole("button", { name: "Turn off" }).click();
   await expect(page.getByRole("button", { name: "Turn on phone alerts" })).toBeVisible();
+});
+
+test("a careers URL is checked, reviewed and saved, with keyboard and touch access", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/#/login");
+  await page.getByLabel("Username").fill("sam_smith");
+  await page.getByLabel("Password").fill("correct horse battery");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^Account/ })).toBeVisible();
+  await page.goto("/#/settings");
+  const url = page.getByLabel("Careers URL", { exact: true });
+  const check = page.getByRole("button", { name: "Check careers URL" });
+  await url.fill("https://company.example/missing");
+  await url.press("Tab");
+  await expect(check).toBeFocused();
+  await check.press("Enter");
+  await expect(page.getByRole("alert")).toContainText("No supported board");
+  await url.fill("https://jobs.ashbyhq.com/acme");
+  await check.click();
+  await expect(page.getByRole("status").filter({ hasText: "Verified ashby board" })).toContainText("7 open postings");
+  await expect(page.getByText("0 of 10 extra companies")).toBeVisible();
+  await expect(page.getByLabel("Job board")).toHaveValue("ashby");
+  await expect(page.getByLabel("Board slug")).toHaveValue("acme");
+  for (const control of [url, check]) {
+    const box = await control.boundingBox();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  }
+  await page.getByLabel("Company name").fill("Acme");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByText("1 of 10 extra companies")).toBeVisible();
+  await page.getByRole("button", { name: "Save extra companies" }).click();
+  await expect(page.getByText("Saved — polling now.")).toBeVisible();
 });
 
 test("an account adds extra companies on the allowed boards only; a bad board says why", async ({ page }) => {

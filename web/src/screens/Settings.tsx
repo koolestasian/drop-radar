@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { api, token, type CompanyConfig, type Me, type ProfileConfig, type WatchlistConfig } from "../api/client";
+import { api, token, type BoardDiscovery, type CompanyConfig, type Me, type ProfileConfig, type WatchlistConfig } from "../api/client";
 import { ArrowRight, ExternalLink, X } from "lucide-react";
 import { ErrorNote, ListSkeleton } from "../components/common";
 import { Badge } from "@/components/ui/badge";
@@ -145,6 +145,11 @@ function WatchlistForm({ initial, account }: { initial: WatchlistConfig; account
   const qc = useQueryClient();
   const [companies, setCompanies] = useState<CompanyConfig[]>(initial.companies ?? []);
   const [draft, setDraft] = useState<CompanyConfig>({ name: "", ats: "greenhouse", slug: "", tier: "B" });
+  const [careersURL, setCareersURL] = useState("");
+  const check = useMutation({
+    mutationFn: (url: string) => api<BoardDiscovery>("/api/config/watchlist/discover", { method: "POST", body: JSON.stringify({ url }) }),
+    onSuccess: (board) => setDraft((previous) => ({ name: previous.name, ats: board.ats, slug: board.slug, tier: board.tier })),
+  });
   const save = useMutation({
     mutationFn: (body: WatchlistConfig) =>
       api<WatchlistConfig>("/api/config/watchlist", { method: "PUT", body: JSON.stringify(body) }),
@@ -163,25 +168,23 @@ function WatchlistForm({ initial, account }: { initial: WatchlistConfig; account
 
   return (
     <div className="flex flex-col gap-4">
-      <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-        {companies.map((c, i) => (
-          <li key={`${c.ats}:${c.slug}`} className="flex items-center gap-3 px-3 py-1.5 text-sm">
-            <span className="min-w-0 flex-1 truncate">
-              <span className="font-medium">{c.name}</span> <span className="text-muted-foreground">{c.ats} · {c.slug}</span>
-            </span>
-            <span className="stamp text-muted-foreground">tier {c.tier}</span>
-            <Button variant="ghost" size="icon" aria-label={`Remove ${c.name}`} onClick={() => setCompanies(companies.filter((_, j) => j !== i))}>
-              <X />
-            </Button>
-          </li>
-        ))}
-        {companies.length === 0 && <li className="px-3 py-4 text-sm text-muted-foreground">{account ? "No extra companies yet." : "No companies yet."}</li>}
-      </ul>
+      <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); check.mutate(careersURL.trim()); }}>
+        <label htmlFor="careers-url" className="text-sm font-semibold">Careers URL</label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input id="careers-url" type="url" required disabled={check.isPending} value={careersURL} onChange={(e) => { setCareersURL(e.target.value); check.reset(); }}
+            placeholder="https://company.com/careers" className="h-11 min-w-0 text-base sm:text-sm" aria-describedby="careers-help" aria-invalid={check.isError} />
+          <Button type="submit" size="lg" variant="outline" disabled={full || check.isPending || !careersURL.trim()}>{check.isPending ? "Checking…" : "Check careers URL"}</Button>
+        </div>
+        <p id="careers-help" className="text-sm text-muted-foreground">Paste a careers page or job-board link. Review the detected board below, give it a company name, then add and save.</p>
+        {check.isError && <ErrorNote error={check.error} />}
+        {check.isSuccess && <p role="status" className="text-sm text-muted-foreground">Verified {check.data.ats} board · {check.data.postings} open postings. Nothing added yet.</p>}
+      </form>
       <form
         className="grid gap-2 sm:grid-cols-[1fr_9rem_1fr_5rem_auto]"
         onSubmit={(e) => {
           e.preventDefault();
           if (!draft.name.trim() || !draft.slug.trim()) return;
+          if (companies.some((c) => c.ats === draft.ats && c.slug.toLowerCase() === draft.slug.trim().toLowerCase())) return;
           setCompanies([...companies, { ...draft, name: draft.name.trim(), slug: draft.slug.trim() }]);
           setDraft({ ...draft, name: "", slug: "" });
         }}
@@ -220,6 +223,20 @@ function WatchlistForm({ initial, account }: { initial: WatchlistConfig; account
         </Button>
         {save.isSuccess && <span role="status" className="text-sm font-medium text-live">Saved — polling now.</span>}
       </div>
+      <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+        {companies.map((c, i) => (
+          <li key={`${c.ats}:${c.slug}`} className="flex items-center gap-3 px-3 py-1.5 text-sm">
+            <span className="min-w-0 flex-1 truncate">
+              <span className="font-medium">{c.name}</span> <span className="text-muted-foreground">{c.ats} · {c.slug}</span>
+            </span>
+            <span className="stamp text-muted-foreground">tier {c.tier}</span>
+            <Button variant="ghost" size="icon" aria-label={`Remove ${c.name}`} onClick={() => setCompanies(companies.filter((_, j) => j !== i))}>
+              <X />
+            </Button>
+          </li>
+        ))}
+        {companies.length === 0 && <li className="px-3 py-4 text-sm text-muted-foreground">{account ? "No extra companies yet." : "No companies yet."}</li>}
+      </ul>
     </div>
   );
 }

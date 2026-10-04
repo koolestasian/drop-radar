@@ -2,14 +2,24 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
-## Unreleased
+## 0.16.0 (2026-10-04)
+
+T16.4 is complete: Settings can check a careers URL, detect its supported ATS board and
+fill a form for review before adding it. Checks use public ATS APIs and the existing
+SSRF/robots guards, run off the API event loop and never save a watchlist by themselves.
+The add/save controls now sit above the company's list so large watchlists stay usable.
+
+Daily Mac maintenance queues verified slug repair candidates after confirmed 404s and
+archive proposals after 30 days of successful empty observations. It logs its evidence,
+resets empty history after errors/gaps, and never changes a live source without review.
+Guessed repair candidates explicitly leave company identity unverified.
 
 T16.4: `python -m radar.sources.yc_boards` discovers company-linked career boards from the YC
 hiring directory off-box and writes verified nonempty boards to a review queue with provenance.
 It supports bounded batches and a live-watchlist export; nothing is added automatically.
 
 The off-box `python -m radar.sources.aggregator_boards` also feeds the review queue from
-commit-pinned Greenhouse, Lever and Ashby lists in Feashliaa/job-board-aggregator. It records
+commit-pinned Greenhouse, Lever, Ashby and Workday lists in Feashliaa/job-board-aggregator. It records
 CC BY-NC dataset attribution and verifies open postings without guessing company names.
 
 ## 0.15.0 (2026-10-04)

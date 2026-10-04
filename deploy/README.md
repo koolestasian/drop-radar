@@ -243,6 +243,29 @@ can be enabled independently. The owner's topic is staged in `/opt/radar/alert-c
 load it into `radar.env` to turn the owner's pushes on (the old hourly job is retired, so nothing doubles up).
 Never print either topic or token to logs.
 
+## Daily board maintenance (T16.4, on the Mac)
+
+`deploy/board-maintenance.py` exports the current configured and self-service watchlists
+over the existing SSH alias, without reading secrets or changing the live DB. It runs
+`radar.sources.repair_boards` locally. A lock prevents overlapping runs. Local state,
+observation logs and the review queue live under `data/t16/`.
+
+The Mac LaunchAgent `com.dropradar.board-maintenance` runs at 03:30 local time each day.
+Its ProgramArguments use this checkout's absolute `.venv/bin/python` and
+`deploy/board-maintenance.py` paths, with WorkingDirectory set to the checkout;
+stdout/stderr go to `~/Library/Logs/DropRadar/board-maintenance.log`. The Mac must be
+awake/online to fetch boards. A gap over two days resets empty-board observation history.
+To run manually: `.venv/bin/python deploy/board-maintenance.py`.
+
+Confirmed 404s trigger bounded slug variants across Greenhouse, Lever, Ashby and
+SmartRecruiters. Open candidates are queued with `company_verified=false`; the owner
+must check identity before replacing a board. Workday tenant/site names aren't guessed.
+Thirty days of successful empty observations queue an archive proposal and log the
+evidence. Transient failures, malformed responses and nonempty boards reset that history.
+**Review only:** these jobs never apply repairs or remove a live source automatically.
+Before applying a queued change, re-probe it and review its timestamp; data repairs still
+require an exact description, the owner's approval and a backup.
+
 ## Deferred
 
 Docker/compose, Fly.io, S3 uploads, Postgres/Redis, sharding, and anything

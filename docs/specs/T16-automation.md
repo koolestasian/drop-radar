@@ -61,7 +61,7 @@ The bake-off ran on Drop Radar's own data. The harness is `data/bake/` (gitignor
 | 16.1 | Logos: verified ladder | **done, live**; `fix-logos` ran for real 2026-10-03 21:35 UTC (owner's yes): 110 changed, report `/opt/radar/data/fix-logos-run.txt`, backup `backups/radar-20261003T212612Z-pre-fix-logos.db` |
 | 16.2 | Delete `filter.py`'s location lists | **done, live** (5761717, deployed 2026-10-03 20:43 UTC) |
 | 16.3 | Turn the LLM on: Stories, junk titles, pay | **Stories + junk titles done, live** (ca347fe, 2026-10-04 02:04 UTC; `LLM_EXTRACTION=on`, model Haiku 4.5, images read, memes hidden when the Story has no apply link). `fix-stories` ran live 2026-10-04 02:12 UTC: 22 rows fixed (backup `backups/radar-20261004T021118Z-pre-fix-stories.db`). Pay range from page text via Haiku: not built. Separate BLS/WageDex US-wide estimates show only where employer pay is blank; 851/1,209 blanks covered on owner's live feed (deployed 2026-10-04 03:26 UTC). |
-| 16.4 | Self-growing watchlist + review queue | doing: stored-link and YC queues built. Pinned aggregator feeder built (2026-10-03 Pacific): Greenhouse, Lever, Ashby; off-box, guarded probes, attributed JSONL review queue. Paste-a-URL and self-repair still todo |
+| 16.4 | Self-growing watchlist + review queue | **done** (2026-10-04, this commit, v0.16.0): stored-link, YC and pinned aggregator queues; Settings careers URL detection; daily off-box repair/archive review queue |
 | 16.5 | Adaptive polling + learned priority | todo (feeds T14) |
 | 16.6 | Learn from the user | todo |
 | 16.7 | Maintenance by agent | todo |
@@ -141,6 +141,28 @@ locations: 161 unknown -> US, 83 unknown -> abroad (the direction that can miss 
    fill blanks.
 
 ### 16.4 Self-growing watchlist (everything goes to a review queue, never straight to live)
+**Settings (built):** a signed-in user pastes a public careers/job-board URL and clicks
+"Check careers URL". The server detects Greenhouse, Lever, Ashby, SmartRecruiters or
+Workday, follows one source-linked careers page when needed, and verifies open postings.
+It fills the existing board form; the user supplies a company name and explicitly adds
+and saves it. Discovery is rate-limited, does not write the database/config, and never
+blocks the API event loop. Ambiguous/missing/blocked/empty boards return a useful error.
+Owner/account limits and existing save validation still apply.
+
+**Self-repair (built):** the daily Mac job `deploy/board-maintenance.py` exports current
+live watchlists read-only, then runs `radar.sources.repair_boards`. Confirmed 404s trigger
+bounded simple-slug variants across ATSes; verified open candidates go to
+`data/t16/16.4-repair-queue.jsonl` with company identity explicitly unverified. Empty
+boards observed successfully for 30 days get logged archive proposals in the same queue.
+Errors/nonempty boards/gaps over two days reset empty history. State is saved atomically
+after each board, and queues deduplicate across retries. **As required by this slice's
+review rule, repair and archive proposals never edit the live watchlist automatically.**
+The owner reviews identity and re-probes before applying changes. See `deploy/README.md`
+for the daily LaunchAgent, local state/log paths and manual command.
+Maintenance supports the five safe host-controlled ATSes above; custom career-site
+adapters are logged as unsupported rather than guessed or archived. Workday site/tenant
+names can't be guessed reliably, but a 404 can still suggest a verified board on another ATS.
+
 **YC feeder (built):** `.venv/bin/python -m radar.sources.yc_boards --limit 50 --offset 0`
 reads the [documented hiring directory](https://github.com/yc-oss/api), checks company homepages
 and one linked careers page, then probes source-linked Greenhouse, Lever, Ashby and
@@ -158,7 +180,7 @@ in `data/t16/16.4-yc-live-sample.jsonl`. Nothing was added to live watchlists or
 Coverage limit: sites needing JavaScript, hiding their ATS links or using other ATSes are skipped.
 
 **Aggregator feeder (built):** `.venv/bin/python -m radar.sources.aggregator_boards --ats ashby --limit 50`
-reads the Greenhouse, Lever or Ashby company lists at pinned commit
+reads the Greenhouse, Lever, Ashby or Workday company lists at pinned commit
 `4bee912c68ca7549ce202db19c61dacded0baaf6` of
 [Feashliaa/job-board-aggregator](https://github.com/Feashliaa/job-board-aggregator).
 Dataset attribution: Riley Dorrington / Feashliaa; [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).
@@ -170,13 +192,22 @@ stays blank and `company_verified` is false; `verified` refers to the board's op
 Use `--watched FILE` for live watchlists (including self-service accounts), `--offset` for
 the next source batch, and `--out` for another queue. Batch offsets remain stable against
 the pinned lists even as watched/queued boards are skipped. Nothing is added to live watchlists.
-Coverage limit: Workday needs POST probes; the other upstream ATSes have no radar source.
-This slice handles the three existing sources that support safe GET probes.
+Workday's `tenant|wdN|site` entries are validated before constructing guarded POST probes.
+Other upstream ATSes without radar adapters remain unsupported.
 Live validation (2026-10-03 Pacific): first 10 source entries per ATS, compared with the
 owner's current watchlists, queued 12 distinct unwatched boards (Ashby 7, Greenhouse 3,
 Lever 2). All 12 have blank company names as intended. Report:
 `data/t16/16.4-aggregator-live-sample.jsonl` on the Mac. One unreadable Lever response was
 skipped without interrupting the batch; empty/error boards were not queued.
+The final Workday sample queued 2 of 3 candidates through guarded POST probes.
+
+Final validation: 458 backend tests, clean pyflakes, build and all 60 desktop/phone e2e
+checks. A Chrome pass with the owner's real Settings snapshot checked light/dark contrast,
+keyboard focus and 44px controls without changing live data. Direct live probes verified
+Rescale (19), Stripe (716) and NVIDIA Workday (2,000), and distinguished a confirmed 404.
+The first maintenance sample checked four supported boards, logged one unsupported adapter
+and queued no unnecessary repairs. Actual 30-day production history is not yet available;
+archive timing, error resets and review-only behavior are covered by offline tests.
 
 - **Feeders:**
   - **Community lists:** run Simplify/community-list apply links through
