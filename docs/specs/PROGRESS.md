@@ -33,6 +33,14 @@ Status: `todo` | `doing` | `done` (with commit hash and date) | `deferred` (not 
 | T20 personal opportunity action engine | doing | `T20-opportunity-action-engine.md`. Personal autonomous workflow: rank jobs/people/routes/actions; reuse private facts/answers; execute permitted outreach, reply handling, agreed scheduling, event/introduction follow-through and supported applications after account/policy activation. Review mode remains optional. Competitor report plus `reports/Drop Radar autonomous networking.md`; T20.1–20.8 phased plan. First prototype: verified contact → policy checks → real reply → agreed calendar meeting → brief. Personal internship workflow; optional private friend access is secondary. Public launch/commercialization/growth are outside the roadmap. Delivery slices remain candidates, with no new deadline or commitment to every feature. Career-library foundation live (5ed96c9, v0.20.0; 516 backend, 74 e2e). Approved schema 5→6 and backup, all existing rows preserved; remaining T20 work pending. |
 
 ## Latest handoff
+Cheaper agent-automation research continued by Claude Cloud (2026-10-05):
+`docs/specs/T20-agent-automation-research-findings.md`. Result: no agent platform for the
+first loop; direct worker + own SQLite action ledger + Haiku with caching/batch, DBOS Transact
+(MIT) later for durable waits. Measured install/import footprint of four libraries and a DBOS
+SQLite crash-recovery smoke test (`t20-dbos-crash-smoke.py`: one send across a crash). The
+ten-case model/framework benchmark is still open. Docs and one script only; no dependency,
+account, model call or deploy.
+
 Cheaper agent-automation research paused for owner handoff (2026-10-04):
 `docs/specs/T20-agent-automation-research-handoff.md` records candidate
 frameworks, model/search/contact cost hypotheses, primary source links and
