@@ -6,9 +6,22 @@ from pydantic import BaseModel, Field
 ActionStatus = Literal["new", "saved", "applied", "interview", "offer", "rejected", "ignored"]
 
 
+class CareersURL(BaseModel):
+    url: str = Field(min_length=8, max_length=2048)
+
+
+class BoardDiscovery(BaseModel):
+    name: str
+    ats: str
+    slug: str
+    postings: int
+
+
 class Action(BaseModel):
     status: str = Field(description="this user's status; legacy imports may say 'actioned'")
     notes: str
+    hide_term: str | None = None
+    hide_term_at: str | None = None
 
 
 class Match(BaseModel):
@@ -63,6 +76,39 @@ class Summary(BaseModel):
 class ActionPatch(BaseModel):
     status: ActionStatus | None = None
     notes: str | None = Field(default=None, max_length=10_000)
+    hide_term: str | None = Field(default=None, max_length=80)
+
+
+class Suggestion(BaseModel):
+    term: str
+    support_count: int
+    supporting_titles: list[str]
+    affected_count: int
+    examples: list[str]
+
+
+class ProfileSuggestions(BaseModel):
+    suggestions: list[Suggestion]
+    muted: list[str]
+
+
+class SuggestionDecision(BaseModel):
+    term: str = Field(min_length=1, max_length=80)
+    decision: Literal["apply", "mute", "restore"]
+
+
+class DiagnosticCheck(BaseModel):
+    stage: str
+    verdict: Literal["passed", "blocked", "unknown"]
+    explanation: str
+    facts: dict[str, str] = {}
+
+
+class LinkDiagnostic(BaseModel):
+    url: str
+    collected: bool
+    summary: str
+    checks: list[DiagnosticCheck]
 
 
 class Me(BaseModel):
@@ -96,12 +142,11 @@ class InstagramRelay(BaseModel):
 
 
 # Config shapes mirror the YAML files; radar.config.parse_watchlist/parse_profile
-# still do the real validation (allowed ATS kinds, tiers, the Instagram cap...).
+# still do the real validation (allowed ATS kinds, the Instagram cap...).
 class CompanyConfig(BaseModel):
     name: str
     ats: str = Field(description="greenhouse | lever | ashby | smartrecruiters | workday")
     slug: str = Field(description="board slug; workday: tenant.wdN/site")
-    tier: str = Field("B", description="S | A | B | C (S/A polled every 2 min)")
 
 
 class InstagramConfig(BaseModel):
@@ -134,7 +179,6 @@ class ProfileConfig(BaseModel):
     exclude: list[str] = Field([], description="any of these in the title rules it out")
     grad_year: int | None = Field(None, description="target season year, e.g. 2027")
     locations: list[str] = []
-    company_tiers: dict[str, str] = {}
 
 
 class SourceHealth(BaseModel):

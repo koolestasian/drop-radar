@@ -10,7 +10,6 @@ roles: [software engineer, software developer, software development, swe, sde, b
         forward deployed engineer]
 grad_year: 2027      # used as the target season: "Summer 2027" passes, "Summer 2026" doesn't
 locations: [Remote, United States]   # "United States" accepts any US city/state; an unknown location is let through
-company_tiers: {Stripe: S}
 keywords: [intern, co-op, new grad, grad, graduate, university, early career, entry level, junior,
            summer, winter, fall, residency, fellowship, apprentice]   # a season in the title implies an internship/co-op
 exclude: [senior, staff, principal, director, high school, phd]

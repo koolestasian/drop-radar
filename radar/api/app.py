@@ -40,10 +40,12 @@ from fastapi.responses import FileResponse, StreamingResponse
 from radar.alerts import DEAD_STATUSES, NtfyChannel, visible_to
 from radar.pipeline import roles
 from radar.pipeline.pay_estimate import estimate_pay
-from radar.api import auth, events
+from radar.pipeline import priority
+from radar.api import auth, career, events
+from radar.api import diagnostics, feedback
 from radar.api.bitindex import BitIndex, pill_counts
-from radar.api.models import (Action, ActionPatch, AuthResult, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
-                              SourceHealth, SourceLatency, Summary, WatchlistConfig)
+from radar.api.models import (Action, ActionPatch, AuthResult, BoardDiscovery, CareersURL, Counts, Credentials, InstagramRelay, Login, Match, Me, Metrics, Opportunity, Page, ProfileConfig,
+                              SourceHealth, SourceLatency, Summary, WatchlistConfig, ProfileSuggestions, SuggestionDecision, LinkDiagnostic)
 from radar.config import GUEST_ID, User, Watchlist, load_guest_profile, load_settings, parse_profile, parse_watchlist
 from radar.errors import ConfigError
 from radar.sources.registry import build_sources
@@ -51,14 +53,12 @@ from radar.store import Store
 from radar.logos import LogoResolver
 from radar.models import utcnow
 from radar.pipeline.filter import is_us_location
-from radar.pipeline.normalize import canonical_company
 from radar.pipeline.places import format_location
 from radar.pipeline.enrich import DEFAULT_DAILY_TOKEN_BUDGET
 from radar.sources.instagram import story_id
 from radar.stats import latency_by_source
 
 log = logging.getLogger(__name__)
-TIER_RANK = {"S": 3, "A": 2, "B": 1, "C": 0}
 HIDDEN_BY_DEFAULT = "ignored"  # a user's own ignored opportunities leave their feed unless asked for
 WEB_DIST = Path(__file__).resolve().parents[2] / "web" / "dist"
 
@@ -89,14 +89,6 @@ EDITED_HEADER = "# Edited through the API (radar.api); validated by radar.config
 def _has_terms(text, terms):
     """Every term starts a word somewhere: "ny" finds "New York, NY", not "Sunnyvale"."""
     return all(re.search(rf"(?<![a-z0-9]){re.escape(t)}", text, re.I) for t in terms)
-
-
-def _ranks(user):
-    """Prestige per company for this user: watchlist tiers, overridden by profile.company_tiers.
-    B (the default rank) is left out unless an override says so."""
-    tiers = {canonical_company(c.name).lower(): c.tier for c in user.watchlist.companies if c.tier != "B"}
-    tiers.update({canonical_company(n).lower(): t for n, t in user.profile.company_tiers.items()})
-    return {name: TIER_RANK[t] for name, t in tiers.items()}
 
 
 def _atomic_write(path, text):
@@ -155,13 +147,20 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         log.error("scheduler stopped", exc_info=task.exception())
         crash_exit()
 
+    def tiers_updated():
+        runtime.apply_tiers()
+        rank_cache.clear()
+        cached.clear()
+
     @asynccontextmanager
     async def lifespan(app):
-        stop, task, logo_task = asyncio.Event(), None, None
+        stop, task, logo_task, tier_task = asyncio.Event(), None, None, None
         if getattr(runtime, "scheduler", None) is not None:
             task = asyncio.create_task(runtime.scheduler.run(stop))
             task.add_done_callback(_log_crash)
             logo_task = asyncio.create_task(logos.run(stop))  # production only: tests stay offline
+            tier_task = asyncio.create_task(priority.run(store, lambda: tuple(runtime.users.values()), stop,
+                                                         on_rated=tiers_updated))
             # ponytail: accounts build their view on their first request, not here: each is 15-30 s of CPU on the box
             warm = [u for u in getattr(runtime, "users", {}).values() if not store.is_account(u.id)] + [guest]
             threading.Thread(target=lambda: [index.safely(u, owned(u), refresh=False) for u in warm],
@@ -171,7 +170,7 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         finally:
             if task is not None:
                 stop.set()  # Scheduler.run drains in-flight fetches before returning
-                await asyncio.gather(task, logo_task, return_exceptions=True)
+                await asyncio.gather(task, logo_task, tier_task, return_exceptions=True)
             index.close()
 
     app = FastAPI(title="Drop Radar", lifespan=lifespan)
@@ -197,13 +196,16 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             raise HTTPException(401, "missing or invalid bearer token", headers={"WWW-Authenticate": "Bearer"})
         return user
 
+    app.include_router(career.router(store, current_user, now))
+
     guest = User(id=GUEST_ID, watchlist=Watchlist(), profile=load_guest_profile())
-    rank_cache = {}  # user id -> (the User it was computed for, ranks): 800 company names are canonicalised per call
+    rank_cache = {}  # user id -> (the User it was computed for, when, ranks): 800 company names are canonicalised per call
 
     def ranks_of(user):
-        if (hit := rank_cache.get(user.id)) is None or hit[0] is not user:
-            hit = rank_cache[user.id] = (user, _ranks(user))
-        return hit[1]
+        now = time.monotonic()
+        if (hit := rank_cache.get(user.id)) is None or hit[0] is not user or now - hit[1] > 300:  # actions change learned ranks
+            hit = rank_cache[user.id] = (user, now, priority.learned_ranks(store, user.id))
+        return hit[2]
 
     summaries, counting = {}, {}  # user id -> (time, Summary); user id -> its recount in progress
     hits, cached = {}, {}  # guest rate limit (ip -> request times) and 60s response cache (query -> (time, page))
@@ -254,7 +256,8 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
             sources=sorted({i["source"] for i in seen_by_me}),
             backfill=bool(seen_by_me) and all(json.loads(i["raw"] or "{}").get("seed") for i in seen_by_me),
             match=Match(ok=ok, reasons=reasons),
-            action=Action(status=action["status"], notes=action["notes"]) if action else None,
+            action=Action(status=action["status"], notes=action["notes"], hide_term=action.get("hide_term"),
+                          hide_term_at=action.get("hide_term_at")) if action else None,
             company_domain=logos.domain(opp["company"]),
         )
 
@@ -612,9 +615,17 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
 
     @app.patch("/api/opportunities/{opp_id}", response_model=Opportunity)
     async def update_opportunity(opp_id: str, patch: ActionPatch, user: User = Depends(current_user)):
-        visible_opportunity(opp_id, user)
-        if patch.status is not None or patch.notes is not None:
-            store.set_action(opp_id, user.id, status=patch.status, notes=patch.notes)
+        opp = visible_opportunity(opp_id, user)
+        term = None
+        if patch.hide_term is not None:
+            if (patch.status or (opp.get("action") or {}).get("status")) != "ignored":
+                raise HTTPException(422, "Hide the job before adding feedback.")
+            try:
+                term = feedback.validate_feedback(patch.hide_term, opp["title"])
+            except ValueError as exc:
+                raise HTTPException(422, str(exc)) from None
+        if patch.status is not None or patch.notes is not None or term is not None:
+            store.set_action(opp_id, user.id, status=patch.status, notes=patch.notes, hide_term=term)
             bus.publish("action", opp_id, user.id)
         return serialize(store.get_opportunity(opp_id, user_id=user.id), user)
 
@@ -645,6 +656,18 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
     @app.get("/api/config/watchlist", response_model=WatchlistConfig)
     async def get_watchlist(user: User = Depends(current_user)):
         return watchlist_out(user)
+
+    @app.post("/api/config/watchlist/discover", response_model=BoardDiscovery)
+    async def discover_board(body: CareersURL, user: User = Depends(current_user)):
+        from radar.sources.board_review import discover_url
+
+        throttle(("board-discovery", user.id), 20, 3600, "Too many board checks; try again in a while.")
+        try:
+            return await asyncio.wait_for(asyncio.to_thread(discover_url, body.url.strip()), 40)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
+        except Exception:
+            raise HTTPException(422, "The careers page couldn't be checked right now. Try its direct job-board URL.") from None
 
     async def put_account_watchlist(body, user):
         """An account's extra companies, kept in the database. Companies only, on the allowed boards, capped,
@@ -709,6 +732,73 @@ def create_app(store, runtime=None, tokens=None, now=utcnow, web_dist=WEB_DIST, 
         else:
             replace_config(user, "profile", body.model_dump(), parse_profile, user.profile_path)
         return ProfileConfig(**dataclasses.asdict(runtime.users[user.id].profile))
+
+    @app.get("/api/profile/suggestions", response_model=ProfileSuggestions)
+    async def profile_suggestions(user: User = Depends(current_user)):
+        return feedback.suggestions(store, user, owned(user), now())
+
+    @app.post("/api/profile/suggestions", response_model=ProfileSuggestions)
+    async def decide_suggestion(body: SuggestionDecision, user: User = Depends(current_user)):
+        term = feedback.normalize_term(body.term)
+        current = feedback.suggestions(store, user, owned(user), now())
+        if body.decision == "apply":
+            if term not in {s.term for s in current.suggestions}:
+                raise HTTPException(409, "This suggestion is no longer available. Refresh Settings.")
+            profile = ProfileConfig(**dataclasses.asdict(user.profile))
+            profile.exclude.append(term)
+            await put_profile(profile, user)
+        else:
+            if (body.decision == "mute" and term not in {s.term for s in current.suggestions}) or (
+                    body.decision == "restore" and term not in current.muted):
+                raise HTTPException(409, "This suggestion is no longer available. Refresh Settings.")
+            with store.conn:
+                if body.decision == "mute":
+                    store.conn.execute("INSERT OR IGNORE INTO muted_profile_terms VALUES (?, ?)", (user.id, term))
+                else:
+                    store.conn.execute("DELETE FROM muted_profile_terms WHERE user_id=? AND term=?", (user.id, term))
+        latest = runtime.users[user.id]
+        return feedback.suggestions(store, latest, owned(latest), now())
+
+    diagnostic_slots = asyncio.Semaphore(2)
+
+    async def preview(url):
+        try:
+            return await asyncio.to_thread(diagnostics.fetch_preview, url)
+        except Exception:
+            log.warning("diagnostic preview failed", exc_info=True)
+            return None
+        finally:
+            diagnostic_slots.release()
+
+    @app.post("/api/diagnostics/link", response_model=LinkDiagnostic)
+    async def diagnose_link(body: CareersURL, user: User = Depends(current_user)):
+        throttle(("diagnostic", user.id), 10, 3600)
+        try:
+            valid = await asyncio.to_thread(diagnostics.public_url, body.url)
+        except ValueError:
+            valid = False
+        if not valid:
+            raise HTTPException(422, "Use a public HTTP(S) job URL without embedded credentials.")
+        url = diagnostics.canonical_url(body.url)
+        opp = diagnostics.stored_link(store, url, owned(user), user.id)
+        facts, recorded = None, []
+        if opp is None:
+            if diagnostic_slots.locked():
+                raise HTTPException(429, "Two posting previews are already running; try again shortly.")
+            await diagnostic_slots.acquire()
+            # Timeout does not free the slot while the blocking guarded fetch is still running.
+            task = asyncio.create_task(preview(url))
+            try:
+                facts = await asyncio.wait_for(asyncio.shield(task), 25)
+            except asyncio.TimeoutError:
+                facts = None
+        else:
+            dispatchers = getattr(getattr(getattr(runtime, "pipeline", None), "alerter", None), "dispatchers", {})
+            for channel in getattr(dispatchers.get(user.id), "channels", ()):
+                alert = store.get_alert(opp["id"], channel.name)
+                if alert:
+                    recorded.append(alert)
+        return diagnostics.explain(url, user, owned(user), opp, facts, recorded)
 
     @app.get("/api/stream", response_class=StreamingResponse,
              responses={200: {"content": {"text/event-stream": {}},

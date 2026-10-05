@@ -1,5 +1,4 @@
 import asyncio
-import dataclasses
 import json
 import tempfile
 import time
@@ -306,12 +305,12 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
         r = await self.client.patch(f"/api/opportunities/{swe}", headers=auth(FRIEND),
                                     json={"status": "saved", "notes": "ask Kevin about this"})
         self.assertEqual(r.status_code, 200, r.text)
-        self.assertEqual(r.json()["action"], {"status": "saved", "notes": "ask Kevin about this"})
+        self.assertEqual(r.json()["action"], {"status": "saved", "notes": "ask Kevin about this", "hide_term": None, "hide_term_at": None})
         mine = (await self.get(f"/api/opportunities/{swe}", KEVIN)).json()
         self.assertIsNone(mine["action"])
         await self.client.patch(f"/api/opportunities/{swe}", headers=auth(FRIEND), json={"status": "applied"})
         theirs = (await self.get(f"/api/opportunities/{swe}", FRIEND)).json()["action"]
-        self.assertEqual(theirs, {"status": "applied", "notes": "ask Kevin about this"}, "omitted notes are kept")
+        self.assertEqual(theirs, {"status": "applied", "notes": "ask Kevin about this", "hide_term": None, "hide_term_at": None}, "omitted notes are kept")
 
     async def test_patch_rejects_unknown_statuses_and_invisible_opportunities(self):
         r = await self.client.patch(f"/api/opportunities/{self.ids['swe']}", headers=auth(KEVIN),
@@ -442,8 +441,8 @@ class OpportunityApiTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_prestige_sorts_by_tier_then_newest_posted_across_pages(self):
         users = directory().users
-        users["kevin"] = dataclasses.replace(users["kevin"], profile=dataclasses.replace(
-            PROFILES["kevin"], company_tiers={"Airbnb": "S", "Stripe": "C"}))
+        for company, tier in {"Airbnb": "S", "Stripe": "C"}.items():
+            self.store.set_enrichment("company_tier:" + company.lower(), {"tier": tier})
         app = create_app(self.store, SimpleNamespace(users=users, owned=OWNED, scheduler=None), tokens=TOKENS)
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
             seen, cursor = [], None

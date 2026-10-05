@@ -99,7 +99,7 @@ class AccountTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_an_account_edits_its_own_profile_in_the_database(self):
         token = (await self.signup()).json()["token"]
-        body = {"roles": ["investment banking"], "keywords": ["intern"], "exclude": [], "locations": [], "company_tiers": {}}
+        body = {"roles": ["investment banking"], "keywords": ["intern"], "exclude": [], "locations": []}
         r = await self.client.put("/api/config/profile", headers=self.bearer(token), json=body)
         self.assertEqual(r.status_code, 200, r.text)
         self.assertEqual(r.json()["roles"], ["investment banking"])
@@ -223,7 +223,7 @@ class AccountTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(post.call_count, 1)
 
     def board(self, name="Ramp", ats="greenhouse", slug="ramp"):
-        return {"name": name, "ats": ats, "slug": slug, "tier": "B"}
+        return {"name": name, "ats": ats, "slug": slug}
 
     async def put_watchlist(self, token, companies, **extra):
         return await self.client.put("/api/config/watchlist", headers=self.bearer(token),

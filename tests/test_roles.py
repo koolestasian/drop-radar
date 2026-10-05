@@ -24,6 +24,23 @@ class RoleTests(unittest.TestCase):
         self.assertEqual(level("Early Careers Analyst"), "new_grad")
         self.assertEqual(level("Early Career Analyst"), "new_grad")
 
+    def test_trading_alone_does_not_mean_quant(self):
+        for title, expected in [
+            ("Sales & Trading Summer Analyst", "Finance"),
+            ("Energy Trader Intern", "Finance"),
+            ("Software Engineer, Trading Systems", "Software"),
+            ("Trading Data Engineer", "AI / ML / Data"),
+            ("Artificial Intelligence Software Engineer", "AI / ML / Data"),
+            ("Quantitative Software Engineer", "Software"),
+            ("Quantitative Trading Intern", "Quant"),
+            ("Algorithmic Trading Intern", "Quant"),
+            ("Systematic Trading Researcher", "Quant"),
+            ("High-Frequency Trading Engineer", "Quant"),
+            ("Quant Trader", "Quant"),
+        ]:
+            with self.subTest(title=title):
+                self.assertEqual(track(title, "Quant"), expected)
+
     def test_track_takes_the_first_rule_that_matches(self):
         for title, role_track, want in [
             ("Quant Developer Intern", "", "Quant"),

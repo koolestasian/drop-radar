@@ -16,6 +16,8 @@ from radar.errors import ConfigError
 from radar.pipeline import Pipeline
 from radar.pipeline.normalize import canonical_url
 from radar.scheduler import Scheduler
+from radar.pipeline.priority import TIER_INTERVAL_S, tier_of
+from radar.sources.cadence import active_hours
 from radar.sources.registry import build_sources_for_users
 
 OWNER_KEY = "meta:owner"  # kept in the enrichment table, the store's generic key -> json
@@ -51,6 +53,12 @@ class Runtime:
         self.events = EventBus()
         store.recanonicalize_urls(canonical_url)  # rows from before a canonical_url rule change
         self.reload()
+
+    def apply_tiers(self):
+        """Poll each ATS board at its company's learned tier interval (T16.5; unrated = B)."""
+        for source in self.scheduler.sources.values():
+            if hasattr(source, "company"):
+                source.interval_s = TIER_INTERVAL_S[tier_of(self.store, source.company.name) or "B"]
 
     def reload(self):
         configured = load_users(self.users_path)
@@ -90,6 +98,10 @@ class Runtime:
         else:
             self.scheduler.reload(sources)
             self.pipeline.alerter = alerter
+        for source in self.scheduler.sources.values():  # adaptive polling: learn each ATS board's posting hours
+            if hasattr(source, "active_hours"):
+                source.active_hours = active_hours(self.store.first_seen_times(source.name))
+        self.apply_tiers()
         for user_id, profile in profiles.items():
             dispatchers[user_id].profile = profile
         self.users = {u.id: u for u in users}

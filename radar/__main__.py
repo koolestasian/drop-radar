@@ -24,6 +24,10 @@
   find-boards [--limit N] [--out FILE]
           ATS boards the stored apply links point at that no watchlist has, probed once each and written to a
           review file (T16 16.4); read-only: nothing is added to a watchlist or the db
+  rate-tiers [--limit N] [--dry-run] [--out FILE]
+          rate every company with postings or on a watchlist that has no tier or one over 30 days old, for a
+          CS student (Jev + Haiku by name, Haiku with web search when they differ; T16.5). Needs TYPESAFE_API_KEY
+          and ANTHROPIC_API_KEY. Writes the tiers to the db unless --dry-run, and a review file either way
   openapi print the API schema; docs/openapi.json is this output (the web
           app's types are generated from it)
 """
@@ -66,6 +70,10 @@ def main(argv=None):
     boards = sub.add_parser("find-boards", parents=[db], help="probe boards the stored links point at that nobody watches")
     boards.add_argument("--limit", type=int, default=None, help="only probe this many boards (most-linked first)")
     boards.add_argument("--out", default="data/t16/16.4-board-queue.tsv", help="review file to write")
+    tiers = sub.add_parser("rate-tiers", parents=[db], help="rate companies S/A/B/C for a CS student")
+    tiers.add_argument("--limit", type=int, default=None, help="only rate this many companies")
+    tiers.add_argument("--dry-run", action="store_true", help="show the tiers; write nothing to the db")
+    tiers.add_argument("--out", default="data/t16/16.5-tiers.tsv", help="review file to write")
     sub.add_parser("openapi", help="print the API's OpenAPI schema as JSON")
     args = parser.parse_args(argv)
 
@@ -191,6 +199,22 @@ def main(argv=None):
         out.write_text("ats\tslug\tcompany\tstored_postings\tstatus\n" + "".join("\t".join(map(str, r)) + "\n" for r in ok))
         print(f"probed {len(found)} unwatched boards: {len(ok)} answer with open postings -> {out}; "
               f"{len(found) - len(ok)} did not (empty, unreadable or no source for that ATS)")
+    elif args.command == "rate-tiers":
+        from collections import Counter
+        from pathlib import Path
+
+        from radar.config import account_user, load_users
+        from radar.pipeline import priority
+
+        with Store(db_path) as store:
+            users = (*load_users(None), *(account_user(r) for r in store.list_accounts()))
+            todo = priority.stale(store, priority.company_names(store, users))[:args.limit]
+            rated = priority.refresh(store, todo, dry_run=args.dry_run)
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text("company\ttier\n" + "".join(f"{n}\t{t}\n" for n, t in sorted(rated.items())))
+        print(f"{'would rate' if args.dry_run else 'rated'} {len(rated)} of {len(todo)} companies "
+              f"({dict(Counter(rated.values()))}); unrated ones keep B and are retried -> {out}")
     elif args.command == "fix-stories":
         import asyncio
         import json

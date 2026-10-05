@@ -81,13 +81,17 @@ def _location_matches(location: str, wanted: str) -> bool:
     return w in location.lower() or places.near(location, wanted)  # "Seattle" takes in Redmond
 
 
+def excluded_term(title, terms):
+    return next((t for t in terms if re.search(rf"\b{re.escape(t)}\b", title, re.I)), None)
+
+
 def matches_profile(opp: dict, profile, level_implied: bool = False) -> tuple[bool, list[str]]:
     """`level_implied`: the item came from a list that only carries early-career
     roles (the SimplifyJobs repos), so a bare "Software Engineer 1" counts."""
     title = str(opp.get("title") or "")
     fields = opp.get("fields") or {}
 
-    hit = next((t for t in profile.exclude if re.search(rf"\b{re.escape(t)}\b", title, re.I)), None)
+    hit = excluded_term(title, profile.exclude)
     if hit:
         return False, [f"excluded keyword matched in title: {hit!r}"]
 

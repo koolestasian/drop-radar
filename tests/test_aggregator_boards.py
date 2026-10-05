@@ -16,8 +16,19 @@ class AggregatorBoardsTests(unittest.TestCase):
         rows = list(ab.candidates("ashby", slugs, {("ashby", "watched")}))
         self.assertEqual(rows, [{"name": "", "website": "https://jobs.ashbyhq.com/Acme", "isHiring": True}])
         for ats in ab.BOARDS:
+            if ats == "workday":
+                continue
             row = next(ab.candidates(ats, ["Acme"], set()))
             self.assertEqual(yc.board_from_url(row["website"]), (ats, "Acme"))
+
+    def test_workday_dataset_entries_are_validated_and_probed_without_guessing_sites(self):
+        rows = list(ab.candidates("workday", ["acme|wd5|jobs", "acme|wd5|../private", "evil.example|wd5|jobs"], set()))
+        self.assertEqual(len(rows), 1)
+        from radar.sources import board_review
+        with patch.object(board_review, "probe", return_value={"status": "ok", "postings": 4}):
+            [row] = ab.workday_boards(rows)
+        self.assertEqual((row["slug"], row["postings"]), ("acme.wd5/jobs", 4))
+        self.assertEqual(list(ab.candidates("workday", ["acme|wd5|jobs"], {("workday", "acme.wd5/jobs")})), [])
 
     def test_uses_guarded_real_parser_and_records_pinned_attribution_without_inventing_names(self):
         source = ab.BASE + "/ashby_companies.json"

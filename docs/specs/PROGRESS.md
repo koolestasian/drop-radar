@@ -26,18 +26,238 @@ Status: `todo` | `doing` | `done` (with commit hash and date) | `deferred` (not 
 | T13 audit | todo | `T13-audit.md`. Ask the user which bugs they saw first; ranked findings on live data. |
 | T14 email digest + priority push | todo | `T14-email-digest-priority-push.md`. Settle its 4 questions first; ends with the alert cutover. |
 | T15 UI | doing (research spec archived; the next UI work is T17) | v0.2.0 redesign done and live (see CHANGELOG.md): grouping, track chips, detail pane, shadcn index-card board, DevTools-verified a11y. v0.10.0 shows every place as "City, ST (US) or City, Country". v0.9.0 fills blank locations/companies/dates from posting links (`fix-pages`). v0.8.0 added extra companies for accounts (10 each, allowed boards only, probed first). v0.7.0 added phone alerts and test push for accounts. v0.6.0 added self-service accounts (username and password). v0.5.0 added a no-login guest view (read-only Feed and All jobs). v0.3.0 added the work-model badge, first-run explainer and transparency numbers. Compact rows (item 6) shipped in v0.4.0, no column picker. v0.12.0 added the pay column (stated ranges only; `fix-pay` completed, checked 2026-10-03 Pacific: filled 685 of 3,088 matching postings; authenticated owner feed 349/1,558 with pay (1,209 blank), PR #56). v0.13.1 adds the top-bar Light/Dark/System menu, remembered per browser and synchronized across tabs; 10 theme checks cover desktop and phone. Live 2026-10-04 04:10 UTC (7811b3d; 48 e2e checks pass). 16.4 `find-boards` (569e186) found 233 unwatched boards in stored links, 213 with open postings, queued in `data/t16/16.4-board-queue.tsv` on the box for the owner to pick from; ATS title gate now rejects store-level postings (3db3438), 199 Domino's store rows deleted from the live DB with the owner's yes (backup `radar-20261004T033918Z.db`). Left: digest layout (7, needs T14). |
-| T16 automation | doing | `T16-automation.md`. Replace hand-kept lists with source facts, free lookups and Claude Haiku (owner's model choice, bake-off in `data/bake/`). 16.1 logos done and live (168780a, e713cdd, eee8958, 2026-10-03); `fix-logos` dry run on the box waits for the owner's review before the real run. 16.2 done and live 2026-10-03 20:43 UTC (5761717): US check reads places.py; diff report `data/t16/16.2-location-diff.txt` waits on the owner. fix-logos keeps a doubted domain unless a better one is found (23c3da2); real run done 21:35 UTC, 110 logos changed. 16.3 Stories live 2026-10-04 (ca347fe, v0.11.0): Haiku reads the Story image, repairs junk titles, hides no-link memes; `python -m radar fix-stories [--dry-run]` not yet run on the live DB (owner's yes). Also v0.11.0: metro-area location matching, duplicate requisitions collapsed, Cache-Control no-cache for index.html. Pay backfill verified 2026-10-03 Pacific: summary 685/3,088 filled, empty error log; read-only comparison with pre-run backup confirms 685 blank-to-pay changes across 12,546 rows, no missing IDs (no pre-existing pay). Owner feed: 1,558 postings, 349 with pay, 1,209 blank; 53 blank companies, 107 blank locations; top named companies TikTok (92), Palantir (57), RTX (36), ByteDance (31). No displayed pay values mention bonus/stipend/equity; direct Workday checks confirm Broadridge $85,000–$90,000/yr, HP $29–$35/hr, CACI $43,900–$87,900/yr are stated salary/pay. Ashby verification was inconclusive: response exceeded fetcher size cap; remaining values not source-checked. US-wide BLS/WageDex wage benchmarks live 2026-10-04 03:26 UTC for 851/1,209 blank-pay owner cards, shown separately from employer pay; 358 still blank, no live DB write. Next: 16.4 or Haiku pay range. |
+| T16 automation | doing | `T16-automation.md`. Replace hand-kept lists with source facts, free lookups and Claude Haiku (owner's model choice, bake-off in `data/bake/`). 16.1 logos done and live (168780a, e713cdd, eee8958, 2026-10-03); `fix-logos` dry run on the box waits for the owner's review before the real run. 16.2 done and live 2026-10-03 20:43 UTC (5761717): US check reads places.py; diff report `data/t16/16.2-location-diff.txt` waits on the owner. fix-logos keeps a doubted domain unless a better one is found (23c3da2); real run done 21:35 UTC, 110 logos changed. 16.3 Stories live 2026-10-04 (ca347fe, v0.11.0): Haiku reads the Story image, repairs junk titles, hides no-link memes; `python -m radar fix-stories [--dry-run]` not yet run on the live DB (owner's yes). Also v0.11.0: metro-area location matching, duplicate requisitions collapsed, Cache-Control no-cache for index.html. Pay backfill verified 2026-10-03 Pacific: summary 685/3,088 filled, empty error log; read-only comparison with pre-run backup confirms 685 blank-to-pay changes across 12,546 rows, no missing IDs (no pre-existing pay). Owner feed: 1,558 postings, 349 with pay, 1,209 blank; 53 blank companies, 107 blank locations; top named companies TikTok (92), Palantir (57), RTX (36), ByteDance (31). No displayed pay values mention bonus/stipend/equity; direct Workday checks confirm Broadridge $85,000–$90,000/yr, HP $29–$35/hr, CACI $43,900–$87,900/yr are stated salary/pay. Ashby verification was inconclusive: response exceeded fetcher size cap; remaining values not source-checked. US-wide BLS/WageDex wage benchmarks live 2026-10-04 03:26 UTC for 851/1,209 blank-pay owner cards, shown separately from employer pay; 358 still blank, no live DB write. 16.4 complete (7eb2c63); 16.3 pay complete (6006a83, 2026-10-04, v0.17.0); approved live backfill added 33 stated-pay values from 2,403 eligible rows. 16.5 done/live (2026-10-04, this commit), v0.18.0: owner-approved key/cache activation with env/DB backups; 11 automatic ratings, hourly refresh respects 196,492/200K shared usage. Owner feed same 1,578 IDs/412 pay; actions/notes/pay preserved; every distinct company tier compared, 36 S/A changes recorded (unrated companies temporarily B). 614 observed board schedules match adaptive intervals within jitter; 11 boards have active-hour history. Deployed Settings checked in Chrome with live owner data via read-only proxy. 489 backend + pyflakes + build + 60 e2e pass. Full cache filling continues; one-hour poll counts/future alerts/owner phone remain unverified. 16.6 done/live (`b47049c`, `46afaae`, 2026-10-04), v0.19.1: explicit hide feedback, approved exclusions and read-only link diagnostics; preview follows Jobs requisition deduplication. 504 backend + pyflakes + build + 68 e2e pass. Approved migration 4→5 preserves existing values; backup `backups/t16.6/radar-20261004T191900Z.db`. Live same 1,578 IDs/card values/profile, 413 paid, blanks company/location 53/107; summary and Chrome live-data desktop/phone pass, no errors. Future feedback/owner phone unverified. Next: 16.7. |
 | T17 feed redesign | done | `T17-feed-redesign.md`. Owner said go 2026-10-04; built with the spec's six default decisions; live on the box 2026-10-04 04:53 UTC (commits 703757f 17.1, 961f8d3 17.2-17.6, 55c6aa1 and the fix commit after it), v0.14.0. 17.1: server-side level/track/posted_within in `radar/pipeline/roles.py`; old vs new classifier differ on 13 of 1,558 matches and 77 of 11,396 jobs, all `Other` to new grad ("2027 Grads", "Early Careers", "College Grad"), no track changed. Checked on the box: For you 1,558, Everything 11,397 (one row added meanwhile), level=intern 1,112, new_grad 311, Software 1,016-1,017, posted_within=7 254 (recomputed independently from a full dump), drops 64, 11 since Oct 3 equal to the `backfill=false&since=` count. 17.2-17.6 shipped in one commit: one Jobs screen (For you/Everything, filters in the hash, `#/feed` and bare `#/jobs` keep working), one meaning of New (per-device last visit, `localStorage`), one date per card, Tracker > Hidden, `/api/opportunities/summary`. 435 backend tests, 58 e2e (29 on desktop and phone). Deviations: the summary scan takes 6 s warm and 23 s cold on the box (spec guessed 1.4 s) because it reads every posting, so a request never waits for it: it gets the last count at once (the first ever request is a 503 with Retry-After), a recount of 5+ minutes old numbers runs on its own thread with naps, one per user; on the box `/api/me` stayed 0.3 s during a count (it was 7.7 s when the count ran inline on request); pills are native selects (a phone gets its own picker) and sit in the Filters drawer on a phone. An e2e flake (Feed writing its address after you left Jobs) is fixed in `update()`. Checked as a guest on the live site (redirect from `#/feed`, header numbers, New pre-selected, no stale bundle). Not verified: the owner's signed-in screen (his token was not used), his phone, and the T14 digest still needs to reuse these words. Owner decisions left open: none (defaults used). |
 | T18 fast sort | done | `T18-fast-sort.md`, built as Option A, v0.15.0 (dbcf2f2), live on the box 2026-10-04 06:04 UTC. Step 0 done: Caddy `encode zstd gzip` (backup `/etc/caddy/Caddyfile.bak-pre-encode`), a 50-row page 39,122 to 7,721 bytes. Index in `radar/api/bitindex.py`, no DB change. Checked on the live feed: For you (1,558) and Everything (11,398) dumps identical in ids and order before and after, `/summary` equals counts computed from the dumps. Typical filtered page 5-30 ms end to end between poller bursts (was 0.4-1.4 s); during a burst everything on the loop slows (`/api/me` 160 ms median) and lists take 150-250 ms; RSS unchanged (about 150-173 MB). Deviations and measurements are in the spec's As built section. Not verified: the owner's signed-in screen and phone, and a real drop arriving (the nudge path is covered by a production-shaped test, not a live drop). Follow-up, not started: the poller's parsing shares the API's event loop and causes the latency bursts. |
+| T19 trusted discovery and optimization | todo | `T19-trusted-discovery.md`. Saved principal-engineer audit: job lifecycle/identity, collection recall, matching, grouping/count parity, alert delivery, performance, security and recovery. Implement in reviewable slices; planning complete, implementation not started. |
+| T20 personal opportunity action engine | doing | `T20-opportunity-action-engine.md`. Personal autonomous workflow: rank jobs/people/routes/actions; reuse private facts/answers; execute permitted outreach, reply handling, agreed scheduling, event/introduction follow-through and supported applications after account/policy activation. Review mode remains optional. Competitor report plus `reports/Drop Radar autonomous networking.md`; T20.1–20.8 phased plan. First prototype: verified contact → policy checks → real reply → agreed calendar meeting → brief. Personal internship workflow; optional private friend access is secondary. Public launch/commercialization/growth are outside the roadmap. Delivery slices remain candidates, with no new deadline or commitment to every feature. Career-library foundation live (5ed96c9, v0.20.0; 516 backend, 74 e2e). Approved schema 5→6 and backup, all existing rows preserved; remaining T20 work pending. |
 
 ## Latest handoff
-T16.4 continuation (2026-10-03 Pacific): pinned aggregator feeder done (this commit) on
-`claude/trim-drop-radar-plan`; YC feeder is done at 98df41f. Changed
-`radar/sources/aggregator_boards.py`, `tests/test_aggregator_boards.py` and task/changelog notes.
-All 449 backend tests and pyflakes passed. Live sample: 30 source entries, 12 distinct
-unwatched boards queued (Ashby 7, Greenhouse 3, Lever 2); names deliberately unknown.
-Off-box tools only; no service deploy or live data write required. Next: paste a careers URL
-in Settings, then self-repair; review queues await owner selection before live additions.
+Merge preparation (2026-10-04), branch `claude/trim-drop-radar-plan`, v0.20.1:
+fixed review findings in `board_review.py`, `pay_llm.py` and diagnostic tests;
+malformed lists cannot become empty-board evidence and uncertain provider usage
+retains its reserved budget. Added regression coverage. Final validation: 520 backend
+tests, pyflakes, build and 74 e2e; production deployment of these fixes remains pending.
+GitHub CI exposed an index shutdown race: closure now shares the worker lock and
+prevents subsequent refreshes. Added shutdown regression coverage.
+Next: merge and tag the validated branch, then use main as the CSEED project's base.
+
+Cheaper agent-automation research continued by Claude Cloud (2026-10-05):
+`docs/specs/T20-agent-automation-research-findings.md`. Result: no agent platform for the
+first loop; direct worker + own SQLite action ledger + Haiku with caching/batch, DBOS Transact
+(MIT) later for durable waits. Measured install/import footprint of four libraries and a DBOS
+SQLite crash-recovery smoke test (`t20-dbos-crash-smoke.py`: one send across a crash). The
+ten-case model/framework benchmark is still open. Docs and one script only; no dependency,
+account, model call or deploy.
+
+Cheaper agent-automation research paused for owner handoff (2026-10-04):
+`docs/specs/T20-agent-automation-research-handoff.md` records candidate
+frameworks, model/search/contact cost hypotheses, primary source links and
+decision gates. No dependencies, accounts, spending or outbound actions were
+activated. The evidence is preliminary; Claude Cloud should benchmark a direct
+in-process worker against LangGraph and AgentScope before selecting a platform.
+
+README refreshed for live v0.20.0 (2026-10-04): private Career library, evidence
+revision/review behavior, current validation counts and shipped-versus-planned scope.
+Docs only; checked diff and synced README to the box without a restart or database
+writes. Branch `claude/trim-drop-radar-plan`; unrelated pending edits preserved.
+The broader goal stays paused at the owner's request. Next after resume: application
+packets and durable action records; no packet implementation started.
+
+T20 career-library foundation live (2026-10-04, code 5ed96c9), branch
+`claude/trim-drop-radar-plan`, v0.20.0: private versioned facts/answers, authenticated
+API/OpenAPI/types, Career screen/navigation, evidence invalidation and history.
+516 backend + pyflakes + build + 74 e2e pass; isolated and live-data Chrome desktop/
+390px mobile pass. Owner approved backup/migration/deployment. Backup
+`/opt/radar/data/backups/radar-20261004T223028Z-pre-career.db`; schema 5→6,
+all 32,541 existing rows/columns across ten tables identical, new table empty,
+quick_check/health OK. Restart 22:31:17 UTC; no post-start errors. Owner matches
+1,578, stated/blank pay 413/1,165, company/location blanks 53/107; summary agrees.
+Local evidence `data/t20/career-*-audit.json`. Shutdown hit the installed 45-second
+timeout; restart recovered. Future graceful shutdown, owner facts and physical phone
+unverified. No external sends, accounts, PR or tag. Next: packet/artifact/action
+foundations; full coordinated opportunity-engine goal remains active. T16.7/T19 unchanged.
+
+Product ambition adopted as the owner's goal (2026-10-04), branch
+`claude/trim-drop-radar-plan`: saved `docs/specs/GOAL.md`, linked it from T20,
+and retained `reports/Drop Radar product ambition review.md` plus all three research
+notes in `research_notes/Drop Radar product ambition review/`. Vision: a coordinated
+personal opportunity engine spanning campaigns, demonstrated readiness, relationships,
+permitted execution, interviews, offers and future cycles. Owner rejects the earlier
+cut/freeze direction and wants continued ambitious feature development. Codex chat
+goal marked active. Existing uncommitted edits preserved; implementation/task statuses
+unchanged. Checks: documentation whitespace and local links. Private live screens
+and physical phone remain unverified. Next: implement a connected slice when requested;
+no accounts, external actions, spending, deployment, PR or tag activated by this save.
+
+Model-training discussion wrapped (2026-10-04), branch `claude/trim-drop-radar-plan`:
+local continuation notes in `research_notes/Drop Radar autonomous networking/model training.md`.
+Next session: choose a narrow training task/evaluation and UW/rented/desktop compute
+before selecting PC parts. No training, spending, accounts or app/live changes.
+Concurrent plan edits preserved; this wrap-up is local/uncommitted.
+
+Personal internship scope clarified (2026-10-04), branch `claude/trim-drop-radar-plan`:
+updated T20 product outcome/private friend access and added a scope note to the
+networking report. Priorities are personal usefulness, application quality,
+relationships, reliability, time saved and operating cost. Public launch,
+commercialization and growth are outside the roadmap; friend access is optional
+with private data/account isolation. Autonomous workflows still require configured
+accounts and an explicit policy. No new deadline or commitment to all delivery slices.
+Checks: documentation diff, whitespace and local links. No code, deployment, account
+activation or external actions. T20 remains todo; T16.7/T19 status unchanged.
+Next: choose a useful implementation slice when requested. Changes are uncommitted.
+
+T20 autonomy research continued (2026-10-04), branch `claude/trim-drop-radar-plan`:
+saved `reports/Drop Radar autonomous networking.md` and private research notes under
+`research_notes/Drop Radar autonomous networking/`; updated T20 policy-based execution
+and T20.7 networking/scheduling/T20.8 event/introduction phases. The latest end-state
+supersedes the earlier per-send default; routine permitted actions execute after
+explicit account/policy setup, with genuine owner decisions as exceptions. First
+prototype is supplied verified contact → policy checks → real reply → exact agreement
+→ calendar meeting → brief. Prototype estimate 5–7 engineering days; reliable narrow
+pilot 8–12 total plus unknown provider setup, not a whole-platform week-one promise.
+Checks: documentation whitespace/local links and source/evidence qualifications;
+no runtime checks apply to docs. No accounts, messages, calendar writes, applications,
+subscriptions or deployment. Research hypotheses and actual networking/hiring uplift
+remain unverified. T20 stays todo; T16.7/T19 status unchanged.
+
+T20 research continued (2026-10-04), branch `claude/trim-drop-radar-plan`: corrected
+scope to automation inside Drop Radar. Public official pages for JobCopilot, AIApply,
+Adzuna ApplyIQ and Sonara crawled; ATS submission constraints and existing app flows
+checked. Saved `reports/Drop Radar competitor automation review.md`; refined T20 with
+answer reuse, resume QA, submission/deadline recovery and phased form/preparation work.
+Checks: documentation diff/links; no app changes or runtime checks required. Competitor
+private execution, outcome uplift and detailed Sonara setup remain unverified. No
+mailbox connection, subscription, message, live write, deployment, PR or tag. T20 stays
+todo; next T20 slice is private fact/answer/packet foundation, then ranking and approval.
+Existing T16.7/T19 status unchanged.
+
+Tasks registered (2026-10-04): audit/optimization roadmap is T19; personal action
+engine and beta/commercial stages are T20. Specs renamed and both marked todo.
+Docs only; no implementation, live changes, PR or tag. Existing active tasks unchanged.
+
+Owner clarified growth sequence (2026-10-04): personal workflow first, then invite-only
+close-friend beta, then possible scale/monetization. Saved plans now include gates for
+each stage; user ownership/isolation begins immediately, public onboarding/billing
+wait. Docs only; no implementation or live changes.
+
+Planning saved (2026-10-04): `T19-trusted-discovery.md` contains the code/production
+audit and staged reliability roadmap. `T20-opportunity-action-engine.md` proposes
+ranked For you, imported referral connections, recruiter evidence, truthful resume
+variants and approved outreach packets for an owner-only first-week slice.
+Owner confirmed fit/interview reachability and per-send approval; sender/resume/contact
+metadata remain pending. Drafts stay in-app initially. Docs only; no app/live
+changes, outreach, deployment, PR or tag. Next: refine inputs, then choose a fresh
+implementation thread; current T16.7 status is unchanged.
+
+T16.6 done/live (2026-10-04, `b47049c` + `46afaae`), v0.19.1, branch
+`claude/trim-drop-radar-plan`: schema/action feedback/mutes, approved exclusions,
+read-only diagnostic, shared hide sheet and Settings tools. Deployment verification
+fixed preview counts to follow Jobs requisition deduplication; real-data preview
+matches exactly 1,011 displayed removals in a local-only test. 504 backend tests,
+pyflakes, build and 68 e2e pass. Approved live schema 4→5 preserves all existing
+values; backup `backups/t16.6/radar-20261004T191900Z.db`, quick_check OK.
+Restart 19:27:54 UTC; no post-start errors. Same 1,578 owner IDs/card values/profile,
+413 stated pay/1,165 blank pay; company/location blanks 53/107. Summary equals
+paged totals; known-link diagnostic and Chrome real live-data desktop/phone pass.
+Artifacts `data/t16/16.6-{deploy-migration-audit,live-feed-audit,displayed-preview-check}.json`.
+Future dismissal pattern and owner's own phone unverified. Next: T16.7; no PR/tag.
+
+T16.6 implemented (2026-10-04, this commit), v0.19.0, branch
+`claude/trim-drop-radar-plan`: action feedback/mute migration, suggestion API and
+read-only link diagnostic; shared hide sheet, Settings tools, OpenAPI/types and
+regressions. 503 backend tests + pyflakes + web build + 68 e2e pass.
+Owner snapshot: migration 4→5 preserves existing table values; matching unchanged
+across 11,519 distinct live posting values. Chrome desktop/phone real-data pass;
+local approval removes exactly the previewed 1,092 jobs, other profile fields kept.
+Artifacts: `data/t16/16.6-local-{live-audit,diagnostics}.json`. No production writes.
+Outstanding: owner approval for nullable action fields + empty mute table, then
+backup/deploy/live verification. Real future feedback and owner's phone unverified.
+Next: finish deployment of 16.6; 16.7 stays untouched. No PR/tag.
+
+Trading classification fix (2026-10-04, this commit), v0.18.1, branch
+`claude/trim-drop-radar-plan`: narrowed Quant detection, put titles before stored role
+categories, retained spelled-out AI titles. Shared classifier serves SQL/index/feed summaries.
+Compared all 1,056 distinct title/category pairs on the owner's 1,578-row feed: three changes
+(DIV Marketing/Trading → Finance, Microsoft Financial Analyst → Finance, Amazon Software
+Development Engineer Robotics → Software). Quant 7→6; Finance 0→2; Software 1,032→1,033;
+AI/Data 321→319. Other tracks unchanged. Counts/pay/company/location blanks unchanged.
+Regression cases include ordinary trading, trading software, explicit quant trading and
+stored Quant tags contradicted by the title. No database repair needed.
+Validation: 490 backend tests, pyflakes, web build and 60 e2e tests pass.
+Next: T16.6; long-window tier/poll verification remains recorded above.
+
+T16.5 activated (2026-10-04, this commit), branch `claude/trim-drop-radar-plan`, v0.18.0.
+Server TypeSafe key installed with approval; env/DB backups are recorded in the spec.
+Seven verified tiers seeded, four added by the background pass; shared usage 196,492/200K.
+Live feed IDs/counts/pay/notes/actions preserved; 852 company tiers compared, 36 S/A
+changes recorded; 614 poll schedules within jitter. Live-data Settings Chrome pass.
+A retry-order fix keeps previously failed companies behind names never attempted.
+489 backend tests + pyflakes pass; existing final web build + 60 e2e pass.
+Full cache coverage and one-hour poll-count/real-alert/owner-phone checks remain open.
+Next: 16.6; no PR/tag opened.
+
+T16.5 takeover handoff (2026-10-04, this commit), branch `claude/trim-drop-radar-plan`:
+completed Claude's config/API/Settings/priority diff and fixed worker-thread SQLite access,
+strict provider parsing, cited web evidence, shared token reservations, rubric invalidation
+and failed-company retry. Tests cover cache/action/poll behavior and background execution.
+Settings checked in Chrome with the owner's 602-company snapshot: no tier controls, no
+horizontal overflow, all mobile watchlist targets at least 44px, visible focus and keyboard
+order. Server env/database unchanged; deployment, full live tier/feed/poll comparison and
+production account-screen check remain. Next: approve key/cache activation, then verify.
+Validation: 489 backend tests, pyflakes, web build and 60 e2e tests pass.
+
+T16.4 done (2026-10-04, this commit), v0.16.0 on `claude/trim-drop-radar-plan`:
+Settings careers URL detection, guarded board probes, daily Mac repair/archive review queue,
+and Workday aggregator support. Changed `radar/sources/{board_review,repair_boards,aggregator_boards}.py`,
+pagefacts, API models/route/schema, Settings/client, tests, maintenance launcher and release/spec notes.
+458 backend tests, pyflakes, web build and all 60 e2e checks passed. Real owner Settings snapshot
+inspected in Chrome; live direct ATS probes and maintenance sample passed. No live data repairs.
+Unverified: actual 30-day production history and owner's signed-in production screen/phone.
+T16.3 pay handoff (`6006a83`, 2026-10-04, v0.17.0): branch `claude/trim-drop-radar-plan`;
+changed pipeline/pagefacts, new pay_llm fallback, tests, version/changelog/spec. Shared
+Story budget, verified source evidence, content cache, background model calls, fill-blanks
+only. Owner sample: 200 rows (41 stated, 159 blank); 20 blanks probed off-box, 16 fetched
+with descriptions, 4 Haiku + 1 regex fills, 15 unchanged. Arc $42/hr, Affirm $55/hr (two
+roles), General Motors $8,100–$10,300/mo; every accepted quote checked against fetched
+text. Checks: 468 backend tests, pyflakes clean, web build and 60 e2e pass. No watchlist writes. Automatic fills on future production drops and Gemini
+fallback are not live-verified. Next: 16.5; queues await owner review.
+
+Approved live pay backfill (2026-10-04, this commit): `python -m radar fix-pay`
+finished 33/2,403 eligible postings; 31 fills backed by verified Haiku evidence and 2
+by structured/regex facts. SQLite backup:
+`backups/radar-20261004T073856Z-pre-haiku-pay.db`. Compared all existing rows: 685
+previously paid rows (352 distinct pay values), permanent IDs, first_seen, Notes,
+Actioned? and per-user actions/notes unchanged. Also filled two blank source deadlines.
+Database quick_check and service health OK, no traceback/service errors. Owner feed:
+1,558 rows, 360 stated pay (was 349 on the same IDs), 1,198 blank pay; 53 blank companies,
+107 blank locations. Top companies unchanged: TikTok 92, Palantir 57, RTX 36, ByteDance 31.
+Artifacts: `data/t16/16.3-backfill-{live.log,audit.json,owner-feed-check.jsonl}`; no secrets.
+Budget remained intact: 193,287 tokens used today, 95 new unique text results cached;
+most remaining blanks were not model-read once the request reservation no longer fit.
+The approved Codex pass below completed the retained-text review. Branch `claude/trim-drop-radar-plan`;
+changed only progress/spec docs for this operation. Next: T16.5.
+
+Owner-approved Codex completion (2026-10-04, this commit): off-box, background,
+Sol low, cached source text only. Screened 1,290 unique unpaid text records, deduplicated
+and sent short compensation excerpts; 362 initial candidates plus 173 targeted wider
+context reviews. Source payload cut from 6.6M to 376K characters. Codex usage: 396,346
+input (91,520 cached), 11,782 output tokens. No model tools or new page fetches.
+Thirty proposals failed the existing source-evidence validator. Applied 164 additional
+blank-only Pay values across 152 unique source texts; all revalidated on the box against
+current cached text hashes. Atomic JSON field updates preserved all other fields.
+Backup: `backups/radar-20261004T154908Z-pre-codex-pay.db`. All 746 previously paid rows
+(377 distinct values), every other opportunity column/field, IDs and user notes/actions
+unchanged. All 164 fills have verified Codex evidence (86 distinct pay values); DB
+quick_check and service health OK. Owner feed now 1,578 rows, 412 stated/1,166 blank pay
+(was 360 stated on the same current IDs); 53 blank companies/107 blank locations.
+Top named companies: TikTok 93, Palantir 57, RTX 39, ByteDance 31. Haiku's shared budget
+unchanged at 193,287; its automatic model and 200K cap remain. One-off Codex evidence
+is cached with honest model/method provenance; no live code or environment changes.
+Artifacts: `data/t16/codex-pay/` (inputs, batches, approved payload, apply/audit/feed reports).
+Remaining blanks lack accepted source evidence in this cached-text pass; unavailable
+pages and ambiguous/rejected pay stay blank. Branch `claude/trim-drop-radar-plan`,
+changed spec/progress docs only. Cached-text backfill is finished. Next: T16.5.
 
 ## Decisions (defaults until the user changes them)
 - Deploy target: systemd on a ~$5 VPS, no Docker (was: Docker on a VPS; changed 2026-09-30 in the plan trim). Home server is best for Instagram.

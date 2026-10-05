@@ -70,8 +70,8 @@ def make_ctx(http, cursor=None, etag=None):
     )
 
 
-def company(ats, slug="acme", tier="B"):
-    return Company(name="Acme", ats=ats, slug=slug, tier=tier)
+def company(ats, slug="acme"):
+    return Company(name="Acme", ats=ats, slug=slug)
 
 
 class AtsSourceContractMixin:
@@ -181,11 +181,8 @@ class AtsSourceContractMixin:
             await self.source_cls(company(self.ats)).fetch(make_ctx(http))
         self.assertEqual(ctxmgr.exception.kind, "transient")
 
-    async def test_interval_from_tier(self):
-        self.assertEqual(self.source_cls(company(self.ats, tier="S")).interval_s, 120.0)
-        self.assertEqual(self.source_cls(company(self.ats, tier="A")).interval_s, 120.0)
-        self.assertEqual(self.source_cls(company(self.ats, tier="B")).interval_s, 300.0)
-        self.assertEqual(self.source_cls(company(self.ats, tier="C")).interval_s, 900.0)
+    async def test_interval_starts_at_default_until_cached_rating_is_applied(self):
+        self.assertEqual(self.source_cls(company(self.ats)).interval_s, 300.0)
 
 
 class GreenhouseTests(AtsSourceContractMixin, unittest.IsolatedAsyncioTestCase):
@@ -483,7 +480,7 @@ class SchedulerIntegrationTests(unittest.IsolatedAsyncioTestCase):
     async def test_backfill_is_silent_then_new_jobs_alert_and_removed_jobs_close(self):
         store = Store(Path(tempfile.mkdtemp()) / "radar.db")
         self.addCleanup(store.close)
-        source = GreenhouseSource(company("greenhouse", tier="B"))
+        source = GreenhouseSource(company("greenhouse"))
         url = source.board_url()
         baseline = [{"id": 1, "title": "Senior Engineer", "updated_at": "2026-01-01T00:00:00Z",
                      "absolute_url": "https://boards.greenhouse.io/acme/jobs/1", "location": {}},

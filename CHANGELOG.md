@@ -2,14 +2,83 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
-## Unreleased
+## 0.20.1 (2026-10-04)
+
+Board-health probes reject malformed posting lists instead of counting them as empty
+boards. Pay extraction retains its token reservation when provider usage is unknown
+after a transport failure. Diagnostic tests mock both public-host guards to stay offline.
+Index shutdown waits for active workers before closing SQLite and prevents later workers
+from reopening the connection.
+
+## 0.20.0 (2026-10-04)
+
+Career adds a private library of career facts and reusable answers. Records begin
+as drafts; approval requires a source or personal confirmation note. Every revision
+is preserved, conflicting edits cannot overwrite newer work, and answers referencing
+changed or retired facts require review. Answer context is explicit; approval does
+not authorize applications, messages or spending. This is the first T20 foundation;
+ranking, packets and external execution are still pending.
+
+## 0.19.1 (2026-10-04)
+
+Profile suggestion previews now count displayed jobs with the same duplicate-requisition
+collapse as Jobs and its summary. A hidden newest copy also suppresses its older twins.
+
+## 0.19.0 (2026-10-04)
+
+T16.6 adds optional title-phrase feedback after hiding a job. Three distinct hides
+within 30 days suggest a profile exclusion in Settings, with supporting jobs and
+an affected-job preview. Suggestions change the profile only when approved;
+dismissed terms stay muted until restored. Unhiding clears feedback and notes stay intact.
+
+Settings also explains a pasted job link using current filters and recorded evidence.
+Unknown links use guarded public posting previews without importing jobs, changing
+model budgets or sending alerts. Missing facts and historical decisions stay inconclusive.
+
+## 0.18.1 (2026-10-04)
+
+Trading/trader alone now classifies as Finance rather than Quant. Quant requires explicit
+quant or quantitative/algorithmic/systematic/high-frequency trading language. Titles take
+precedence over stored role tags; spelled-out artificial intelligence remains AI / ML / Data.
+This applies consistently to feed filters, summaries and the bitmap index.
+
+## 0.18.0 (2026-10-04)
+
+T16.5 replaces manual company tiers with automatic CS-student ratings. Confident Jev and
+Haiku agreement sets the tier; other names use Haiku web search with cited evidence.
+Ratings refresh every 30 days within the shared Haiku daily budget. Failed ratings preserve
+the previous tier and retry after a day. Quant firms, frontier AI labs and big tech are S
+candidates. User actions still personalize prestige sorting. Settings no longer asks for a
+tier. Cached ratings set polling intervals, adjusted by each board's observed posting hours.
+
+## 0.17.0 (2026-10-04)
+
+T16.3 pay extraction now uses Haiku when the fetched posting has no structured/regex pay.
+Amounts, currency, period and an exact source quote must pass validation before filling a
+blank. Gemini is tried only after Haiku fails, with a ten-minute pause on quota errors.
+Calls share the Story daily token budget; content caching avoids repeat spend. Unknowns
+retry after a week, API failures retry next time, and dry runs use cached model evidence
+only. Model calls run in the background so alerts still go out promptly. Existing pay,
+row IDs and notes are preserved, including changes made while a request is running.
+
+## 0.16.0 (2026-10-04)
+
+T16.4 is complete: Settings can check a careers URL, detect its supported ATS board and
+fill a form for review before adding it. Checks use public ATS APIs and the existing
+SSRF/robots guards, run off the API event loop and never save a watchlist by themselves.
+The add/save controls now sit above the company's list so large watchlists stay usable.
+
+Daily Mac maintenance queues verified slug repair candidates after confirmed 404s and
+archive proposals after 30 days of successful empty observations. It logs its evidence,
+resets empty history after errors/gaps, and never changes a live source without review.
+Guessed repair candidates explicitly leave company identity unverified.
 
 T16.4: `python -m radar.sources.yc_boards` discovers company-linked career boards from the YC
 hiring directory off-box and writes verified nonempty boards to a review queue with provenance.
 It supports bounded batches and a live-watchlist export; nothing is added automatically.
 
 The off-box `python -m radar.sources.aggregator_boards` also feeds the review queue from
-commit-pinned Greenhouse, Lever and Ashby lists in Feashliaa/job-board-aggregator. It records
+commit-pinned Greenhouse, Lever, Ashby and Workday lists in Feashliaa/job-board-aggregator. It records
 CC BY-NC dataset attribution and verifies open postings without guessing company names.
 
 ## 0.15.0 (2026-10-04)

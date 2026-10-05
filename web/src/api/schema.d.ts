@@ -132,6 +132,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/career": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Records */
+        get: operations["list_records_api_career_get"];
+        put?: never;
+        /** Create Record */
+        post: operations["create_record_api_career_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/career/{record_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Revise Record */
+        put: operations["revise_record_api_career__record_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/career/{record_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Record History */
+        get: operations["record_history_api_career__record_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/config/profile": {
         parameters: {
             query?: never;
@@ -162,6 +214,40 @@ export interface paths {
         /** Put Watchlist */
         put: operations["put_watchlist_api_config_watchlist_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config/watchlist/discover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Discover Board */
+        post: operations["discover_board_api_config_watchlist_discover_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diagnostics/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Diagnose Link */
+        post: operations["diagnose_link_api_diagnostics_link_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -246,6 +332,9 @@ export interface paths {
         /**
          * Summary
          * @description The numbers behind the Jobs header and filter pills, over everything the list would show.
+         *     Counting reads every posting (seconds on the box), so a request never waits for it: it gets the last
+         *     count at once, and an older-than-5-minutes or missing one starts a recount. The first ever request
+         *     is a 503 with Retry-After while the recount runs.
          */
         get: operations["summary_api_opportunities_summary_get"];
         put?: never;
@@ -272,6 +361,24 @@ export interface paths {
         head?: never;
         /** Update Opportunity */
         patch: operations["update_opportunity_api_opportunities__opp_id__patch"];
+        trace?: never;
+    };
+    "/api/profile/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Profile Suggestions */
+        get: operations["profile_suggestions_api_profile_suggestions_get"];
+        put?: never;
+        /** Decide Suggestion */
+        post: operations["decide_suggestion_api_profile_suggestions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/sources/health": {
@@ -334,6 +441,10 @@ export interface components {
     schemas: {
         /** Action */
         Action: {
+            /** Hide Term */
+            hide_term?: string | null;
+            /** Hide Term At */
+            hide_term_at?: string | null;
             /** Notes */
             notes: string;
             /**
@@ -344,6 +455,8 @@ export interface components {
         };
         /** ActionPatch */
         ActionPatch: {
+            /** Hide Term */
+            hide_term?: string | null;
             /** Notes */
             notes?: string | null;
             /** Status */
@@ -357,6 +470,134 @@ export interface components {
              * @description send as 'Authorization: Bearer <token>'; shown once, kept only as a hash
              */
             token: string;
+        };
+        /** BoardDiscovery */
+        BoardDiscovery: {
+            /** Ats */
+            ats: string;
+            /** Name */
+            name: string;
+            /** Postings */
+            postings: number;
+            /** Slug */
+            slug: string;
+        };
+        /** CareerInput */
+        CareerInput: {
+            /**
+             * Context
+             * @default
+             */
+            context: string;
+            /** Fact Refs */
+            fact_refs?: components["schemas"]["FactReference"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "fact" | "answer";
+            /** Label */
+            label: string;
+            /**
+             * Source Note
+             * @default
+             */
+            source_note: string;
+            /**
+             * State
+             * @default draft
+             * @enum {string}
+             */
+            state: "draft" | "approved" | "retired";
+            /** Text */
+            text: string;
+        };
+        /** CareerPage */
+        CareerPage: {
+            /** Next After */
+            next_after?: string | null;
+            /** Records */
+            records: components["schemas"]["CareerRecord"][];
+        };
+        /** CareerRecord */
+        CareerRecord: {
+            /**
+             * Context
+             * @default
+             */
+            context: string;
+            /** Created At */
+            created_at: string;
+            /** Fact Refs */
+            fact_refs?: components["schemas"]["FactReference"][];
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "fact" | "answer";
+            /** Label */
+            label: string;
+            /**
+             * Reusable
+             * @description Current owner-approved revision with current approved supporting facts; context matching and action authorization still required
+             */
+            reusable: boolean;
+            /** Review Reasons */
+            review_reasons: string[];
+            /** Revision */
+            revision: number;
+            /**
+             * Source Note
+             * @default
+             */
+            source_note: string;
+            /**
+             * State
+             * @default draft
+             * @enum {string}
+             */
+            state: "draft" | "approved" | "retired";
+            /** Text */
+            text: string;
+        };
+        /** CareerRevision */
+        CareerRevision: {
+            /**
+             * Context
+             * @default
+             */
+            context: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Fact Refs */
+            fact_refs?: components["schemas"]["FactReference"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "fact" | "answer";
+            /** Label */
+            label: string;
+            /**
+             * Source Note
+             * @default
+             */
+            source_note: string;
+            /**
+             * State
+             * @default draft
+             * @enum {string}
+             */
+            state: "draft" | "approved" | "retired";
+            /** Text */
+            text: string;
+        };
+        /** CareersURL */
+        CareersURL: {
+            /** Url */
+            url: string;
         };
         /** CompanyConfig */
         CompanyConfig: {
@@ -372,12 +613,6 @@ export interface components {
              * @description board slug; workday: tenant.wdN/site
              */
             slug: string;
-            /**
-             * Tier
-             * @description S | A | B | C (S/A polled every 2 min)
-             * @default B
-             */
-            tier: string;
         };
         /** Counts */
         Counts: {
@@ -404,6 +639,32 @@ export interface components {
             password: string;
             /** Username */
             username: string;
+        };
+        /** DiagnosticCheck */
+        DiagnosticCheck: {
+            /** Explanation */
+            explanation: string;
+            /**
+             * Facts
+             * @default {}
+             */
+            facts: {
+                [key: string]: string;
+            };
+            /** Stage */
+            stage: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "passed" | "blocked" | "unknown";
+        };
+        /** FactReference */
+        FactReference: {
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
         };
         /** FeedConfig */
         FeedConfig: {
@@ -449,6 +710,17 @@ export interface components {
             }[];
             /** Username */
             username: string;
+        };
+        /** LinkDiagnostic */
+        LinkDiagnostic: {
+            /** Checks */
+            checks: components["schemas"]["DiagnosticCheck"][];
+            /** Collected */
+            collected: boolean;
+            /** Summary */
+            summary: string;
+            /** Url */
+            url: string;
         };
         /** Login */
         Login: {
@@ -620,13 +892,6 @@ export interface components {
         /** ProfileConfig */
         ProfileConfig: {
             /**
-             * Company Tiers
-             * @default {}
-             */
-            company_tiers: {
-                [key: string]: string;
-            };
-            /**
              * Exclude
              * @description any of these in the title rules it out
              * @default []
@@ -654,6 +919,13 @@ export interface components {
              * @default []
              */
             roles: string[];
+        };
+        /** ProfileSuggestions */
+        ProfileSuggestions: {
+            /** Muted */
+            muted: string[];
+            /** Suggestions */
+            suggestions: components["schemas"]["Suggestion"][];
         };
         /** RepoConfig */
         RepoConfig: {
@@ -702,6 +974,29 @@ export interface components {
             p95: number;
             /** Source */
             source: string;
+        };
+        /** Suggestion */
+        Suggestion: {
+            /** Affected Count */
+            affected_count: number;
+            /** Examples */
+            examples: string[];
+            /** Support Count */
+            support_count: number;
+            /** Supporting Titles */
+            supporting_titles: string[];
+            /** Term */
+            term: string;
+        };
+        /** SuggestionDecision */
+        SuggestionDecision: {
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "apply" | "mute" | "restore";
+            /** Term */
+            term: string;
         };
         /** Summary */
         Summary: {
@@ -976,6 +1271,148 @@ export interface operations {
             };
         };
     };
+    list_records_api_career_get: {
+        parameters: {
+            query?: {
+                after?: string;
+                limit?: number;
+            };
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_record_api_career_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CareerInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revise_record_api_career__record_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CareerRevision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_history_api_career__record_id__history_get: {
+        parameters: {
+            query?: {
+                before?: number | null;
+                limit?: number;
+            };
+            header?: {
+                authorization?: string;
+            };
+            path: {
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CareerRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_profile_api_config_profile_get: {
         parameters: {
             query?: never;
@@ -1095,6 +1532,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WatchlistConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discover_board_api_config_watchlist_discover_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CareersURL"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardDiscovery"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diagnose_link_api_diagnostics_link_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CareersURL"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkDiagnostic"];
                 };
             };
             /** @description Validation Error */
@@ -1355,6 +1862,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Opportunity"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    profile_suggestions_api_profile_suggestions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileSuggestions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_suggestion_api_profile_suggestions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestionDecision"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileSuggestions"];
                 };
             };
             /** @description Validation Error */

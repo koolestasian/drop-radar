@@ -68,7 +68,6 @@ class ConfigTests(unittest.TestCase):
         cases = [
             ("companies: [{name: A, ats: nope, slug: a}]", r"companies\[0\].*'ats'"),
             ("companies: [{name: A, ats: lever}]", r"'slug'"),
-            ("companies: [{name: A, ats: lever, slug: a, tier: Z}]", r"'tier'"),
             ("instagram: [{username: x, interval_s: -1}]", r"'interval_s'"),
             ("feeds: [{url: ftp://x}]", r"'url'"),
             ("repos: [{name: noslash}]", r"owner/name"),
@@ -84,8 +83,8 @@ class ConfigTests(unittest.TestCase):
             load_profile(write("grad_year: soon"))
         with self.assertRaisesRegex(ConfigError, "roles"):
             load_profile(write("roles: 5"))
-        with self.assertRaisesRegex(ConfigError, "company_tiers"):
-            load_profile(write("company_tiers: {A: Q}"))
+        profile = load_profile(write("company_tiers: {A: Q}"))
+        self.assertFalse(hasattr(profile, "company_tiers"))
         self.assertEqual(load_profile(write("")).roles, ())
 
 

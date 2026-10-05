@@ -10,6 +10,12 @@ export type SourceHealth = S["SourceHealth"];
 export type ProfileConfig = S["ProfileConfig"];
 export type WatchlistConfig = S["WatchlistConfig"];
 export type CompanyConfig = S["CompanyConfig"];
+export type BoardDiscovery = S["BoardDiscovery"];
+export type ProfileSuggestions = S["ProfileSuggestions"];
+export type LinkDiagnostic = S["LinkDiagnostic"];
+export type CareerRecord = S["CareerRecord"];
+export type CareerInput = S["CareerInput"];
+export type CareerPage = S["CareerPage"];
 export type ActionStatus = NonNullable<S["ActionPatch"]["status"]>;
 
 const TOKEN_KEY = "radar.token";
@@ -105,7 +111,7 @@ export function query(params: Record<string, string | number | boolean | undefin
   return s ? `?${s}` : "";
 }
 
-export function setStatus(id: string, patch: { status?: ActionStatus; notes?: string }) {
+export function setStatus(id: string, patch: { status?: ActionStatus; notes?: string; hide_term?: string }) {
   return api<Opportunity>(`/api/opportunities/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify(patch),

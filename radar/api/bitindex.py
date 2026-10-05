@@ -149,6 +149,7 @@ class BitIndex:
     def __init__(self, store, every=60.0):
         # the connection opens on first use; the path is read here, on the thread that owns the store's connection
         self.every, self.conn = every, None
+        self.closed = False
         self.wanted = self.snap_gen = 0  # nudges so far; the nudges the snapshot is known to include
         self.path = store.conn.execute("PRAGMA database_list").fetchone()["file"] if store is not None else None
         self.lock = threading.Lock()  # one refresh or view build at a time; requests meanwhile use what is there
@@ -166,6 +167,8 @@ class BitIndex:
     def refresh(self, force=False, min_gap=0.0):
         """Bring the snapshot up to date. Does nothing when no other connection has committed since."""
         with self.lock:
+            if self.closed:
+                return
             if self.snap is not None and time.monotonic() - self.at < min_gap:
                 return
             gen, started = self.wanted, time.monotonic()  # read before scanning: a commit before a nudge is in the scan
@@ -255,6 +258,8 @@ class BitIndex:
         if self.snap is None:
             self.refresh()
         with self.lock:
+            if self.closed:
+                return
             snap, have = self.snap, self.views.get(user.id)
             same_basis = have is not None and have[0].mine == mine and have[1] == user.profile
             cache = have[2] if same_basis else {}
@@ -286,8 +291,11 @@ class BitIndex:
         return mask
 
     def close(self):
-        if self.conn is not None:
-            self.conn.close()
+        with self.lock:
+            self.closed = True
+            if self.conn is not None:
+                self.conn.close()
+                self.conn = None
 
 
 def pill_counts(snap, scope):

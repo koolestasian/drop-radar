@@ -31,6 +31,20 @@ MIGRATIONS = (
        DROP TABLE actions;
        ALTER TABLE actions_new RENAME TO actions""",
     "ALTER TABLE accounts ADD COLUMN ntfy_topic TEXT",  # 4: an account's own phone-alert topic (NULL = alerts off)
+    """ALTER TABLE actions ADD COLUMN hide_term TEXT;
+       ALTER TABLE actions ADD COLUMN hide_term_at TEXT;
+       CREATE TABLE muted_profile_terms (
+           user_id TEXT NOT NULL, term TEXT NOT NULL, PRIMARY KEY (user_id, term)
+       )""",  # 5: explicit, per-user hide feedback (T16.6)
+    """CREATE TABLE career_records (
+           user_id TEXT NOT NULL,
+           id TEXT NOT NULL,
+           revision INTEGER NOT NULL CHECK (revision > 0),
+           kind TEXT NOT NULL CHECK (kind IN ('fact', 'answer')),
+           body TEXT NOT NULL,
+           created_at TEXT NOT NULL,
+           PRIMARY KEY (user_id, id, revision)
+       )""",  # 6: private, immutable career fact/answer revisions (T20.1)
 )
 
 
@@ -262,6 +276,14 @@ class Store:
             "SELECT count(*) FROM items WHERE source = ? AND seen_at >= ?", (source, _iso(since))
         ).fetchone()[0]
 
+    def first_seen_times(self, source):
+        """When this source first saw each posting it has emitted, oldest first. Seed
+        and closed-signal items are left out: neither says when a posting appeared."""
+        rows = self.conn.execute(
+            "SELECT seen_at FROM items WHERE source = ? AND coalesce(json_extract(raw, '$.seed'), 0) = 0 "
+            "AND coalesce(json_extract(raw, '$.closed'), 0) = 0 ORDER BY seen_at", (source,)).fetchall()
+        return [datetime.fromisoformat(row[0]) for row in rows]
+
     # ---- alerts, actions, enrichment -------------------------------------
 
     def record_alert(self, opportunity_id, channel, sent_at=None):
@@ -313,7 +335,7 @@ class Store:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def set_action(self, opportunity_id, user_id, status=None, notes=None):
+    def set_action(self, opportunity_id, user_id, status=None, notes=None, hide_term=None):
         """Set one user's status and/or notes; None leaves that field as it is.
         user_id has no default, so no caller can write to someone else's row by omission."""
         with self.conn:
@@ -325,6 +347,12 @@ class Store:
                 {"id": opportunity_id, "user_id": user_id, "status": status, "notes": notes,
                  "now": _iso(utcnow())},
             )
+            if status is not None and status != "ignored":
+                self.conn.execute("UPDATE actions SET hide_term=NULL, hide_term_at=NULL WHERE opportunity_id=? AND user_id=?",
+                                  (opportunity_id, user_id))
+            elif hide_term is not None:
+                self.conn.execute("UPDATE actions SET hide_term=?, hide_term_at=? WHERE opportunity_id=? AND user_id=?",
+                                  (hide_term, _iso(utcnow()), opportunity_id, user_id))
 
     def get_enrichment(self, key):
         row = self.conn.execute("SELECT json FROM enrichment WHERE key = ?", (key,)).fetchone()
@@ -336,6 +364,18 @@ class Store:
                 "INSERT INTO enrichment (key, json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET json = excluded.json",
                 (key, json.dumps(value, ensure_ascii=False, sort_keys=True)),
             )
+
+    def enrichment_with_prefix(self, prefix):
+        """[(key, value)] for every enrichment key starting with `prefix`."""
+        rows = self.conn.execute("SELECT key, json FROM enrichment WHERE substr(key, 1, ?) = ?",
+                                 (len(prefix), prefix)).fetchall()
+        return [(row[0], json.loads(row[1])) for row in rows]
+
+    def actioned_companies(self, user_id):
+        """Company names of the opportunities this user has given a status."""
+        return [row[0] for row in self.conn.execute(
+            "SELECT DISTINCT o.company FROM actions a JOIN opportunities o ON o.id = a.opportunity_id "
+            "WHERE a.user_id = ? AND a.status != '' AND o.company != ''", (user_id,))]
 
     # ---- accounts, credentials, sessions ------------------------------------
 

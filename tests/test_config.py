@@ -77,14 +77,11 @@ class BuildSourcesForUsersTests(unittest.TestCase):
         self.assertEqual(owned["kevin"], {"ats.greenhouse.airbnb", "ats.greenhouse.stripe"})
         self.assertEqual(owned["friend"], {"ats.greenhouse.stripe"})
 
-    def test_a_shared_source_polls_at_the_faster_users_interval(self):
-        slow = Company(name="Stripe", ats="greenhouse", slug="stripe", tier="C")
-        fast = Company(name="Stripe", ats="greenhouse", slug="stripe", tier="S")
-        for order in ([slow, fast], [fast, slow]):
-            with self.subTest(first=order[0].tier):
-                sources, _, _ = build_sources_for_users([user("a", [order[0]]), user("b", [order[1]])], SETTINGS)
-                expected, _, _ = build_sources_for_users([user("x", [fast])], SETTINGS)
-                self.assertEqual(sources[0].interval_s, expected[0].interval_s)
+    def test_a_shared_source_uses_the_default_interval(self):
+        shared = Company(name="Stripe", ats="greenhouse", slug="stripe")
+        sources, _, _ = build_sources_for_users([user("a", [shared]), user("b", [shared])], SETTINGS)
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(sources[0].interval_s, 300.0)
 
     def test_a_user_with_an_empty_watchlist_owns_nothing(self):
         sources, owned, _ = build_sources_for_users([user("friend")], SETTINGS)
