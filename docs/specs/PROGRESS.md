@@ -36,8 +36,10 @@ Status: `todo` | `doing` | `done` (with commit hash and date) | `deferred` (not 
 Merge preparation (2026-10-04), branch `claude/trim-drop-radar-plan`, v0.20.1:
 fixed review findings in `board_review.py`, `pay_llm.py` and diagnostic tests;
 malformed lists cannot become empty-board evidence and uncertain provider usage
-retains its reserved budget. Added regression coverage. Final validation: 519 backend
+retains its reserved budget. Added regression coverage. Final validation: 520 backend
 tests, pyflakes, build and 74 e2e; production deployment of these fixes remains pending.
+GitHub CI exposed an index shutdown race: closure now shares the worker lock and
+prevents subsequent refreshes. Added shutdown regression coverage.
 Next: merge and tag the validated branch, then use main as the CSEED project's base.
 
 Cheaper agent-automation research continued by Claude Cloud (2026-10-05):
