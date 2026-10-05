@@ -11,7 +11,7 @@ def send(body):
     with open(SEND,"a") as f: f.write("SENT "+body+"\n")   # side effect
     print("step send",flush=True); return True
 @DBOS.step()
-def calendar(): 
+def calendar():
     if os.environ.get("CRASH")=="1": print("CRASH before calendar",flush=True); os._exit(9)
     print("step calendar",flush=True)
 @DBOS.workflow()
