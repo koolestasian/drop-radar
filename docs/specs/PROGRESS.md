@@ -33,6 +33,13 @@ Status: `todo` | `doing` | `done` (with commit hash and date) | `deferred` (not 
 | T20 personal opportunity action engine | doing | `T20-opportunity-action-engine.md`. Personal autonomous workflow: rank jobs/people/routes/actions; reuse private facts/answers; execute permitted outreach, reply handling, agreed scheduling, event/introduction follow-through and supported applications after account/policy activation. Review mode remains optional. Competitor report plus `reports/Drop Radar autonomous networking.md`; T20.1–20.8 phased plan. First prototype: verified contact → policy checks → real reply → agreed calendar meeting → brief. Personal internship workflow; optional private friend access is secondary. Public launch/commercialization/growth are outside the roadmap. Delivery slices remain candidates, with no new deadline or commitment to every feature. Career-library foundation live (5ed96c9, v0.20.0; 516 backend, 74 e2e). Approved schema 5→6 and backup, all existing rows preserved; remaining T20 work pending. |
 
 ## Latest handoff
+Merge preparation (2026-10-04), branch `claude/trim-drop-radar-plan`, v0.20.1:
+fixed review findings in `board_review.py`, `pay_llm.py` and diagnostic tests;
+malformed lists cannot become empty-board evidence and uncertain provider usage
+retains its reserved budget. Added regression coverage. Final validation: 519 backend
+tests, pyflakes, build and 74 e2e; production deployment of these fixes remains pending.
+Next: merge and tag the validated branch, then use main as the CSEED project's base.
+
 Cheaper agent-automation research continued by Claude Cloud (2026-10-05):
 `docs/specs/T20-agent-automation-research-findings.md`. Result: no agent platform for the
 first loop; direct worker + own SQLite action ledger + Haiku with caching/batch, DBOS Transact

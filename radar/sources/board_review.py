@@ -55,6 +55,9 @@ def probe(company):
             if count < 0:
                 raise ValueError("invalid posting count")
         else:
+            jobs = data if company.ats == "lever" else data["jobs"]
+            if not isinstance(jobs, list):
+                raise ValueError("invalid posting list")
             count = len(source.parse(data))
     except (ValueError, KeyError, TypeError, AttributeError, IndexError):
         return {"status": "error", "postings": 0}

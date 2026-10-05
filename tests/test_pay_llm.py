@@ -35,6 +35,18 @@ class EvidenceTests(unittest.TestCase):
         self.assertIsNone(pay_from_text(TEXT))
         self.assertEqual(verified(RESULT, TEXT)["max"], 150000)
 
+    def test_gemini_transport_failure_keeps_usage_uncertain(self):
+        from types import SimpleNamespace
+        client = mock.Mock()
+        client.messages.create.return_value = SimpleNamespace(
+            usage=SimpleNamespace(input_tokens=80, output_tokens=40), stop_reason="refusal")
+        with mock.patch("anthropic.Anthropic", return_value=client), \
+                mock.patch.dict("os.environ", {"GEMINI_API_KEY": "test"}), \
+                mock.patch("httpx.post", side_effect=TimeoutError()):
+            data, tokens, _ = PayLLM(None)._ask(TEXT)
+        self.assertIsNone(data)
+        self.assertIsNone(tokens)
+
     def test_invented_amount_currency_period_and_quote_are_rejected(self):
         for patch in ({"max": 160000}, {"currency": "GBP"}, {"period": "hr"}, {"evidence": "invented"}):
             with self.subTest(patch=patch):
@@ -84,6 +96,18 @@ class PayFallbackTests(unittest.IsolatedAsyncioTestCase):
         await self.llm.extract(TEXT + " changed")
         await self.llm.extract(TEXT + " changed")
         self.assertEqual(self.ask.call_count, 3)
+
+    async def test_uncertain_usage_keeps_reservation_and_stops_retries_at_budget(self):
+        reserve = 2 * len(TEXT.encode()) + 5000
+        self.llm.budget = reserve
+        client = mock.Mock()
+        client.messages.create.side_effect = TimeoutError()
+        self.llm.ask = self.llm._ask
+        with mock.patch("anthropic.Anthropic", return_value=client), mock.patch.dict("os.environ", {"GEMINI_API_KEY": ""}):
+            self.assertIsNone(await self.llm.extract(TEXT))
+            self.assertIsNone(await self.llm.extract(TEXT))
+        client.messages.create.assert_called_once()
+        self.assertEqual(self.store.get_enrichment(f"llm_budget:{_today()}")["tokens"], reserve)
 
     async def test_page_fills_blanks_and_preserves_concurrent_notes_and_pay(self):
         opp, _ = self.store.upsert_item(Item(source="ats.test", external_id="a", title="Intern",

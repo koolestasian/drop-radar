@@ -23,9 +23,10 @@ class FeedbackTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.store = Store(Path(tempfile.mkdtemp()) / "radar.db")
         self.addCleanup(self.store.close)
-        guard = patch("radar.pipeline.pagefacts._public", side_effect=lambda host: host != "127.0.0.1")
-        guard.start()
-        self.addCleanup(guard.stop)
+        for target in ("radar.pipeline.pagefacts._public", "radar.api.diagnostics._public"):
+            guard = patch(target, side_effect=lambda host: host != "127.0.0.1")
+            guard.start()
+            self.addCleanup(guard.stop)
         self.source = "ats.greenhouse.demo"
         self.user = User(id="owner", profile=Profile(), watchlist=Watchlist())
         self.runtime = SimpleNamespace(users={"owner": self.user}, owned={"owner": {self.source}}, scheduler=None)

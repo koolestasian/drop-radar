@@ -59,6 +59,15 @@ class BoardTests(unittest.TestCase):
             self.assertIsNone(pagefacts._get("https://acme.wd5.myworkdayjobs.com/jobs", method="POST", json_body={}))
             post.assert_called_once()
 
+    def test_malformed_posting_lists_are_not_empty_board_evidence(self):
+        for ats, empty in (("lever", []), ("greenhouse", {"jobs": []}), ("ashby", {"jobs": []})):
+            company = Company("Acme", ats, "acme")
+            for data in ({}, {"jobs": {}}, {"jobs": ""}, None):
+                with self.subTest(ats=ats, data=data), patch.object(pagefacts, "_get", return_value=response(data)):
+                    self.assertEqual(br.probe(company)["status"], "error")
+            with patch.object(pagefacts, "_get", return_value=response(empty)):
+                self.assertEqual(br.probe(company)["status"], "empty")
+
 
 class MaintenanceTests(unittest.TestCase):
     def test_only_confirmed_404s_trigger_bounded_repair_guesses(self):

@@ -59,7 +59,7 @@ class PayLLM:
                   "stated base salary/wage range, never estimates, bonuses, equity or total compensation. "
                   "Quote one exact contiguous sentence/paragraph containing both amounts, currency, pay type and period. "
                   "Do not annualize or convert amounts. If unknown use min=0,max=0,evidence=''.\n<posting>" + text + "</posting>")
-        tokens = 0
+        tokens = None  # Unknown usage retains the reservation after transport failures.
         try:
             r = anthropic.Anthropic(max_retries=0, timeout=20).messages.create(
                 model=MODEL, max_tokens=500, messages=[{"role": "user", "content": prompt}],
@@ -83,11 +83,12 @@ class PayLLM:
                 self._gemini_until = time.monotonic() + 600
             r.raise_for_status()
             body = r.json()
-            tokens += body.get("usageMetadata", {}).get("totalTokenCount", 0)
+            usage = body.get("usageMetadata", {}).get("totalTokenCount")
+            tokens = tokens + usage if tokens is not None and usage is not None else None
             return json.loads(body["candidates"][0]["content"]["parts"][0]["text"]), tokens, "gemini-3.5-flash-lite"
         except Exception as exc:
             log.warning("pay Gemini unavailable: %s", type(exc).__name__)
-            return None, tokens, MODEL
+            return None, None, MODEL
 
     async def extract(self, text, dry_run=False):
         text = clean(text)[:16000]
@@ -110,7 +111,7 @@ class PayLLM:
             self.store.set_enrichment(budget_key, {"tokens": spent + reserve})
             data, tokens, model = await asyncio.to_thread(self.ask, text)
             current = (self.store.get_enrichment(budget_key) or {}).get("tokens", 0)
-            self.store.set_enrichment(budget_key, {"tokens": current - reserve + tokens})
+            self.store.set_enrichment(budget_key, {"tokens": current - reserve + tokens if tokens is not None else current})
             pay = verified(data, text)
             if data is not None:  # API failures retry; valid unknowns retry after a week.
                 self.store.set_enrichment(key, {"result": data, "pay": pay, "model": model,

@@ -2,6 +2,12 @@
 
 Versions follow the web app (`web/package.json`). Every merge to `main` adds an entry and a `vX.Y.Z` tag.
 
+## 0.20.1 (2026-10-04)
+
+Board-health probes reject malformed posting lists instead of counting them as empty
+boards. Pay extraction retains its token reservation when provider usage is unknown
+after a transport failure. Diagnostic tests mock both public-host guards to stay offline.
+
 ## 0.20.0 (2026-10-04)
 
 Career adds a private library of career facts and reusable answers. Records begin
