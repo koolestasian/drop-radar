@@ -1,8 +1,8 @@
 # Drop Radar
 
 **An always-on radar for internship and new-grad postings.** It watches about 800 company career sites,
-community job lists and an Instagram account's Stories, keeps only what matches your profile, and tells you
-within minutes: a live web app and a phone push, instead of refreshing a dozen tabs.
+community job lists and zero2sudo Instagram account's Stories, keeps only what matches your profile, and tells you
+within minutes when a job posting drop.
 
 <p>
   <img src="docs/images/jobs-desktop.png" alt="Drop Radar Jobs screen on desktop, with a posting open in the detail pane" width="62%">
