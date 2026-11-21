@@ -195,9 +195,3 @@ guide, is tagged `legacy-hourly-monitor`.
   The [adopted product goal](docs/specs/GOAL.md) and [T20 plan](docs/specs/T20-opportunity-action-engine.md)
   describe the broader personal opportunity engine; they do not activate accounts, spending or sends.
 
-## Project history
-
-The plan and what each milestone decided are in [`docs/specs/`](docs/specs/) (start with
-[`00-overview.md`](docs/specs/00-overview.md) and [`PROGRESS.md`](docs/specs/PROGRESS.md)); user-visible changes
-are in [`CHANGELOG.md`](CHANGELOG.md). Next up: more automation (pay ranges read from the posting by Claude Haiku, a
-review queue for new boards), then an hourly email digest and push only for a priority list.
